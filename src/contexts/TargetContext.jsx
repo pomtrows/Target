@@ -24,7 +24,7 @@ const initialState = {
   loading: true,
 };
 
-// ===== Reducer =====
+// ===== Reducer (PURE) =====
 function targetReducer(state, action) {
   switch (action.type) {
     case 'INITIALIZE':
@@ -37,53 +37,18 @@ function targetReducer(state, action) {
     case 'RESET':
       return initialState;
 
-    // ----- Objectives -----
-    case 'ADD_OBJECTIVE': {
-      const { user_id, title, target, categoryId, assignments } = action.payload;
-      const newObj = {
-        id: `obj-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-        title,
-        target: target || 1,
-        categoryId: categoryId || 'autre',
-        assignments: assignments || [],
-        createdAt: new Date().toISOString().slice(0, 10),
-      };
-      
-      // Sync to Supabase
-      supabase.from('objectives').insert({
-        id: newObj.id,
-        user_id,
-        title: newObj.title,
-        target: newObj.target,
-        category_id: newObj.categoryId,
-        assignments: newObj.assignments,
-        created_at: newObj.createdAt
-      }).then();
+    case 'ADD_OBJECTIVE':
+      return { ...state, objectives: [...state.objectives, action.payload.objective] };
 
-      return { ...state, objectives: [...state.objectives, newObj] };
-    }
-
-    case 'UPDATE_OBJECTIVE': {
-      const updated = action.payload;
-      // Sync to Supabase
-      supabase.from('objectives').update({
-        title: updated.title,
-        target: updated.target,
-        category_id: updated.categoryId,
-        assignments: updated.assignments
-      }).eq('id', updated.id).then();
-
+    case 'UPDATE_OBJECTIVE':
       return {
         ...state,
         objectives: state.objectives.map((obj) =>
-          obj.id === updated.id ? { ...obj, ...updated } : obj
+          obj.id === action.payload.id ? { ...obj, ...action.payload } : obj
         ),
       };
-    }
 
     case 'DELETE_OBJECTIVE': {
-      supabase.from('objectives').delete().eq('id', action.payload).then();
-      
       const newProgress = { ...state.progress };
       for (const weekId in newProgress) {
         if (newProgress[weekId][action.payload]) {
@@ -99,31 +64,11 @@ function targetReducer(state, action) {
       };
     }
 
-    // ----- Progress -----
     case 'INCREMENT_PROGRESS':
     case 'DECREMENT_PROGRESS':
     case 'TOGGLE_PROGRESS': {
-      let { weekId, objectiveId, user_id } = action.payload;
+      const { weekId, objectiveId, value } = action.payload;
       const weekProgress = state.progress[weekId] || {};
-      let current = weekProgress[objectiveId] || 0;
-      
-      if (action.type === 'INCREMENT_PROGRESS') {
-        const objective = state.objectives.find((o) => o.id === objectiveId);
-        const max = objective?.target || 1;
-        if (current < max) current++;
-      } else if (action.type === 'DECREMENT_PROGRESS') {
-        if (current > 0) current--;
-      } else {
-        current = current >= 1 ? 0 : 1;
-      }
-
-      // Sync to Supabase
-      supabase.from('progress').upsert({
-        week_id: weekId,
-        objective_id: objectiveId,
-        user_id,
-        value: current
-      }, { onConflict: 'week_id,objective_id' }).then();
 
       return {
         ...state,
@@ -131,22 +76,14 @@ function targetReducer(state, action) {
           ...state.progress,
           [weekId]: {
             ...weekProgress,
-            [objectiveId]: current,
+            [objectiveId]: value,
           },
         },
       };
     }
 
-    // ----- Rewards -----
     case 'SET_REWARD': {
-      const { weekId, reward, user_id } = action.payload;
-      // Sync to Supabase
-      supabase.from('rewards').upsert({
-        week_id: weekId,
-        user_id,
-        reward: reward
-      }, { onConflict: 'week_id' }).then();
-
+      const { weekId, reward } = action.payload;
       return {
         ...state,
         rewards: {
@@ -156,54 +93,22 @@ function targetReducer(state, action) {
       };
     }
 
-    // ----- Categories -----
-    case 'ADD_CATEGORY': {
-      const { user_id, label, icon, color } = action.payload;
-      const newCat = {
-        id: `cat-${Date.now()}`,
-        label, icon, color
-      };
-      // Sync to Supabase
-      supabase.from('categories').insert({
-        id: newCat.id,
-        user_id,
-        label: newCat.label,
-        icon: newCat.icon,
-        color: newCat.color
-      }).then();
+    case 'ADD_CATEGORY':
+      return { ...state, categories: [...state.categories, action.payload.category] };
 
-      return { ...state, categories: [...state.categories, newCat] };
-    }
-
-    case 'UPDATE_CATEGORY': {
-      const updated = action.payload;
-      supabase.from('categories').update({
-        label: updated.label,
-        icon: updated.icon,
-        color: updated.color
-      }).eq('id', updated.id).then();
-
+    case 'UPDATE_CATEGORY':
       return {
         ...state,
         categories: state.categories.map((cat) =>
-          cat.id === updated.id ? { ...cat, ...updated } : cat
+          cat.id === action.payload.id ? { ...cat, ...action.payload } : cat
         ),
       };
-    }
 
-    case 'DELETE_CATEGORY': {
-      const hasObjectives = state.objectives.some(
-        (obj) => obj.categoryId === action.payload
-      );
-      if (hasObjectives) return state;
-      
-      supabase.from('categories').delete().eq('id', action.payload).then();
-
+    case 'DELETE_CATEGORY':
       return {
         ...state,
         categories: state.categories.filter((cat) => cat.id !== action.payload),
       };
-    }
 
     default:
       return state;
@@ -271,13 +176,134 @@ export function TargetProvider({ children }) {
     fetchData();
   }, [user]);
 
-  // Wrapper for dispatch to automatically inject user_id
-  const userDispatch = (action) => {
-    if (user) {
-      dispatch({ 
-        ...action, 
-        payload: { ...action.payload, user_id: user.id } 
-      });
+  // Wrapper for dispatch to handle async side effects and local updates
+  const userDispatch = async (action) => {
+    if (!user) return;
+
+    switch (action.type) {
+      case 'ADD_OBJECTIVE': {
+        const newObj = {
+          id: `obj-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          title: action.payload.title,
+          target: action.payload.target || 1,
+          categoryId: action.payload.categoryId || 'autre',
+          assignments: action.payload.assignments || [],
+          createdAt: new Date().toISOString().slice(0, 10),
+          user_id: user.id
+        };
+        
+        // Optimistic update
+        dispatch({ type: 'ADD_OBJECTIVE', payload: { objective: newObj } });
+        
+        // DB sync
+        await supabase.from('objectives').insert({
+          id: newObj.id,
+          user_id: user.id,
+          title: newObj.title,
+          target: newObj.target,
+          category_id: newObj.categoryId,
+          assignments: newObj.assignments,
+          created_at: newObj.createdAt
+        });
+        break;
+      }
+
+      case 'UPDATE_OBJECTIVE': {
+        const updated = { ...action.payload };
+        dispatch({ type: 'UPDATE_OBJECTIVE', payload: updated });
+        await supabase.from('objectives').update({
+          title: updated.title,
+          target: updated.target,
+          category_id: updated.categoryId,
+          assignments: updated.assignments
+        }).eq('id', updated.id);
+        break;
+      }
+
+      case 'DELETE_OBJECTIVE': {
+        dispatch({ type: 'DELETE_OBJECTIVE', payload: action.payload });
+        await supabase.from('objectives').delete().eq('id', action.payload);
+        break;
+      }
+
+      case 'INCREMENT_PROGRESS':
+      case 'DECREMENT_PROGRESS':
+      case 'TOGGLE_PROGRESS': {
+        const { weekId, objectiveId } = action.payload;
+        const weekProgress = state.progress[weekId] || {};
+        let current = weekProgress[objectiveId] || 0;
+        
+        if (action.type === 'INCREMENT_PROGRESS') {
+          const objective = state.objectives.find((o) => o.id === objectiveId);
+          const max = objective?.target || 1;
+          if (current < max) current++;
+        } else if (action.type === 'DECREMENT_PROGRESS') {
+          if (current > 0) current--;
+        } else {
+          current = current >= 1 ? 0 : 1;
+        }
+
+        dispatch({ type: action.type, payload: { ...action.payload, value: current } });
+        await supabase.from('progress').upsert({
+          week_id: weekId,
+          objective_id: objectiveId,
+          user_id: user.id,
+          value: current
+        }, { onConflict: 'week_id,objective_id' });
+        break;
+      }
+
+      case 'SET_REWARD': {
+        const { weekId, reward } = action.payload;
+        dispatch({ type: 'SET_REWARD', payload: action.payload });
+        await supabase.from('rewards').upsert({
+          week_id: weekId,
+          user_id: user.id,
+          reward: reward
+        }, { onConflict: 'week_id' });
+        break;
+      }
+
+      case 'ADD_CATEGORY': {
+        const newCat = {
+          id: `cat-${Date.now()}`,
+          ...action.payload,
+          user_id: user.id
+        };
+        dispatch({ type: 'ADD_CATEGORY', payload: { category: newCat } });
+        await supabase.from('categories').insert({
+          id: newCat.id,
+          user_id: user.id,
+          label: newCat.label,
+          icon: newCat.icon,
+          color: newCat.color
+        });
+        break;
+      }
+
+      case 'UPDATE_CATEGORY': {
+        const updated = action.payload;
+        dispatch({ type: 'UPDATE_CATEGORY', payload: updated });
+        await supabase.from('categories').update({
+          label: updated.label,
+          icon: updated.icon,
+          color: updated.color
+        }).eq('id', updated.id);
+        break;
+      }
+
+      case 'DELETE_CATEGORY': {
+        const hasObjectives = state.objectives.some(
+          (obj) => obj.categoryId === action.payload
+        );
+        if (hasObjectives) return;
+        dispatch({ type: 'DELETE_CATEGORY', payload: action.payload });
+        await supabase.from('categories').delete().eq('id', action.payload);
+        break;
+      }
+
+      default:
+        dispatch(action);
     }
   };
 
@@ -296,6 +322,7 @@ export function TargetProvider({ children }) {
     </TargetContext.Provider>
   );
 }
+
 
 // ===== Hook =====
 export function useTarget() {
