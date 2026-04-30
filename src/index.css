@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+/* ===== Custom Theme (Design Tokens) ===== */
+@theme {
+  --color-dark-900: #0a0e1a;
+  --color-dark-800: #0f172a;
+  --color-dark-700: #1e293b;
+  --color-dark-600: #334155;
+  --color-dark-500: #475569;
+  --color-dark-400: #64748b;
+  --color-dark-300: #94a3b8;
+  --color-dark-200: #cbd5e1;
+  --color-dark-100: #e2e8f0;
+
+  --color-accent-cyan: #06b6d4;
+  --color-accent-violet: #8b5cf6;
+  --color-accent-green: #22c55e;
+  --color-accent-orange: #f97316;
+  --color-accent-red: #ef4444;
+  --color-accent-gold: #fbbf24;
+  --color-accent-pink: #ec4899;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ===== Light Mode (default) ===== */
+:root {
+  --color-dark-900: #f1f5f9;
+  --color-dark-800: #ffffff;
+  --color-dark-700: #f8fafc;
+  --color-dark-600: #e2e8f0;
+  --color-dark-500: #94a3b8;
+  --color-dark-400: #64748b;
+  --color-dark-300: #475569;
+  --color-dark-200: #334155;
+  --color-dark-100: #1e293b;
+
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(148, 163, 184, 0.2);
+  --glass-strong-bg: rgba(255, 255, 255, 0.9);
+  --glass-strong-border: rgba(148, 163, 184, 0.25);
+  --scrollbar-track: #f1f5f9;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
+  --shadow-color: rgba(0, 0, 0, 0.05);
+}
+
+/* ===== Dark Mode ===== */
+.dark {
+  --color-dark-900: #0a0e1a;
+  --color-dark-800: #0f172a;
+  --color-dark-700: #1e293b;
+  --color-dark-600: #334155;
+  --color-dark-500: #475569;
+  --color-dark-400: #64748b;
+  --color-dark-300: #94a3b8;
+  --color-dark-200: #cbd5e1;
+  --color-dark-100: #e2e8f0;
+
+  --glass-bg: rgba(30, 41, 59, 0.6);
+  --glass-border: rgba(148, 163, 184, 0.1);
+  --glass-strong-bg: rgba(30, 41, 59, 0.85);
+  --glass-strong-border: rgba(148, 163, 184, 0.15);
+  --scrollbar-track: #0f172a;
+  --scrollbar-thumb: #334155;
+  --scrollbar-thumb-hover: #475569;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+/* ===== Google Font ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ===== Base Styles ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-dark-900);
+  color: var(--color-dark-100);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ===== Custom Utilities ===== */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+}
+
+.glass-strong {
+  background: var(--glass-strong-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-strong-border);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-border {
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-violet));
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+}
+
+/* Gold shimmer for unlocked rewards */
+@keyframes gold-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.gold-shimmer {
+  background: linear-gradient(90deg, var(--color-accent-gold), #fde68a, var(--color-accent-gold), #fde68a, var(--color-accent-gold));
+  background-size: 200% 100%;
+  animation: gold-shimmer 3s linear infinite;
+}
+
+/* Confetti keyframes */
+@keyframes confetti-fall {
+  0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* Pulse glow effect */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.2); }
+  50% { box-shadow: 0 0 40px rgba(6, 182, 212, 0.4); }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ===== Light mode shadow for cards - REMOVED TO ALLOW TAILWIND SHADOWS ===== */
+
+:root:not(.dark) [data-sidebar] {
+  box-shadow: 2px 0 8px var(--shadow-color);
+}
+
+/* ===== Sidebar Responsive ===== */
+[data-sidebar] {
+  transform: translateX(-100%);
+  transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+@media (min-width: 768px) {
+  [data-sidebar] {
+    transform: translateX(0) !important;
+  }
+  [data-main] {
+    margin-left: 16rem;
+    padding-left: 10px;
+    padding-top: 1.5rem;
+  }
+}
+
+/* ===== Theme transition ===== */
+[data-sidebar],
+[data-main],
+.glass,
+.glass-strong {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
