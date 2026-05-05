@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, Plus, Pencil, Trash2, Check, X, AlertTriangle } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
+import Modal from '../Shared/Modal';
 
 const PRESET_COLORS = [
   '#22d3ee', '#06b6d4', '#0891b2', '#0e7490', // Cyans
@@ -20,6 +21,9 @@ const PRESET_ICONS = [
   '🏃', '🥗', '👥', '🎮', '📋', '🛒', '📌', '💪',
   '📚', '🧘', '💰', '🎯', '🏠', '✈️', '🎵', '💊',
   '🧠', '❤️', '🌱', '⭐', '🔥', '🎨', '💻', '🍳',
+  '🧗', '🚴', '🏊', '🎾', '⚽', '🏀', '🥊', '🛹',
+  '🍎', '🍕', '☕', '🍷', '🍺', '🍦', '🍰', '🍣',
+  '🐶', '🐱', '🐦', '🌸', '🌳', '☀️', '🌙', '☁️',
 ];
 
 export default function CategoriesView() {
@@ -28,6 +32,7 @@ export default function CategoriesView() {
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState({ label: '', icon: '📌', color: '#94a3b8' });
   const [deleteError, setDeleteError] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const startEdit = (cat) => {
     setEditingId(cat.id);
@@ -54,13 +59,16 @@ export default function CategoriesView() {
   };
 
   const handleDelete = (catId) => {
-    const hasObj = state.objectives.some((o) => o.categoryId === catId);
-    if (hasObj) {
-      setDeleteError(catId);
-      setTimeout(() => setDeleteError(null), 3000);
-      return;
+    if (catId === 'autre') return; // Cannot delete "Autre"
+    const category = state.categories.find(c => c.id === catId);
+    setDeleteConfirm(category || { id: catId, label: 'cette catégorie' });
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirm) {
+      dispatch({ type: 'DELETE_CATEGORY', payload: deleteConfirm.id });
+      setDeleteConfirm(null);
     }
-    dispatch({ type: 'DELETE_CATEGORY', payload: catId });
   };
 
   const handleCancel = () => {
@@ -76,20 +84,24 @@ export default function CategoriesView() {
       exit={{ opacity: 0, height: 0 }}
       className="overflow-hidden"
     >
-      <div className="p-4 rounded-2xl bg-dark-700/50 border border-dark-600/30 space-y-4">
+      <div className="p-4 rounded-2xl bg-dark-700/50 border border-dark-600/30">
         <div>
           <label className="block text-xs font-medium text-dark-400 mb-1.5">Nom</label>
           <input
             type="text"
             value={form.label}
-            onChange={(e) => setForm({ ...form, label: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value;
+              setForm({ ...form, label: val.charAt(0).toUpperCase() + val.slice(1) });
+            }}
             placeholder="Ex: Fitness"
             autoFocus
-            className="w-full bg-dark-600/50 border border-dark-500/50 rounded-xl px-3 py-2 text-sm text-dark-100 placeholder-dark-500 focus:outline-none focus:border-accent-cyan/50"
+            className="w-full bg-dark-600/50 border border-dark-500/50 rounded-xl py-2 text-sm text-dark-100 placeholder-dark-500 focus:outline-none focus:border-accent-cyan/50"
+            style={{ paddingLeft: '15px' }}
           />
         </div>
 
-        <div>
+        <div style={{ marginTop: '10px' }}>
           <label className="block text-xs font-medium text-dark-400 mb-1.5">Icône</label>
           <div className="flex flex-wrap gap-1.5">
             {PRESET_ICONS.map((icon) => (
@@ -109,7 +121,7 @@ export default function CategoriesView() {
           </div>
         </div>
 
-        <div>
+        <div style={{ marginTop: '16px' }}>
           <label className="block text-xs font-medium text-dark-400 mb-1.5">Couleur</label>
           <div className="flex flex-wrap gap-2">
             {PRESET_COLORS.map((color) => (
@@ -126,7 +138,7 @@ export default function CategoriesView() {
           </div>
         </div>
 
-        <div className="flex gap-2 pt-1">
+        <div className="flex gap-2" style={{ marginTop: '10px' }}>
           <button
             onClick={handleCancel}
             className="flex-1 px-3 py-2 rounded-xl text-sm text-dark-400 bg-dark-600/30 hover:text-dark-200 transition-colors"
@@ -146,8 +158,8 @@ export default function CategoriesView() {
   );
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+    <div className="max-w-2xl mx-auto" style={{ paddingTop: '60px' }}>
+      <div className="flex items-center justify-between" style={{ marginBottom: '25px' }}>
         <div>
           <h1 className="text-2xl font-bold text-dark-100 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-accent-orange/20 flex items-center justify-center">
@@ -155,7 +167,7 @@ export default function CategoriesView() {
             </div>
             Catégories
           </h1>
-          <p className="text-sm text-dark-400 mt-1 ml-[52px]">{state.categories.length} catégorie{state.categories.length !== 1 ? 's' : ''}</p>
+
         </div>
 
         {!showNew && !editingId && (
@@ -163,7 +175,8 @@ export default function CategoriesView() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={startNew}
-            className="px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-accent-cyan to-accent-violet hover:opacity-90 transition-opacity flex items-center gap-2"
+            className="py-2.5 rounded-full text-sm font-medium text-white bg-gradient-to-r from-accent-cyan to-accent-violet hover:opacity-90 transition-opacity flex items-center gap-2 whitespace-nowrap"
+            style={{ paddingLeft: '24px', paddingRight: '24px' }}
           >
             <Plus size={18} />
             Nouvelle
@@ -220,12 +233,14 @@ export default function CategoriesView() {
                         >
                           <Pencil size={16} />
                         </button>
-                        <button
-                          onClick={() => handleDelete(cat.id)}
-                          className="p-2 rounded-lg text-dark-400 hover:text-accent-red hover:bg-dark-600/50 transition-all"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {cat.id !== 'autre' && (
+                          <button
+                            onClick={() => handleDelete(cat.id)}
+                            className="p-2 rounded-lg text-dark-400 hover:text-accent-red hover:bg-dark-600/50 transition-all"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -247,6 +262,45 @@ export default function CategoriesView() {
           })}
         </AnimatePresence>
       </div>
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        title="Supprimer la catégorie"
+        maxWidth="max-w-sm"
+      >
+        <div className="flex flex-col items-center text-center">
+          <div className="w-14 h-14 bg-accent-red/15 rounded-full flex items-center justify-center mb-4">
+            <AlertTriangle size={28} className="text-accent-red" />
+          </div>
+          <p className="text-dark-200 mb-2 text-lg font-semibold">
+            Êtes-vous sûr ?
+          </p>
+          <p className="text-dark-400 text-sm" style={{ marginBottom: '32px' }}>
+            La catégorie <strong className="text-dark-200">"{deleteConfirm?.label}"</strong> sera définitivement supprimée.
+            {state.objectives.some(o => o.categoryId === deleteConfirm?.id) && (
+              <>
+                <br />
+                <span className="text-accent-orange font-medium">Les objectifs associés seront déplacés dans "Autre".</span>
+              </>
+            )}
+          </p>
+          <div className="flex gap-3 w-full">
+            <button
+              onClick={() => setDeleteConfirm(null)}
+              className="flex-1 py-3 rounded-xl bg-dark-700 text-dark-200 font-bold hover:bg-dark-600 transition-all"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={confirmDelete}
+              className="flex-1 py-3 rounded-xl bg-accent-red text-white font-bold hover:bg-accent-red/80 transition-all"
+            >
+              Supprimer
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

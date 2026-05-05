@@ -108,6 +108,9 @@ function targetReducer(state, action) {
       return {
         ...state,
         categories: state.categories.filter((cat) => cat.id !== action.payload),
+        objectives: state.objectives.map((obj) =>
+          obj.categoryId === action.payload ? { ...obj, categoryId: 'autre' } : obj
+        ),
       };
 
     default:
@@ -293,12 +296,20 @@ export function TargetProvider({ children }) {
       }
 
       case 'DELETE_CATEGORY': {
-        const hasObjectives = state.objectives.some(
-          (obj) => obj.categoryId === action.payload
-        );
-        if (hasObjectives) return;
-        dispatch({ type: 'DELETE_CATEGORY', payload: action.payload });
-        await supabase.from('categories').delete().eq('id', action.payload);
+        const catId = action.payload;
+        if (catId === 'autre') return; // Protect default category
+
+        // 1. Update objectives in Supabase
+        await supabase
+          .from('objectives')
+          .update({ category_id: 'autre' })
+          .eq('category_id', catId);
+
+        // 2. Delete category in Supabase
+        await supabase.from('categories').delete().eq('id', catId);
+
+        // 3. Update local state
+        dispatch({ type: 'DELETE_CATEGORY', payload: catId });
         break;
       }
 

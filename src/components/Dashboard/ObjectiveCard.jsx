@@ -47,18 +47,18 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
       className="group relative h-full min-h-[110px] rounded-[24px] bg-dark-700/40 border border-dark-600 transition-all duration-300 hover:bg-dark-700/60 flex flex-col justify-between shadow-xl hover:shadow-2xl"
     >
       {/* Edit/Delete Icons (Top Right) */}
-      <div className="absolute top-3 right-4 flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-3 right-4 flex gap-4 opacity-60 group-hover:opacity-100 transition-opacity">
         <button
           onClick={(e) => { e.stopPropagation(); onEdit?.(objective); }}
-          className="p-1.5 rounded-lg text-dark-200 hover:text-dark-100 hover:bg-dark-600/50 transition-all"
+          className="p-2 rounded-lg text-dark-200 hover:text-dark-100 hover:bg-dark-600/50 transition-all"
         >
-          <Pencil size={14} />
+          <Pencil size={18} />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete?.(objective.id); }}
-          className="p-1.5 rounded-lg text-dark-300 hover:text-accent-red hover:bg-accent-red/10 transition-all"
+          className="p-2 rounded-lg text-dark-300 hover:text-accent-red hover:bg-accent-red/10 transition-all"
         >
-          <Trash2 size={14} />
+          <Trash2 size={18} />
         </button>
       </div>
 

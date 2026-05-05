@@ -112,7 +112,10 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           <input
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setTitle(val.charAt(0).toUpperCase() + val.slice(1));
+            }}
             placeholder="Ex: Courir, Lire, Méditer..."
             autoFocus
             className="w-full bg-dark-700/50 border border-dark-600/50 rounded-xl py-2.5 text-sm text-dark-100 placeholder-dark-500 focus:outline-none focus:border-accent-cyan/50 transition-colors"
@@ -131,7 +134,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
             max="100"
             value={target}
             onChange={(e) => setTarget(e.target.value)}
-            className="w-24 bg-dark-700/50 border border-dark-600/50 rounded-xl py-2.5 text-sm text-dark-100 focus:outline-none focus:border-accent-cyan/50 transition-colors"
+            className="w-24 text-center bg-dark-700/50 border border-dark-600/50 rounded-xl py-2.5 text-sm text-dark-100 focus:outline-none focus:border-accent-cyan/50 transition-colors"
             style={{ paddingLeft: '16px', paddingRight: '16px' }}
           />
         </div>
@@ -221,8 +224,8 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute z-10 top-full left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-dark-800 border border-dark-600/50 rounded-xl shadow-xl p-2 space-y-1">
-                  {getSelectableWeeks(4, 12).map(week => (
+                <div className="absolute z-10 bottom-full left-0 right-0 mb-2 max-h-60 overflow-y-auto bg-dark-800 border border-dark-600/50 rounded-xl shadow-xl p-2 space-y-1">
+                  {getSelectableWeeks(4, 52).map(week => (
                     <label key={week} className="flex items-center gap-3 p-2 rounded-lg hover:bg-dark-700/50 cursor-pointer transition-colors">
                       <input 
                         type="checkbox" 

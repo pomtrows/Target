@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Pencil } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Pencil, AlertTriangle } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { getCurrentWeekId, getAdjacentWeeks, formatWeekLabelParts, isCurrentWeek, getWeeksInMonth } from '../../utils/weekUtils';
 import { getObjectivesForWeek, getWeekProgressPercent, isWeekComplete, getWeekProgress } from '../../utils/progressUtils';
@@ -8,6 +8,7 @@ import ProgressRing from './ProgressRing';
 import ObjectiveCard from './ObjectiveCard';
 import RewardBanner from './RewardBanner';
 import ObjectiveForm from './ObjectiveForm';
+import Modal from '../Shared/Modal';
 
 export default function WeekView() {
   const { state, dispatch } = useTarget();
@@ -15,6 +16,7 @@ export default function WeekView() {
   const [showForm, setShowForm] = useState(false);
   const [editObjective, setEditObjective] = useState(null);
   const [direction, setDirection] = useState(0);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const objectives = useMemo(
     () => getObjectivesForWeek(state.objectives, currentWeek, getWeeksInMonth),
@@ -44,7 +46,15 @@ export default function WeekView() {
   };
 
   const handleDelete = (objectiveId) => {
-    dispatch({ type: 'DELETE_OBJECTIVE', payload: objectiveId });
+    const objective = state.objectives.find(o => o.id === objectiveId);
+    setDeleteConfirm(objective || { id: objectiveId, title: 'cet objectif' });
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirm) {
+      dispatch({ type: 'DELETE_OBJECTIVE', payload: deleteConfirm.id });
+      setDeleteConfirm(null);
+    }
   };
 
   const handleEdit = (objective) => {
@@ -131,8 +141,22 @@ export default function WeekView() {
       </div>
 
       {/* Progress Ring + Stats */}
-      <div className="flex flex-col items-center" style={{ marginTop: '20px', marginBottom: '20px' }}>
+      <div className="flex flex-col items-center relative" style={{ marginTop: '20px', marginBottom: '20px' }}>
         <ProgressRing progress={progress} size={160} strokeWidth={12} />
+        
+        {/* Desktop Add Button (Next to ring) */}
+        <motion.button
+          whileHover={{ scale: 1.1, rotate: 90 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => {
+            setEditObjective(null);
+            setShowForm(true);
+          }}
+          className="hidden md:flex absolute left-[calc(50%+200px)] top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-dark-100 text-dark-900 shadow-xl items-center justify-center transition-all duration-300"
+        >
+          <Plus size={28} strokeWidth={2.5} />
+        </motion.button>
+
         <p className="mt-3 text-sm text-dark-400">
           {objectives.length === 0
             ? 'Aucun objectif cette semaine'
@@ -196,7 +220,7 @@ export default function WeekView() {
         </motion.div>
       )}
 
-      {/* Floating Add button */}
+      {/* Floating Add button (Mobile only) */}
       <motion.button
         whileHover={{ scale: 1.1, rotate: 90 }}
         whileTap={{ scale: 0.9 }}
@@ -204,7 +228,7 @@ export default function WeekView() {
           setEditObjective(null);
           setShowForm(true);
         }}
-        className="fixed bottom-8 right-8 w-14 h-14 rounded-full bg-dark-100 text-dark-900 shadow-2xl flex items-center justify-center z-50 transition-all duration-300 md:bottom-10 md:right-10"
+        className="md:hidden fixed bottom-8 right-8 w-14 h-14 rounded-full bg-dark-100 text-dark-900 shadow-2xl flex items-center justify-center z-50 transition-all duration-300"
       >
         <Plus size={28} strokeWidth={2.5} />
       </motion.button>
@@ -219,6 +243,40 @@ export default function WeekView() {
         weekId={currentWeek}
         editObjective={editObjective}
       />
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        title="Supprimer l'objectif"
+        maxWidth="max-w-sm"
+      >
+        <div className="flex flex-col items-center text-center">
+          <div className="w-14 h-14 bg-accent-red/15 rounded-full flex items-center justify-center mb-4">
+            <AlertTriangle size={28} className="text-accent-red" />
+          </div>
+          <p className="text-dark-200 mb-2 text-lg font-semibold">
+            Êtes-vous sûr ?
+          </p>
+          <p className="text-dark-400 text-sm" style={{ marginBottom: '32px' }}>
+            L'objectif <strong className="text-dark-200">"{deleteConfirm?.title}"</strong> sera définitivement supprimé.
+          </p>
+          <div className="flex gap-3 w-full">
+            <button
+              onClick={() => setDeleteConfirm(null)}
+              className="flex-1 py-3 rounded-xl bg-dark-700 text-dark-200 font-bold hover:bg-dark-600 transition-all"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={confirmDelete}
+              className="flex-1 py-3 rounded-xl bg-accent-red text-white font-bold hover:bg-accent-red/80 transition-all"
+            >
+              Supprimer
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -50,15 +50,13 @@ export default function AuthScreen() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-dark-800 border border-dark-600/30 mb-4 shadow-xl">
-            <span className="text-3xl font-black text-dark-100">T</span>
-          </div>
-          <h1 className="text-4xl font-black tracking-tighter text-dark-100 mb-2">TARGET</h1>
+        <div className="text-center" style={{ marginBottom: '50px' }}>
+
+          <h1 className="text-4xl font-black tracking-tighter text-dark-100 mb-3">TARGET</h1>
           <p className="text-dark-400 text-sm uppercase tracking-[0.2em] font-bold">Performance Tracking System</p>
         </div>
 
-        <div className="glass border border-dark-600/30 rounded-[32px] p-8 shadow-2xl relative overflow-hidden">
+        <div className="glass border border-dark-600/30 rounded-[32px] shadow-2xl relative overflow-hidden" style={{ padding: '32px' }}>
           <AnimatePresence mode="wait">
             {success ? (
               <motion.div
@@ -86,13 +84,13 @@ export default function AuthScreen() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: isLogin ? 20 : -20 }}
               >
-                <h2 className="text-2xl font-bold text-dark-100 mb-6 text-center">
+                <h2 className="text-2xl font-bold text-dark-100 text-center" style={{ marginBottom: '30px' }}>
                   {isLogin ? 'Bon retour parmi nous' : 'Créer votre compte'}
                 </h2>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                   <div>
-                    <label className="block text-xs font-bold text-dark-400 uppercase tracking-wider mb-2 ml-1">
+                    <label className="block text-xs font-bold text-dark-400 uppercase tracking-wider mb-3 ml-1">
                       Adresse Email
                     </label>
                     <div className="relative">
@@ -102,14 +100,15 @@ export default function AuthScreen() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-dark-800/50 border border-dark-600/30 rounded-xl py-3.5 pl-12 pr-4 text-dark-100 placeholder-dark-600 focus:outline-none focus:border-accent-cyan/50 focus:ring-1 focus:ring-accent-cyan/50 transition-all"
+                        className="w-full bg-dark-800/50 border border-dark-600/30 rounded-xl text-dark-100 placeholder-dark-600 focus:outline-none focus:border-accent-cyan/50 focus:ring-1 focus:ring-accent-cyan/50 transition-all"
+                        style={{ padding: '12px 16px 12px 56px' }}
                         placeholder="nom@exemple.com"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-dark-400 uppercase tracking-wider mb-2 ml-1">
+                    <label className="block text-xs font-bold text-dark-400 uppercase tracking-wider mb-3 ml-1">
                       Mot de passe
                     </label>
                     <div className="relative">
@@ -119,7 +118,8 @@ export default function AuthScreen() {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-dark-800/50 border border-dark-600/30 rounded-xl py-3.5 pl-12 pr-4 text-dark-100 placeholder-dark-600 focus:outline-none focus:border-accent-cyan/50 focus:ring-1 focus:ring-accent-cyan/50 transition-all"
+                        className="w-full bg-dark-800/50 border border-dark-600/30 rounded-xl text-dark-100 placeholder-dark-600 focus:outline-none focus:border-accent-cyan/50 focus:ring-1 focus:ring-accent-cyan/50 transition-all"
+                        style={{ padding: '12px 16px 12px 56px' }}
                         placeholder="••••••••"
                       />
                     </div>
@@ -130,7 +130,7 @@ export default function AuthScreen() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                     >
-                      <label className="block text-xs font-bold text-dark-400 uppercase tracking-wider mb-2 ml-1">
+                      <label className="block text-xs font-bold text-dark-400 uppercase tracking-wider mb-3 ml-1">
                         Confirmer le mot de passe
                       </label>
                       <div className="relative">
@@ -140,7 +140,8 @@ export default function AuthScreen() {
                           required
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="w-full bg-dark-800/50 border border-dark-600/30 rounded-xl py-3.5 pl-12 pr-4 text-dark-100 placeholder-dark-600 focus:outline-none focus:border-accent-cyan/50 focus:ring-1 focus:ring-accent-cyan/50 transition-all"
+                          className="w-full bg-dark-800/50 border border-dark-600/30 rounded-xl text-dark-100 placeholder-dark-600 focus:outline-none focus:border-accent-cyan/50 focus:ring-1 focus:ring-accent-cyan/50 transition-all"
+                          style={{ padding: '16px 16px 16px 56px' }}
                           placeholder="••••••••"
                         />
                       </div>
@@ -157,7 +158,7 @@ export default function AuthScreen() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-accent-cyan to-accent-violet text-dark-900 font-black flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="w-full py-4 mt-4 rounded-xl bg-gradient-to-r from-accent-cyan to-accent-violet text-dark-900 font-black flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   >
                     {loading ? (
                       <Loader2 className="animate-spin" size={20} />
@@ -170,7 +171,7 @@ export default function AuthScreen() {
                   </button>
                 </form>
 
-                <div className="mt-8 pt-6 border-t border-dark-600/30 text-center">
+                <div className="mt-10 pt-8 border-t border-dark-600/30 text-center">
                   <p className="text-dark-400 text-sm">
                     {isLogin ? "Vous n'avez pas de compte ?" : "Vous avez déjà un compte ?"}
                     <button
