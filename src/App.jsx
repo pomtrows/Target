@@ -8,6 +8,7 @@ import BacklogPage from './pages/BacklogPage';
 import HistoryPage from './pages/HistoryPage';
 import AdminPage from './pages/AdminPage';
 import AuthScreen from './components/Auth/AuthScreen';
+import InstallPrompt from './components/Shared/InstallPrompt';
 
 function AppContent() {
   const { user } = useAuth();
@@ -20,6 +21,7 @@ function AppContent() {
     <TargetProvider>
       <div className="flex min-h-screen">
         <Sidebar />
+        <InstallPrompt />
 
         {/* Main content - offset for sidebar */}
         <main data-main style={{ paddingLeft: '20px', paddingRight: '20px', paddingTop: '20px' }} className="flex-1 py-6 md:py-8">
