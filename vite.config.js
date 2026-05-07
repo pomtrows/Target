@@ -12,8 +12,8 @@ export default defineConfig({
         name: 'Target - Vos Objectifs',
         short_name: 'Target',
         description: 'Suivi d\'objectifs hebdomadaires gamifié',
-        theme_color: '#0a0e1a',
-        background_color: '#0a0e1a',
+        theme_color: '#ffffff',
+        background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
