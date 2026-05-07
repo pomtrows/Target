@@ -92,7 +92,7 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
                     <div className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-all flex-shrink-0 ${
                       isSubChecked
                         ? 'bg-accent-green/20 border-accent-green/50'
-                        : 'border-dark-600 group-hover/sub:border-dark-500'
+                        : 'border-dark-500 group-hover/sub:border-dark-400'
                     }`}>
                       {isSubChecked && <Check size={12} className="text-accent-green" strokeWidth={3} />}
                     </div>
