@@ -1,17 +1,24 @@
 export default function Badge({ label, icon, color, size = 'sm' }) {
-  const sizes = {
-    xs: 'text-xs px-1.5 py-0.5',
-    sm: 'text-xs px-2.5 py-1',
-    md: 'text-sm px-3 py-1.5',
+  const textSizes = {
+    xs: 'text-xs',
+    sm: 'text-xs',
+    md: 'text-sm',
+  };
+
+  const paddings = {
+    xs: '2px 10px',
+    sm: '4px 10px',
+    md: '6px 12px',
   };
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full font-medium ${sizes[size]}`}
+      className={`inline-flex items-center gap-1 rounded-full font-medium ${textSizes[size]}`}
       style={{
         backgroundColor: `${color}20`,
         color: color,
         border: `1px solid ${color}30`,
+        padding: paddings[size],
       }}
     >
       {icon && <span>{icon}</span>}

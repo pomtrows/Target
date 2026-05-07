@@ -53,7 +53,7 @@ export default function ProgressRing({
       {/* Center text */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <motion.span
-          className="text-3xl font-bold"
+          className={`${size < 60 ? 'text-sm' : size < 100 ? 'text-xl' : 'text-3xl'} font-bold`}
           style={{ color }}
           key={percent}
           initial={{ scale: 1.3, opacity: 0 }}
@@ -62,7 +62,9 @@ export default function ProgressRing({
         >
           {percent}%
         </motion.span>
-        <span className="text-xs text-dark-400 mt-0.5">Atteinte</span>
+        {size >= 80 && (
+          <span className="text-xs text-dark-400 mt-0.5">Atteinte</span>
+        )}
       </div>
     </div>
   );

@@ -161,9 +161,9 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
                         borderColor: cat.color,
                         backgroundColor: `${cat.color}15`,
                         color: cat.color,
-                        padding: '8px 16px',
+                        padding: '2px 12px',
                       }
-                    : { color: 'var(--color-dark-200)', padding: '8px 16px' }
+                    : { color: 'var(--color-dark-200)', padding: '2px 12px' }
                 }
               >
                 <span className="text-lg">{cat.icon}</span>
