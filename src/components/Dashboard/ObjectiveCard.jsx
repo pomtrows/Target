@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Plus, Minus, Check, Pencil, Trash2 } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
-import { getObjectiveProgress, getProgressColor } from '../../utils/progressUtils';
+import { getObjectiveProgress, getProgressColor, isBitSet } from '../../utils/progressUtils';
 
 export default function ObjectiveCard({ objective, weekId, index, onEdit, onDelete }) {
   const { state, dispatch } = useTarget();
@@ -9,6 +9,8 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
   const category = state.categories.find((c) => c.id === objective.categoryId);
   const weekProgress = state.progress[weekId] || {};
   const current = weekProgress[objective.id] || 0;
+  
+  const hasSubObjectives = objective.target === 1 && objective.subObjectives?.length > 0;
   const isCheckbox = objective.target < 1;
   const isChecked = current >= 1;
   const progress = getObjectiveProgress(objective, weekProgress);
@@ -33,6 +35,13 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
     dispatch({
       type: 'TOGGLE_PROGRESS',
       payload: { weekId, objectiveId: objective.id },
+    });
+  };
+
+  const handleToggleSub = (subIndex) => {
+    dispatch({
+      type: 'TOGGLE_SUB_OBJECTIVE',
+      payload: { weekId, objectiveId: objective.id, subIndex },
     });
   };
 
@@ -64,13 +73,37 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
 
       <div className="flex-1">
         {/* Title */}
-        <h3 className="font-bold text-lg text-dark-100 mb-6 px-1">
+        <h3 className="font-bold text-lg text-dark-100 mb-6 px-1 pr-12">
           {objective.title}
         </h3>
 
-        {/* Counter Section */}
-        <div className="flex items-center gap-6 mb-8 px-1">
-          {!isCheckbox && (
+        {/* Counter Section OR Sub-objectives */}
+        <div className="flex flex-col gap-6 mb-8 px-1">
+          {hasSubObjectives ? (
+            <div className="space-y-2.5">
+              {objective.subObjectives.map((sub, i) => {
+                const isSubChecked = isBitSet(current, i);
+                return (
+                  <button
+                    key={sub.id}
+                    onClick={() => handleToggleSub(i)}
+                    className="flex items-start gap-3 w-full group/sub text-left transition-colors"
+                  >
+                    <div className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-all flex-shrink-0 ${
+                      isSubChecked
+                        ? 'bg-accent-green/20 border-accent-green/50'
+                        : 'border-dark-600 group-hover/sub:border-dark-500'
+                    }`}>
+                      {isSubChecked && <Check size={12} className="text-accent-green" strokeWidth={3} />}
+                    </div>
+                    <span className={`text-sm leading-tight transition-all ${isSubChecked ? 'text-dark-500 line-through' : 'text-dark-200'}`}>
+                      {sub.title}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : !isCheckbox ? (
             <div className="flex items-center gap-4">
               <motion.button
                 whileTap={{ scale: 0.9 }}
@@ -105,9 +138,7 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
                 <Plus size={18} />
               </motion.button>
             </div>
-          )}
-
-          {isCheckbox && (
+          ) : (
             <button
               onClick={handleToggle}
               className="flex items-center gap-4 group/check"

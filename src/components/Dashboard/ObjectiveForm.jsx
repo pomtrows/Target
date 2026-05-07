@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import Modal from '../Shared/Modal';
 import { getCurrentWeekId, getSelectableWeeks, formatWeekLabel } from '../../utils/weekUtils';
@@ -9,6 +10,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
   const [title, setTitle] = useState(editObjective?.title || '');
   const [target, setTarget] = useState(editObjective?.target || 1);
   const [categoryId, setCategoryId] = useState(editObjective?.categoryId || 'autre');
+  const [subObjectives, setSubObjectives] = useState(editObjective?.subObjectives || []);
   const [assignType, setAssignType] = useState(
     editObjective
       ? (editObjective.assignments?.length > 0 ? 'week' : 'backlog')
@@ -39,6 +41,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
       setTitle(editObjective?.title || '');
       setTarget(editObjective?.target || 1);
       setCategoryId(editObjective?.categoryId || 'autre');
+      setSubObjectives(editObjective?.subObjectives || []);
       setAssignType(
         editObjective
           ? (editObjective.assignments?.length > 0 ? 'week' : 'backlog')
@@ -52,6 +55,18 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
     }
   }, [isOpen, editObjective, weekId]);
 
+  const addSubObjective = () => {
+    setSubObjectives([...subObjectives, { id: `sub-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`, title: '' }]);
+  };
+
+  const removeSubObjective = (id) => {
+    setSubObjectives(subObjectives.filter(s => s.id !== id));
+  };
+
+  const updateSubObjective = (id, title) => {
+    setSubObjectives(subObjectives.map(s => s.id === id ? { ...s, title } : s));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -60,6 +75,11 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
     if (assignType === 'week' && assignWeeks.length > 0) {
       assignments.push(...assignWeeks);
     }
+
+    // Only keep sub-objectives if target is 1 and they have a title
+    const finalSubObjectives = Number(target) === 1 
+      ? subObjectives.filter(s => s.title.trim() !== '')
+      : [];
 
     if (editObjective) {
       dispatch({
@@ -70,6 +90,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           target: Number(target),
           categoryId,
           assignments,
+          subObjectives: finalSubObjectives
         },
       });
     } else {
@@ -80,6 +101,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           target: Number(target),
           categoryId,
           assignments,
+          subObjectives: finalSubObjectives
         },
       });
     }
@@ -87,8 +109,9 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
     onClose();
     // Reset
     setTitle('');
-    setTarget(0);
+    setTarget(1);
     setCategoryId('autre');
+    setSubObjectives([]);
     setAssignType(weekId ? 'week' : 'backlog');
     setAssignWeeks(weekId ? [weekId] : [getCurrentWeekId()]);
     setIsDropdownOpen(false);
@@ -102,7 +125,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
     >
       <form 
         onSubmit={handleSubmit} 
-        style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
+        style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}
       >
         {/* Title */}
         <div>
@@ -123,21 +146,67 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           />
         </div>
 
-        {/* Target quantity */}
-        <div>
-          <label className="block text-sm font-medium text-dark-200 mb-3">
-            Cible quantitative
-          </label>
-          <input
-            type="number"
-            min="1"
-            max="100"
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-            className="w-24 text-center bg-dark-700/50 border border-dark-600/50 rounded-xl py-2.5 text-sm text-dark-100 focus:outline-none focus:border-accent-cyan/50 transition-colors"
-            style={{ paddingLeft: '16px', paddingRight: '16px' }}
-          />
+        <div className="flex gap-4 items-end">
+          {/* Target quantity */}
+          <div className="w-32">
+            <label className="block text-sm font-medium text-dark-200 mb-2">
+              Cible quantitative
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="100"
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+              className="w-full text-center bg-dark-700/50 border border-dark-600/50 rounded-xl py-2.5 text-sm text-dark-100 focus:outline-none focus:border-accent-cyan/50 transition-colors"
+            />
+          </div>
+
+          {/* Sub-objectives Button */}
+          {Number(target) === 1 && (
+            <button
+              type="button"
+              onClick={addSubObjective}
+              className="flex-1 px-4 rounded-xl text-xs font-bold text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/20 hover:bg-accent-cyan/20 transition-all flex items-center justify-center gap-2"
+              style={{ paddingTop: '5px', paddingBottom: '5px' }}
+            >
+              <Plus size={16} /> Ajouter des sous-tâches
+            </button>
+          )}
         </div>
+
+        {/* Sub-objectives List */}
+        {Number(target) === 1 && subObjectives.length > 0 && (
+          <div className="space-y-3 bg-dark-900/30 p-4 rounded-2xl border border-dark-600/20">
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-bold text-dark-400 uppercase tracking-wider">
+                Sous-tâches
+              </label>
+              <span className="text-[10px] text-dark-500">{subObjectives.length} étape{subObjectives.length > 1 ? 's' : ''}</span>
+            </div>
+            <div className="space-y-2">
+              {subObjectives.map((sub, index) => (
+                <div key={sub.id} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={sub.title}
+                    onChange={(e) => updateSubObjective(sub.id, e.target.value)}
+                    placeholder={`Étape ${index + 1}...`}
+                    className="flex-1 bg-dark-800/50 border border-dark-600/30 rounded-xl py-2 text-sm text-dark-100 placeholder-dark-600 focus:outline-none focus:border-accent-cyan/30 transition-colors"
+                    style={{ paddingLeft: '15px', paddingRight: '12px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeSubObjective(sub.id)}
+                    className="p-2 text-dark-500 hover:text-accent-red transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Category */}
         <div>
@@ -251,7 +320,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
         </div>
 
         {/* Actions */}
-        <div className="flex gap-4 pt-6">
+        <div className="flex gap-4 pt-4">
           <button
             type="button"
             onClick={onClose}

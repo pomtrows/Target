@@ -1,4 +1,31 @@
 /**
+ * Count set bits in an integer (used for sub-objectives progression)
+ */
+export function countSetBits(n) {
+  let count = 0;
+  let temp = Number(n) || 0;
+  while (temp > 0) {
+    temp &= (temp - 1);
+    count++;
+  }
+  return count;
+}
+
+/**
+ * Check if a specific bit is set
+ */
+export function isBitSet(value, index) {
+  return (Number(value) & (1 << index)) !== 0;
+}
+
+/**
+ * Toggle a bit in a value
+ */
+export function toggleBit(value, index) {
+  return Number(value) ^ (1 << index);
+}
+
+/**
  * Calculate the progress for a single objective in a given week
  * Returns a value between 0 and 1
  */
@@ -6,8 +33,14 @@ export function getObjectiveProgress(objective, weekProgress) {
   if (!weekProgress) return 0;
   const current = weekProgress[objective.id] || 0;
 
+  // Handle Sub-objectives (if target is 1 and sub-objectives exist)
+  if (Number(objective.target) === 1 && objective.subObjectives?.length > 0) {
+    const done = countSetBits(current);
+    return Math.min(done / objective.subObjectives.length, 1);
+  }
+
   // If target is 0 or 1 (boolean/checkbox), treat as toggle
-  if (!objective.target || objective.target <= 1) {
+  if (!objective.target || Number(objective.target) <= 1) {
     return current >= 1 ? 1 : 0;
   }
 

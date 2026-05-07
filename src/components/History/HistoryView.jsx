@@ -34,25 +34,37 @@ export default function HistoryView() {
     const completed = [];
     
     // Parcourir toutes les semaines où il y a de la progression
-    const allWeeks = Object.keys(state.progress);
-    
-    allWeeks.forEach(weekId => {
-      const objectives = getObjectivesForWeek(state.objectives, weekId, getWeeksInMonth);
-      const wp = state.progress[weekId] || {};
-      
-      objectives.forEach(obj => {
-        if (getObjectiveProgress(obj, wp) === 1) {
-          completed.push({
-            id: `${obj.id}-${weekId}`,
-            objective: obj,
-            weekId: weekId
-          });
+    Object.entries(state.progress).forEach(([weekId, weekProg]) => {
+      Object.entries(weekProg).forEach(([objId, val]) => {
+        const obj = state.objectives.find(o => o.id === objId);
+        if (obj) {
+          // Utiliser l'objet de progression de la semaine pour le calcul
+          const progressPercent = getObjectiveProgress(obj, weekProg);
+          
+          if (progressPercent >= 1) {
+            completed.push({
+              id: `${obj.id}-${weekId}`,
+              objective: obj,
+              weekId: weekId,
+              completedAt: state.progressTimestamps[`${weekId}-${objId}`]
+            });
+          }
         }
       });
     });
 
-    // Tri chronologique: du plus récent au plus ancien
-    completed.sort((a, b) => compareWeekIds(b.weekId, a.weekId));
+    // Tri par ordre décroissant de validation (le plus récent en haut)
+    completed.sort((a, b) => {
+      const dateA = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+      const dateB = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+      
+      if (dateA !== dateB) {
+        return dateB - dateA; // Décroissant
+      }
+      
+      // Si dates identiques ou manquantes, repli sur l'ID de semaine
+      return compareWeekIds(b.weekId, a.weekId);
+    });
 
     return completed;
   }, [state]);

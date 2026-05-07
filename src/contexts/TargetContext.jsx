@@ -1,6 +1,7 @@
 import { createContext, useContext, useReducer, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
+import { toggleBit } from '../utils/progressUtils';
 
 const TargetContext = createContext(null);
 
@@ -21,6 +22,7 @@ const initialState = {
   progress: {}, 
   categories: defaultCategories,
   rewards: {}, 
+  progressTimestamps: {}, // New: Stores "weekId-objId" -> ISO timestamp
   loading: true,
 };
 
@@ -79,6 +81,10 @@ function targetReducer(state, action) {
             [objectiveId]: value,
           },
         },
+        progressTimestamps: {
+          ...state.progressTimestamps,
+          [`${weekId}-${objectiveId}`]: new Date().toISOString()
+        }
       };
     }
 
@@ -112,6 +118,24 @@ function targetReducer(state, action) {
           obj.categoryId === action.payload ? { ...obj, categoryId: 'autre' } : obj
         ),
       };
+
+    case 'TOGGLE_SUB_OBJECTIVE': {
+      const { weekId, objectiveId, value } = action.payload;
+      return {
+        ...state,
+        progress: {
+          ...state.progress,
+          [weekId]: {
+            ...(state.progress[weekId] || {}),
+            [objectiveId]: value,
+          },
+        },
+        progressTimestamps: {
+          ...state.progressTimestamps,
+          [`${weekId}-${objectiveId}`]: new Date().toISOString()
+        }
+      };
+    }
 
     default:
       return state;
@@ -150,6 +174,11 @@ export function TargetProvider({ children }) {
           return acc;
         }, {});
 
+        const transformedTimestamps = (progress || []).reduce((acc, p) => {
+          acc[`${p.week_id}-${p.objective_id}`] = p.updated_at || p.created_at || null;
+          return acc;
+        }, {});
+
         const transformedRewards = (rewards || []).reduce((acc, r) => {
           acc[r.week_id] = r.reward;
           return acc;
@@ -158,6 +187,7 @@ export function TargetProvider({ children }) {
         const transformedObjectives = (objectives || []).map(o => ({
           ...o,
           categoryId: o.category_id,
+          subObjectives: o.sub_objectives || [],
           createdAt: o.created_at
         }));
 
@@ -167,6 +197,7 @@ export function TargetProvider({ children }) {
             categories: categories && categories.length > 0 ? categories : defaultCategories,
             objectives: transformedObjectives,
             progress: transformedProgress,
+            progressTimestamps: transformedTimestamps,
             rewards: transformedRewards,
           }
         });
@@ -191,6 +222,7 @@ export function TargetProvider({ children }) {
           target: action.payload.target || 1,
           categoryId: action.payload.categoryId || 'autre',
           assignments: action.payload.assignments || [],
+          subObjectives: action.payload.subObjectives || [],
           createdAt: new Date().toISOString().slice(0, 10),
           user_id: user.id
         };
@@ -206,6 +238,7 @@ export function TargetProvider({ children }) {
           target: newObj.target,
           category_id: newObj.categoryId,
           assignments: newObj.assignments,
+          sub_objectives: newObj.subObjectives,
           created_at: newObj.createdAt
         });
         break;
@@ -218,7 +251,8 @@ export function TargetProvider({ children }) {
           title: updated.title,
           target: updated.target,
           category_id: updated.categoryId,
-          assignments: updated.assignments
+          assignments: updated.assignments,
+          sub_objectives: updated.subObjectives || []
         }).eq('id', updated.id);
         break;
       }
@@ -251,7 +285,25 @@ export function TargetProvider({ children }) {
           week_id: weekId,
           objective_id: objectiveId,
           user_id: user.id,
-          value: current
+          value: current,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'week_id,objective_id' });
+        break;
+      }
+      
+      case 'TOGGLE_SUB_OBJECTIVE': {
+        const { weekId, objectiveId, subIndex } = action.payload;
+        const weekProgress = state.progress[weekId] || {};
+        const current = weekProgress[objectiveId] || 0;
+        const nextValue = toggleBit(current, subIndex);
+
+        dispatch({ type: 'TOGGLE_SUB_OBJECTIVE', payload: { weekId, objectiveId, value: nextValue } });
+        await supabase.from('progress').upsert({
+          week_id: weekId,
+          objective_id: objectiveId,
+          user_id: user.id,
+          value: nextValue,
+          updated_at: new Date().toISOString()
         }, { onConflict: 'week_id,objective_id' });
         break;
       }
