@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, Trophy, Lock, ChevronRight, Filter } from 'lucide-react';
+import { BarChart3, Trophy, Lock, ChevronRight, Filter, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTarget } from '../../contexts/TargetContext';
 import { getRecentWeeks, formatWeekShort, isCurrentWeek, getWeeksInMonth, formatWeekLabelParts, compareWeekIds } from '../../utils/weekUtils';
@@ -250,6 +250,20 @@ export default function HistoryView() {
                           {cat && <Badge label={cat.label} color={cat.color} size="xs" />}
                           <span className="text-[11px] text-dark-400 font-medium">{title} • {dates}</span>
                         </div>
+
+                        {/* Detail of sub-tasks */}
+                        {item.objective.subObjectives?.length > 0 && (
+                          <div className="mt-4 grid grid-cols-1 gap-1 border-t border-dark-600/30 pt-3">
+                            {item.objective.subObjectives.map((sub, idx) => (
+                              <div key={idx} className="flex items-center gap-2 text-[11px] text-dark-400/80">
+                                <div className="w-4 h-4 rounded-full bg-accent-gold/10 flex items-center justify-center text-accent-gold flex-shrink-0">
+                                  <Check size={10} strokeWidth={3} />
+                                </div>
+                                <span className="truncate">{sub.title}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="w-8 h-8 rounded-full bg-accent-gold/10 flex items-center justify-center text-accent-gold flex-shrink-0">
