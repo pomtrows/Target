@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Inbox, BarChart3, Settings, Menu, X, Sun, Moon, LogOut } from 'lucide-react';
+import { LayoutDashboard, Inbox, BarChart3, Settings, Menu, X, Sun, Moon, LogOut, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,14 +9,20 @@ const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/backlog', label: 'Backlog', icon: Inbox },
   { path: '/history', label: 'Historique', icon: BarChart3 },
-  { path: '/admin', label: 'Catégories', icon: Settings },
+  { path: '/admin/categories', label: 'Catégories', icon: Settings },
+  { path: '/admin/users', label: 'Administration', icon: Users },
 ];
 
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
-  const { logout } = useAuth();
+  const { logout, isAdmin } = useAuth();
+
+  const filteredNavItems = navItems.filter(item => {
+    if (item.path.startsWith('/admin')) return isAdmin;
+    return true;
+  });
 
   return (
     <>
@@ -70,7 +76,7 @@ export default function Sidebar() {
             gap: '15px'
           }}
         >
-          {navItems.map((item) => {
+          {filteredNavItems.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
             return (

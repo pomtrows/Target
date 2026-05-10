@@ -33,7 +33,9 @@ function AppContent() {
               <Route path="/" element={<DashboardPage />} />
               <Route path="/backlog" element={<BacklogPage />} />
               <Route path="/history" element={<HistoryPage />} />
-              <Route path="/admin" element={<AdminPage />} />
+              <Route path="/admin/categories" element={<AdminPage defaultTab="categories" />} />
+              <Route path="/admin/users" element={<AdminPage defaultTab="users" />} />
+              <Route path="/admin" element={<Navigate to="/admin/categories" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>

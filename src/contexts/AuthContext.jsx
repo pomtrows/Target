@@ -46,8 +46,10 @@ export function AuthProvider({ children }) {
     if (error) throw error;
   };
 
+  const isAdmin = user?.email === 'ni.pommier@gmail.com';
+  
   return (
-    <AuthContext.Provider value={{ user, loading, signup, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, signup, login, logout, isAdmin }}>
       {!loading && children}
     </AuthContext.Provider>
   );
