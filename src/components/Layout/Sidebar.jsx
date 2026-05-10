@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Inbox, BarChart3, Settings, Menu, X, Sun, Moon, LogOut, Users } from 'lucide-react';
+import { LayoutDashboard, Inbox, BarChart3, Settings, Menu, X, Sun, Moon, LogOut, Users, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,6 +9,7 @@ const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/backlog', label: 'Backlog', icon: Inbox },
   { path: '/history', label: 'Historique', icon: BarChart3 },
+  { path: '/notes', label: 'Notes', icon: FileText },
   { path: '/admin/categories', label: 'Catégories', icon: Settings },
   { path: '/admin/users', label: 'Administration', icon: Users },
 ];
