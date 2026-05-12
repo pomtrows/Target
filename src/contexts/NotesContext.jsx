@@ -162,6 +162,9 @@ export function NotesProvider({ children }) {
   };
 
   const updateNote = async (id, updates) => {
+    // Update local state immediately
+    dispatch({ type: 'UPDATE_NOTE', payload: { id, ...updates } });
+    
     const { data, error } = await supabase
       .from('notes')
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -169,6 +172,8 @@ export function NotesProvider({ children }) {
       .select()
       .single();
     if (error) throw error;
+    // Sync with server response
+    dispatch({ type: 'UPDATE_NOTE', payload: data });
     return data;
   };
 
