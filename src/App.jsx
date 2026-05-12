@@ -31,7 +31,7 @@ function AppContent() {
             {/* Spacer for mobile menu to prevent overlap */}
             <div className="flex-none h-12 w-full md:hidden"></div>
             
-            <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
+            <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col overflow-y-auto custom-scrollbar h-full px-2">
               <Routes>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/backlog" element={<BacklogPage />} />
