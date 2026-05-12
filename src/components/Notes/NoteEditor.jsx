@@ -323,15 +323,62 @@ export default function NoteEditor({ noteId }) {
           break;
       }
     }
-  }, [execFormat, title, scheduleSave]);
+  }, [execFormat, title, scheduleSave, checkActiveFormats]);
+
+  const renderToolbar = (isMobile = false) => (
+    <div className={`w-full ${isMobile ? '' : 'overflow-x-auto scrollbar-hide flex-wrap'}`}>
+      <div className={`flex items-center ${isMobile ? 'gap-1 px-2 py-2 flex-wrap justify-center' : 'gap-0.5 px-6 pb-3 min-w-max'}`}>
+        {/* Undo / Redo */}
+        <ToolbarButton icon={Undo2} action="undo" title="Annuler" onClick={execFormat} />
+        <ToolbarButton icon={Redo2} action="redo" title="Rétablir" onClick={execFormat} />
+        
+        <Separator />
+
+        {/* Headings */}
+        <ToolbarButton icon={Heading1} action="h1" title="Titre 1" onClick={execFormat} />
+        <ToolbarButton icon={Heading2} action="h2" title="Titre 2" onClick={execFormat} />
+        <ToolbarButton icon={Heading3} action="h3" title="Titre 3" onClick={execFormat} />
+
+        <Separator />
+
+        {/* Text style */}
+        <ToolbarButton icon={Bold} action="bold" title="Gras" isActive={activeFormats.bold} onClick={execFormat} />
+        <ToolbarButton icon={Italic} action="italic" title="Italique" isActive={activeFormats.italic} onClick={execFormat} />
+        <ToolbarButton icon={Underline} action="underline" title="Souligné" isActive={activeFormats.underline} onClick={execFormat} />
+        <ToolbarButton icon={Strikethrough} action="strikeThrough" title="Barré" isActive={activeFormats.strikeThrough} onClick={execFormat} />
+
+        <Separator />
+
+        {/* Lists & blocks */}
+        <ToolbarButton icon={List} action="insertUnorderedList" title="Liste à puces" isActive={activeFormats.insertUnorderedList} onClick={execFormat} />
+        <ToolbarButton icon={ListOrdered} action="insertOrderedList" title="Liste numérotée" isActive={activeFormats.insertOrderedList} onClick={execFormat} />
+        <ToolbarButton icon={CheckSquare} action="checklist" title="Case à cocher" isActive={activeFormats.checklist} onClick={execFormat} />
+        <ToolbarButton icon={Star} action="star" title="Étoile" isActive={activeFormats.star} onClick={execFormat} />
+        <ToolbarButton icon={Quote} action="quote" title="Citation" onClick={execFormat} />
+        <ToolbarButton icon={Code} action="code" title="Code" onClick={execFormat} />
+
+        <Separator />
+
+        {/* Alignment */}
+        <ToolbarButton icon={AlignLeft} action="justifyLeft" title="Aligner à gauche" isActive={activeFormats.justifyLeft} onClick={execFormat} />
+        <ToolbarButton icon={AlignCenter} action="justifyCenter" title="Centrer" isActive={activeFormats.justifyCenter} onClick={execFormat} />
+        <ToolbarButton icon={AlignRight} action="justifyRight" title="Aligner à droite" isActive={activeFormats.justifyRight} onClick={execFormat} />
+
+        <Separator />
+
+        {/* Insert */}
+        <ToolbarButton icon={Minus} action="hr" title="Séparateur" onClick={execFormat} />
+        <ToolbarButton icon={Link2} action="link" title="Lien" onClick={execFormat} />
+      </div>
+    </div>
+  );
 
   if (!note) return null;
-
 
   return (
     <div className="h-full flex flex-col bg-dark-800/20">
       {/* Top bar: save status */}
-      <div className="border-b border-dark-600/30 bg-dark-800/40">
+      <div className="flex-none border-b border-dark-600/30 bg-dark-800/40">
         <div className="flex items-center justify-between px-6 py-3">
           <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest">
             {saving ? (
@@ -353,54 +400,19 @@ export default function NoteEditor({ noteId }) {
           </div>
         </div>
 
-        {/* Formatting toolbar */}
-        <div className="flex items-center gap-0.5 px-6 pb-3 overflow-x-auto flex-wrap">
-          {/* Undo / Redo */}
-          <ToolbarButton icon={Undo2} action="undo" title="Annuler" shortcut="Ctrl+Z" onClick={execFormat} />
-          <ToolbarButton icon={Redo2} action="redo" title="Rétablir" shortcut="Ctrl+Shift+Z" onClick={execFormat} />
-          
-          <Separator />
+        {/* Desktop Toolbar */}
+        <div className="hidden md:block">
+          {renderToolbar(false)}
+        </div>
 
-          {/* Headings */}
-          <ToolbarButton icon={Heading1} action="h1" title="Titre 1" onClick={execFormat} />
-          <ToolbarButton icon={Heading2} action="h2" title="Titre 2" onClick={execFormat} />
-          <ToolbarButton icon={Heading3} action="h3" title="Titre 3" onClick={execFormat} />
-
-          <Separator />
-
-          {/* Text style */}
-          <ToolbarButton icon={Bold} action="bold" title="Gras" shortcut="Ctrl+B" isActive={activeFormats.bold} onClick={execFormat} />
-          <ToolbarButton icon={Italic} action="italic" title="Italique" shortcut="Ctrl+I" isActive={activeFormats.italic} onClick={execFormat} />
-          <ToolbarButton icon={Underline} action="underline" title="Souligné" shortcut="Ctrl+U" isActive={activeFormats.underline} onClick={execFormat} />
-          <ToolbarButton icon={Strikethrough} action="strikeThrough" title="Barré" isActive={activeFormats.strikeThrough} onClick={execFormat} />
-
-          <Separator />
-
-          {/* Lists & blocks */}
-          <ToolbarButton icon={List} action="insertUnorderedList" title="Liste à puces" isActive={activeFormats.insertUnorderedList} onClick={execFormat} />
-          <ToolbarButton icon={ListOrdered} action="insertOrderedList" title="Liste numérotée" isActive={activeFormats.insertOrderedList} onClick={execFormat} />
-          <ToolbarButton icon={CheckSquare} action="checklist" title="Case à cocher" shortcut="Ctrl+&" isActive={activeFormats.checklist} onClick={execFormat} />
-          <ToolbarButton icon={Star} action="star" title="Étoile" shortcut="Ctrl+é" isActive={activeFormats.star} onClick={execFormat} />
-          <ToolbarButton icon={Quote} action="quote" title="Citation" onClick={execFormat} />
-          <ToolbarButton icon={Code} action="code" title="Code" onClick={execFormat} />
-
-          <Separator />
-
-          {/* Alignment */}
-          <ToolbarButton icon={AlignLeft} action="justifyLeft" title="Aligner à gauche" isActive={activeFormats.justifyLeft} onClick={execFormat} />
-          <ToolbarButton icon={AlignCenter} action="justifyCenter" title="Centrer" isActive={activeFormats.justifyCenter} onClick={execFormat} />
-          <ToolbarButton icon={AlignRight} action="justifyRight" title="Aligner à droite" isActive={activeFormats.justifyRight} onClick={execFormat} />
-
-          <Separator />
-
-          {/* Insert */}
-          <ToolbarButton icon={Minus} action="hr" title="Séparateur" onClick={execFormat} />
-          <ToolbarButton icon={Link2} action="link" title="Lien" onClick={execFormat} />
+        {/* Mobile Toolbar (Moved to top for permanent visibility) */}
+        <div className="md:hidden border-t border-dark-600/30 bg-dark-800/40 backdrop-blur-md">
+          {renderToolbar(true)}
         </div>
       </div>
 
       {/* Editor Content */}
-      <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto pl-12 pr-4 py-6 md:p-12 custom-scrollbar overflow-x-hidden">
         <div className="max-w-3xl mx-auto space-y-6">
           {/* Title */}
           <input
@@ -446,8 +458,7 @@ export default function NoteEditor({ noteId }) {
           />
         </div>
       </div>
-
-
     </div>
   );
+
 }

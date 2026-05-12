@@ -74,19 +74,19 @@ export default function NotesPage() {
   if (selectedNoteId) {
     const selectedNote = state.notes.find(n => n.id === selectedNoteId);
     return (
-      <div className="h-[calc(100vh-120px)] flex flex-col gap-4 animate-in fade-in duration-300">
-        <div className="flex items-center gap-3">
+      <div className="h-full max-h-[100dvh] flex flex-col gap-4 animate-in fade-in duration-300 relative">
+        <div className="flex items-center gap-3 md:static absolute top-[-50px] left-[45px] z-50">
           <button
             onClick={() => setSelectedNoteId(null)}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-dark-700/50 text-dark-400 hover:text-accent-cyan transition-all"
+            className="flex items-center gap-2 px-2 py-1 rounded-xl hover:bg-dark-700/50 text-dark-400 hover:text-accent-cyan transition-all"
           >
             <ArrowLeft size={18} />
             <span className="text-sm font-bold">Retour</span>
           </button>
           <span className="text-dark-500 text-sm">•</span>
-          <span className="text-dark-400 text-sm font-medium truncate">{selectedNote?.title || 'Sans titre'}</span>
+          <span className="text-dark-400 text-sm font-medium truncate max-w-[150px]">{selectedNote?.title || 'Sans titre'}</span>
         </div>
-        <div className="flex-1 glass rounded-3xl border border-dark-600/30 overflow-hidden shadow-2xl">
+        <div className="flex-1 glass rounded-3xl border border-dark-600/30 overflow-hidden shadow-2xl relative">
           <NoteEditor noteId={selectedNoteId} />
         </div>
       </div>
@@ -95,9 +95,9 @@ export default function NotesPage() {
 
   // Explorer view — full width, notes inside tree
   return (
-    <div className="flex flex-col gap-4 animate-in fade-in duration-500" style={{ marginTop: '-60px', height: 'calc(100vh - 80px)' }}>
-      <div className="flex items-center justify-between pr-2" style={{ height: '48px', paddingLeft: '50px' }}>
-        <h2 className="text-xl font-black text-dark-100">Explorateur</h2>
+    <div className="flex flex-col h-full max-h-[100dvh] gap-4 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between pr-2 md:pl-12 pl-4" style={{ height: '48px' }}>
+        <h2 className="text-xl font-black text-dark-100 uppercase tracking-tight">Explorateur</h2>
         <div className="flex gap-5">
           <button
             onClick={() => { setSearchOpen(o => !o); if (searchOpen) setSearchQuery(''); }}

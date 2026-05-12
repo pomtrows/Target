@@ -27,7 +27,7 @@ function AppContent() {
           <InstallPrompt />
 
           {/* Main content - offset for sidebar */}
-          <main data-main style={{ paddingLeft: '20px', paddingRight: '20px', paddingTop: '20px' }} className="flex-1 py-6 md:py-8">
+          <main data-main style={{ paddingLeft: '20px', paddingRight: '20px', paddingTop: '20px' }} className="flex-1 h-full overflow-hidden flex flex-col py-6 md:py-8">
             {/* Spacer for mobile menu to prevent overlap */}
             <div className="h-12 w-full md:hidden"></div>
             
