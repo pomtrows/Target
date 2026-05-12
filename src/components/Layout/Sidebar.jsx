@@ -30,7 +30,7 @@ export default function Sidebar() {
       {/* Mobile toggle */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-xl glass text-dark-200 hover:text-dark-100 transition-colors"
+        className="fixed top-4 left-4 z-[100] md:hidden p-2 rounded-xl glass text-dark-200 hover:text-dark-100 transition-colors"
       >
         <Menu size={22} />
       </button>
@@ -38,7 +38,7 @@ export default function Sidebar() {
       {/* Mobile backdrop */}
       {mobileOpen && (
         <motion.div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/50 z-[90] md:hidden"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           onClick={() => setMobileOpen(false)}
@@ -47,7 +47,7 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <motion.aside
-        className="fixed top-0 left-0 h-full w-64 bg-dark-800 border-r border-dark-600/30 z-50 flex flex-col transition-transform duration-300 ease-in-out"
+        className="fixed top-0 left-0 h-full w-64 bg-dark-800 border-r border-dark-600/30 z-[100] flex flex-col transition-transform duration-300 ease-in-out"
         style={{ transform: mobileOpen ? 'translateX(0)' : undefined }}
         data-sidebar
       >

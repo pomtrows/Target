@@ -76,7 +76,7 @@ export default function NotesPage() {
     return (
       <div className="fixed inset-0 md:relative md:h-full flex flex-col animate-in fade-in duration-300 z-[60] bg-dark-900 md:bg-transparent">
         {/* Mobile Header (Fixed at top) */}
-        <div className="flex-none flex items-center gap-3 px-4 pl-14 h-14 md:h-auto md:static relative z-50">
+        <div className="flex-none flex items-center gap-3 px-4 h-14 md:h-auto md:static relative z-50" style={{ paddingLeft: '80px' }}>
           <button
             onClick={() => setSelectedNoteId(null)}
             className="flex items-center gap-2 px-2 py-1 rounded-xl hover:bg-dark-700/50 text-dark-400 hover:text-accent-cyan transition-all"
