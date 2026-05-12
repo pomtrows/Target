@@ -98,10 +98,10 @@ export default function NotesPage() {
 
   // Explorer view — full width, notes inside tree
   return (
-    <div className="flex flex-col h-full max-h-[100dvh] gap-4 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between pr-2 md:pl-12 pl-4" style={{ height: '48px' }}>
-        <h2 className="text-xl font-black text-dark-100 uppercase tracking-tight">Explorateur</h2>
-        <div className="flex gap-5">
+    <div className="flex flex-col h-full max-h-[100dvh] gap-4 animate-in fade-in duration-500 relative">
+      <div className="flex items-center md:justify-between justify-end md:pl-12 md:static absolute top-[-44px] left-0 right-1 z-50" style={{ height: '48px' }}>
+        <h2 className="text-xl font-black text-dark-100 uppercase tracking-tight md:static absolute left-1/2 md:left-auto -translate-x-1/2 md:translate-x-0">NOTES</h2>
+        <div className="flex gap-4">
           <button
             onClick={() => { setSearchOpen(o => !o); if (searchOpen) setSearchQuery(''); }}
             className={`p-2.5 rounded-xl transition-all ${searchOpen ? 'bg-accent-cyan/15 text-accent-cyan' : 'hover:bg-dark-700 text-dark-400 hover:text-accent-cyan'}`}
@@ -216,6 +216,27 @@ export default function NotesPage() {
             />
           </div>
         )}
+
+        {/* Root-level note creation */}
+        {creatingNoteInFolderId === 'root' && (
+          <div className="flex items-center gap-2 px-2 py-1.5" style={{ paddingLeft: '20px' }}>
+            <FileText size={16} className="text-dark-500" />
+            <input
+              autoFocus
+              type="text"
+              placeholder="Titre de la note..."
+              className="bg-dark-700 border border-accent-cyan/30 rounded px-2 py-0.5 text-xs text-dark-100 focus:outline-none focus:border-accent-cyan w-full"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submitCreateNote(e.target.value, 'root');
+                if (e.key === 'Escape') setCreatingNoteInFolderId(null);
+              }}
+              onBlur={(e) => {
+                if (e.target.value) submitCreateNote(e.target.value, 'root');
+                else setCreatingNoteInFolderId(null);
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -225,13 +246,13 @@ export default function NotesPage() {
 function NoteItem({ note, level, onSelect, onDelete }) {
   return (
     <div
-      className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer group transition-all hover:bg-dark-700/50 text-dark-400 hover:text-dark-200"
+      className="flex items-center gap-2 px-2 py-2.5 md:py-1.5 rounded-lg cursor-pointer group transition-all hover:bg-dark-700/50 text-dark-400 hover:text-dark-200"
       style={{ paddingLeft: `${level * 12 + 8}px` }}
       onClick={() => onSelect(note.id)}
     >
       <FileText size={15} className="text-dark-500 group-hover:text-accent-cyan transition-colors flex-shrink-0" />
       <span className="text-sm font-medium truncate flex-1">{note.title || 'Sans titre'}</span>
-      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+      <div className="md:opacity-0 md:group-hover:opacity-100 flex items-center gap-1 transition-opacity opacity-100">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -239,10 +260,10 @@ function NoteItem({ note, level, onSelect, onDelete }) {
               onDelete(note.id);
             }
           }}
-          className="p-1 hover:text-accent-red"
+          className="p-2 hover:text-accent-red"
           title="Supprimer"
         >
-          <Trash2 size={12} />
+          <Trash2 size={18} />
         </button>
       </div>
     </div>
@@ -317,7 +338,7 @@ function FolderItem({
     <div className="select-none">
       {/* Folder row */}
       <div
-        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer group transition-all hover:bg-dark-700/50 text-dark-400 hover:text-dark-200`}
+        className={`flex items-center gap-2 px-2 py-2.5 md:py-1.5 rounded-lg cursor-pointer group transition-all hover:bg-dark-700/50 text-dark-400 hover:text-dark-200`}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
         onClick={() => toggleFolder(id)}
       >
@@ -338,12 +359,12 @@ function FolderItem({
           </span>
         )}
         {/* Action buttons */}
-        <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
-          <button onClick={(e) => { e.stopPropagation(); onAddNote(id); }} className="p-1 hover:text-accent-cyan" title="Nouvelle note">
-            <FilePlus size={12} />
+        <div className="md:opacity-0 md:group-hover:opacity-100 flex items-center gap-4 transition-opacity opacity-100">
+          <button onClick={(e) => { e.stopPropagation(); onAddNote(id); }} className="p-2 hover:text-accent-cyan" title="Nouvelle note">
+            <FilePlus size={18} />
           </button>
-          <button onClick={(e) => { e.stopPropagation(); onAddSub(id); }} className="p-1 hover:text-accent-cyan" title="Nouveau sous-dossier">
-            <FolderPlus size={12} />
+          <button onClick={(e) => { e.stopPropagation(); onAddSub(id); }} className="p-2 hover:text-accent-cyan" title="Nouveau sous-dossier">
+            <FolderPlus size={18} />
           </button>
           <button
             onClick={(e) => {
@@ -352,10 +373,10 @@ function FolderItem({
                 onDelete(id);
               }
             }}
-            className="p-1 hover:text-accent-red"
+            className="p-2 hover:text-accent-red"
             title="Supprimer"
           >
-            <Trash2 size={12} />
+            <Trash2 size={18} />
           </button>
         </div>
       </div>
