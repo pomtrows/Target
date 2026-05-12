@@ -22,16 +22,16 @@ function AppContent() {
   return (
     <TargetProvider>
       <NotesProvider>
-        <div className="flex min-h-screen">
+        <div className="flex h-screen overflow-hidden">
           <Sidebar />
           <InstallPrompt />
 
           {/* Main content - offset for sidebar */}
           <main data-main style={{ paddingLeft: '20px', paddingRight: '20px', paddingTop: '20px' }} className="flex-1 h-full overflow-hidden flex flex-col py-6 md:py-8">
             {/* Spacer for mobile menu to prevent overlap */}
-            <div className="h-12 w-full md:hidden"></div>
+            <div className="flex-none h-12 w-full md:hidden"></div>
             
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col overflow-hidden">
               <Routes>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/backlog" element={<BacklogPage />} />

@@ -74,8 +74,9 @@ export default function NotesPage() {
   if (selectedNoteId) {
     const selectedNote = state.notes.find(n => n.id === selectedNoteId);
     return (
-      <div className="h-full max-h-[100dvh] flex flex-col gap-4 animate-in fade-in duration-300 relative">
-        <div className="flex items-center gap-3 md:static absolute top-[-50px] left-[45px] z-50">
+      <div className="fixed inset-0 md:relative md:h-full flex flex-col animate-in fade-in duration-300 z-[60] bg-dark-900 md:bg-transparent">
+        {/* Mobile Header (Fixed at top) */}
+        <div className="flex-none flex items-center gap-3 px-4 pl-14 h-14 md:h-auto md:static relative z-50">
           <button
             onClick={() => setSelectedNoteId(null)}
             className="flex items-center gap-2 px-2 py-1 rounded-xl hover:bg-dark-700/50 text-dark-400 hover:text-accent-cyan transition-all"
@@ -86,7 +87,9 @@ export default function NotesPage() {
           <span className="text-dark-500 text-sm">•</span>
           <span className="text-dark-400 text-sm font-medium truncate max-w-[150px]">{selectedNote?.title || 'Sans titre'}</span>
         </div>
-        <div className="flex-1 glass rounded-3xl border border-dark-600/30 overflow-hidden shadow-2xl relative">
+
+        {/* Editor Container */}
+        <div className="flex-1 flex flex-col md:glass md:rounded-3xl md:border border-dark-600/30 overflow-hidden md:shadow-2xl relative">
           <NoteEditor noteId={selectedNoteId} />
         </div>
       </div>
