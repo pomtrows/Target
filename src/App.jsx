@@ -11,6 +11,9 @@ import AdminPage from './pages/AdminPage';
 import AuthScreen from './components/Auth/AuthScreen';
 import InstallPrompt from './components/Shared/InstallPrompt';
 import { NotesProvider } from './contexts/NotesContext';
+import { SportProvider } from './contexts/SportContext';
+import SportPage from './pages/SportPage';
+
 
 function AppContent() {
   const { user } = useAuth();
@@ -22,7 +25,8 @@ function AppContent() {
   return (
     <TargetProvider>
       <NotesProvider>
-        <div className="flex h-screen overflow-hidden">
+        <SportProvider>
+          <div className="flex h-screen overflow-hidden">
           <Sidebar />
           <InstallPrompt />
 
@@ -40,11 +44,13 @@ function AppContent() {
                 <Route path="/admin/categories" element={<AdminPage defaultTab="categories" />} />
                 <Route path="/admin/users" element={<AdminPage defaultTab="users" />} />
                 <Route path="/admin" element={<Navigate to="/admin/categories" replace />} />
+                <Route path="/sport" element={<SportPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </div>
           </main>
         </div>
+        </SportProvider>
       </NotesProvider>
     </TargetProvider>
   );

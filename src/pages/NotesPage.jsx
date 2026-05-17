@@ -99,32 +99,40 @@ export default function NotesPage() {
   // Explorer view — full width, notes inside tree
   return (
     <div className="flex flex-col h-full max-h-[100dvh] gap-4 animate-in fade-in duration-500 relative">
-      <div className="flex items-center md:justify-between justify-end md:pl-12 md:static absolute top-[-44px] left-0 right-1 z-50" style={{ height: '48px' }}>
-        <h2 className="text-xl font-black text-dark-100 uppercase tracking-tight md:static absolute left-1/2 md:left-auto -translate-x-1/2 md:translate-x-0">NOTES</h2>
-        <div className="flex gap-4">
+      {/* Header */}
+      <div className="md:relative md:flex-none md:flex md:flex-col md:items-center md:mb-6 fixed top-3 left-0 w-full z-40 pointer-events-none md:pointer-events-auto">
+        <div className="pointer-events-auto flex items-center justify-center relative w-full max-w-7xl mx-auto px-4 md:px-0">
+          <h1 className="text-3xl font-black text-dark-100 flex items-center gap-3">
+            <div className="p-3 bg-gradient-to-br from-accent-cyan/20 to-accent-violet/20 rounded-2xl shadow-lg shadow-accent-cyan/10">
+              <FileText className="text-accent-cyan" size={28} />
+            </div>
+            Notes
+          </h1>
+          <div className="absolute right-4 md:right-0 top-1/2 -translate-y-1/2 flex gap-1 sm:gap-2">
           <button
             onClick={() => { setSearchOpen(o => !o); if (searchOpen) setSearchQuery(''); }}
-            className={`p-2.5 rounded-xl transition-all ${searchOpen ? 'bg-accent-cyan/15 text-accent-cyan' : 'hover:bg-dark-700 text-dark-400 hover:text-accent-cyan'}`}
+            className={`p-2 rounded-xl transition-all ${searchOpen ? 'bg-accent-cyan/15 text-accent-cyan' : 'hover:bg-dark-700 text-dark-400 hover:text-accent-cyan'}`}
             title="Rechercher"
           >
             <Search size={22} />
           </button>
           <button
             onClick={() => handleCreateFolder(null)}
-            className="p-2.5 rounded-xl hover:bg-dark-700 text-dark-400 hover:text-accent-cyan transition-all"
+            className="p-2 rounded-xl hover:bg-dark-700 text-dark-400 hover:text-accent-cyan transition-all"
             title="Nouveau dossier"
           >
             <FolderPlus size={22} />
           </button>
           <button
             onClick={() => handleCreateNote(null)}
-            className="p-2.5 rounded-xl hover:bg-dark-700 text-dark-400 hover:text-accent-cyan transition-all"
+            className="p-2 rounded-xl hover:bg-dark-700 text-dark-400 hover:text-accent-cyan transition-all"
             title="Nouvelle note"
           >
             <FilePlus size={22} />
           </button>
         </div>
       </div>
+    </div>
 
       {searchOpen && (
         <div className="relative animate-in slide-in-from-top-2 duration-200">
