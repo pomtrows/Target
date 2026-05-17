@@ -155,7 +155,7 @@ export default function SportPage() {
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {sessionToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ padding: '16px' }}>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -167,25 +167,28 @@ export default function SportPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-dark-800 rounded-3xl border border-dark-600/30 p-6 w-full max-w-sm relative z-10 shadow-2xl"
+              className="bg-dark-800 rounded-3xl border border-dark-600/30 p-8 w-full max-w-sm relative z-10 shadow-2xl"
+              style={{ padding: '32px 28px 28px 28px', boxSizing: 'border-box' }}
             >
-              <div className="w-12 h-12 rounded-full bg-accent-red/10 flex items-center justify-center mb-4 text-accent-red">
+              <div className="w-12 h-12 rounded-full bg-accent-red/10 flex items-center justify-center mb-4 text-accent-red" style={{ marginBottom: '16px', width: '48px', height: '48px' }}>
                 <Trash2 size={24} />
               </div>
-              <h3 className="text-xl font-bold text-dark-100 mb-2">Supprimer la séance ?</h3>
-              <p className="text-dark-400 mb-6 text-sm">
+              <h3 className="text-xl font-bold text-dark-100 mb-2" style={{ marginBottom: '12px' }}>Supprimer la séance ?</h3>
+              <p className="text-dark-400 mb-6 text-sm" style={{ marginBottom: '28px', lineHeight: '1.5' }}>
                 Êtes-vous sûr de vouloir supprimer la séance "{sessionToDelete.name}" ? Cette action est irréversible.
               </p>
-              <div className="flex gap-3">
+              <div className="flex gap-3" style={{ display: 'flex', gap: '16px' }}>
                 <button
                   onClick={() => setSessionToDelete(null)}
                   className="flex-1 py-2.5 rounded-xl text-dark-200 font-medium hover:bg-dark-700 transition-colors"
+                  style={{ padding: '12px 20px' }}
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleDeleteConfirm}
                   className="flex-1 py-2.5 bg-accent-red text-white font-bold rounded-xl hover:bg-red-500 transition-colors"
+                  style={{ padding: '12px 20px' }}
                 >
                   Supprimer
                 </button>

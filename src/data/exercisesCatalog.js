@@ -158,7 +158,7 @@ export const exercisesCatalog = [
     name: 'Wall Sit (Chaise)',
     category: EXERCISE_CATEGORIES.LOWER,
     goalType: GOAL_TYPES.TIME,
-    mediaUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=800&auto=format&fit=crop',
+    mediaUrl: '/images/sport/wall_sit_1779051408501.png',
     level: LEVEL.INTERMEDIATE
   },
 
@@ -168,7 +168,7 @@ export const exercisesCatalog = [
     name: 'Jumping Jacks',
     category: EXERCISE_CATEGORIES.CARDIO,
     goalType: GOAL_TYPES.TIME,
-    mediaUrl: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=800&auto=format&fit=crop',
+    mediaUrl: '/images/sport/jumping_jacks_1779051420569.png',
     level: LEVEL.BEGINNER
   },
   {
@@ -176,7 +176,7 @@ export const exercisesCatalog = [
     name: 'Burpees',
     category: EXERCISE_CATEGORIES.CARDIO,
     goalType: GOAL_TYPES.REPS,
-    mediaUrl: 'https://images.unsplash.com/photo-1599058917212-d750089bc07e?q=80&w=800&auto=format&fit=crop',
+    mediaUrl: '/images/sport/burpees_1779051433296.png',
     level: LEVEL.ADVANCED
   },
   {
@@ -184,7 +184,7 @@ export const exercisesCatalog = [
     name: 'Montées de genoux',
     category: EXERCISE_CATEGORIES.CARDIO,
     goalType: GOAL_TYPES.TIME,
-    mediaUrl: 'https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?q=80&w=800&auto=format&fit=crop',
+    mediaUrl: '/images/sport/montees_genoux_1779051445465.png',
     level: LEVEL.INTERMEDIATE
   },
 ];

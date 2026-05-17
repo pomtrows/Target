@@ -13,7 +13,7 @@ const formatTime = (seconds) => {
 
 export default function SessionForm({ session, onClose }) {
   const { createSession, updateSession } = useSport();
-  
+
   const [name, setName] = useState(session?.name || '');
   const [exercises, setExercises] = useState(session?.exercises || []);
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
@@ -22,11 +22,11 @@ export default function SessionForm({ session, onClose }) {
   // Handle Drag & Drop
   const onDragEnd = (result) => {
     if (!result.destination) return;
-    
+
     const items = Array.from(exercises);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
-    
+
     setExercises(items);
   };
 
@@ -82,7 +82,7 @@ export default function SessionForm({ session, onClose }) {
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      
+
       <motion.div
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -175,7 +175,7 @@ export default function SessionForm({ session, onClose }) {
                                 >
                                   <GripVertical size={20} />
                                 </div>
-                                
+
                                 <div className="flex-1 min-w-0">
                                   <h4 className="text-dark-100 font-semibold text-sm truncate">{ex.name}</h4>
                                   <span className="text-xs text-dark-400">{ex.category}</span>
@@ -193,7 +193,7 @@ export default function SessionForm({ session, onClose }) {
                                       className="w-16 bg-dark-800 border border-dark-600 rounded-lg px-2 py-1.5 text-sm text-center text-dark-100 focus:border-accent-cyan focus:outline-none"
                                     />
                                   </div>
-                                  
+
                                   {/* Repos */}
                                   <div className="flex flex-col items-center">
                                     <span className="text-[10px] text-dark-400 uppercase font-bold px-1 text-center mb-0.5">Repos (s)</span>
@@ -267,7 +267,7 @@ export default function SessionForm({ session, onClose }) {
                   Terminer
                 </button>
               </div>
-              
+
               <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
                 {exercisesCatalog.map((catEx) => {
                   const count = exercises.filter(ex => ex.id === catEx.id).length;
@@ -280,7 +280,7 @@ export default function SessionForm({ session, onClose }) {
                       <div className="w-24 h-24 bg-dark-800 rounded-lg overflow-hidden relative flex-shrink-0 border border-dark-600/30">
                         <img src={catEx.mediaUrl} alt={catEx.name} className="w-full h-full object-cover" />
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <h4 className="text-dark-100 font-medium text-sm truncate">{catEx.name}</h4>
                         <div className="flex gap-2 text-xs text-dark-400 mt-0.5">
@@ -288,7 +288,7 @@ export default function SessionForm({ session, onClose }) {
                           <span className="bg-dark-800 px-1.5 py-0.5 rounded">{catEx.level}</span>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         {count > 0 && (
                           <span className="bg-accent-cyan text-dark-900 text-xs font-black w-6 h-6 rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200">
