@@ -112,7 +112,14 @@ export default function SportPage() {
 
                 <div className="mt-auto">
                   <button
-                    onClick={() => setSessionToPlay(session)}
+                    onClick={() => {
+                      if ('speechSynthesis' in window) {
+                        const unlockUtterance = new SpeechSynthesisUtterance('');
+                        unlockUtterance.volume = 0;
+                        window.speechSynthesis.speak(unlockUtterance);
+                      }
+                      setSessionToPlay(session);
+                    }}
                     className="w-full flex items-center justify-center gap-2 py-3 bg-accent-cyan/10 text-accent-cyan font-bold rounded-xl hover:bg-accent-cyan/20 transition-colors"
                   >
                     <Play size={18} fill="currentColor" />

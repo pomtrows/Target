@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, SkipForward, SkipBack, X, Volume2, VolumeX, RefreshCcw } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, X, Volume2, VolumeX, PartyPopper } from 'lucide-react';
 import { GOAL_TYPES } from '../../data/exercisesCatalog';
 
 const STATES = {
@@ -10,7 +10,7 @@ const STATES = {
   FINISHED: 'finished'
 };
 
-export default function WorkoutPlayer({ session, onClose }) {
+export default function WorkoutPlayer({ session, onClose, onFinish }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentState, setCurrentState] = useState(STATES.PREPARATION);
   const [timeLeft, setTimeLeft] = useState(5); // 5s prep
@@ -28,15 +28,10 @@ export default function WorkoutPlayer({ session, onClose }) {
 
   // Initialize Audio Context for beeps
   useEffect(() => {
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      audioContextRef.current = new AudioContext();
-    } catch (e) {
-      console.warn("AudioContext not supported");
-    }
+    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
     return () => {
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
+      if (audioContextRef.current?.state !== 'closed') {
+        audioContextRef.current?.close();
       }
     };
   }, []);
@@ -68,6 +63,17 @@ export default function WorkoutPlayer({ session, onClose }) {
     }
   }, [isMuted]);
 
+  const playApplause = useCallback(() => {
+    if (isMuted) return;
+    try {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/600/600-preview.mp3');
+      audio.volume = 1.0;
+      audio.play().catch(e => console.warn("Audio play blocked:", e));
+    } catch (e) {
+      console.error("Error playing applause audio", e);
+    }
+  }, [isMuted]);
+
   const speak = useCallback((text) => {
     if (isMuted || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel(); // Cancel any ongoing speech
@@ -76,6 +82,13 @@ export default function WorkoutPlayer({ session, onClose }) {
     utterance.rate = 1.0;
     window.speechSynthesis.speak(utterance);
   }, [isMuted]);
+
+  // Annonce vocale initiale au lancement
+  useEffect(() => {
+    if (session.exercises[0]) {
+      speak(`Préparation pour le premier exercice : ${session.exercises[0].name}`);
+    }
+  }, [session, speak]);
 
   const startExercise = useCallback(() => {
     // Assuming next exercise is now currentExercise since we incremented index before calling or it's the first one
@@ -86,7 +99,7 @@ export default function WorkoutPlayer({ session, onClose }) {
       speak(`Début de l'exercice : ${ex.name} pour ${ex.targetValue} secondes`);
     } else {
       setTimeLeft(0); // Not a timer for reps
-      speak(`Début de l'exercice : ${ex.name}, ${ex.targetValue} répétitions`);
+      speak(`Début de l'exercice : ${ex.name}, ${ex.targetValue} répétitions. Appuyez sur suivant une fois terminé.`);
     }
   }, [currentIndex, session.exercises, speak]);
 
@@ -114,6 +127,8 @@ export default function WorkoutPlayer({ session, onClose }) {
           setTimeLeft(3); // Short prep between without rest
         } else {
           setCurrentState(STATES.FINISHED);
+          onFinish?.();
+          playApplause();
           speak('Séance terminée. Bravo !');
         }
       }
@@ -124,9 +139,12 @@ export default function WorkoutPlayer({ session, onClose }) {
         startExercise(); // Start next directly
       } else {
         setCurrentState(STATES.FINISHED);
+        onFinish?.();
+        playApplause();
+        speak('Séance terminée. Bravo !');
       }
     }
-  }, [currentState, currentIndex, currentExercise, nextExercise, totalExercises, playBeep, speak, startExercise]);
+  }, [currentState, currentIndex, currentExercise, nextExercise, totalExercises, playBeep, speak, startExercise, playApplause, onFinish]);
 
   // Handle State Transitions and Timer Logic
   useEffect(() => {
@@ -260,24 +278,26 @@ export default function WorkoutPlayer({ session, onClose }) {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.2 }}
-              className="text-center"
+              className="w-full max-w-2xl flex flex-col items-center justify-center text-center mx-auto"
             >
               <div className="w-24 h-24 bg-gradient-to-br from-accent-cyan to-accent-violet rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(34,211,238,0.4)]">
-                <RefreshCcw size={40} className="text-dark-900" />
+                <PartyPopper size={40} className="text-dark-900 animate-bounce" />
               </div>
               <h2 className="text-4xl font-black mb-4">Séance Terminée !</h2>
-              <p className="text-dark-400 text-lg mb-10 max-w-sm mx-auto">Excellent travail. Prenez le temps de bien vous hydrater et vous étirer.</p>
+              <p className="text-dark-400 text-lg max-w-sm mx-auto" style={{ marginBottom: '48px' }}>Excellent travail. Prenez le temps de bien vous hydrater et vous étirer.</p>
               
               <div className="flex gap-4 justify-center">
                 <button 
                   onClick={onClose}
-                  className="px-8 py-4 bg-dark-800 text-dark-100 font-bold rounded-2xl hover:bg-dark-700 transition-colors"
+                  style={{ padding: '16px 32px', width: 'auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                  className="bg-dark-800 text-dark-100 font-bold rounded-2xl hover:bg-dark-700 transition-colors"
                 >
                   Fermer
                 </button>
                 <button 
                   onClick={handleReplaySession}
-                  className="px-8 py-4 bg-gradient-to-r from-accent-cyan to-accent-violet text-white font-bold rounded-2xl shadow-lg shadow-accent-cyan/20 hover:scale-105 transition-transform"
+                  style={{ padding: '16px 32px', width: 'auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                  className="bg-gradient-to-r from-accent-cyan to-accent-violet text-white font-bold rounded-2xl shadow-lg shadow-accent-cyan/20 hover:scale-105 transition-transform"
                 >
                   Recommencer
                 </button>
@@ -340,11 +360,16 @@ export default function WorkoutPlayer({ session, onClose }) {
                       {formatTimeDisplay(timeLeft)}
                     </div>
                   ) : isRepsMode ? (
-                    <div className="flex flex-col items-center">
+                    <div className="flex flex-col items-center animate-in fade-in duration-300">
                       <div className="text-8xl md:text-9xl font-black font-mono leading-none tracking-tighter text-accent-cyan">
                         {currentExercise.targetValue}
                       </div>
-                      <div className="text-2xl font-bold text-dark-400 uppercase tracking-widest mt-2">Répétitions</div>
+                      <div className="text-2xl font-bold text-dark-400 uppercase tracking-widest mt-2 mb-6">Répétitions</div>
+                      <div className="flex items-center gap-2 px-6 py-3 bg-dark-800 border border-dark-600 rounded-2xl text-accent-cyan animate-bounce shadow-lg shadow-accent-cyan/10">
+                        <span className="text-sm font-bold">Appuyez sur</span>
+                        <div className="p-1 bg-dark-700 rounded-lg flex items-center justify-center"><SkipForward size={16} /></div>
+                        <span className="text-sm font-bold">une fois terminé</span>
+                      </div>
                     </div>
                   ) : null}
                 </div>

@@ -187,6 +187,7 @@ export function TargetProvider({ children }) {
         const transformedObjectives = (objectives || []).map(o => ({
           ...o,
           categoryId: o.category_id,
+          sportSessionId: o.sport_session_id || null,
           subObjectives: o.sub_objectives || [],
           createdAt: o.created_at
         }));
@@ -221,6 +222,7 @@ export function TargetProvider({ children }) {
           title: action.payload.title,
           target: action.payload.target || 1,
           categoryId: action.payload.categoryId || 'autre',
+          sportSessionId: action.payload.sportSessionId || null,
           assignments: action.payload.assignments || [],
           subObjectives: action.payload.subObjectives || [],
           createdAt: new Date().toISOString().slice(0, 10),
@@ -237,6 +239,7 @@ export function TargetProvider({ children }) {
           title: newObj.title,
           target: newObj.target,
           category_id: newObj.categoryId,
+          sport_session_id: newObj.sportSessionId,
           assignments: newObj.assignments,
           sub_objectives: newObj.subObjectives,
           created_at: newObj.createdAt
@@ -251,6 +254,7 @@ export function TargetProvider({ children }) {
           title: updated.title,
           target: updated.target,
           category_id: updated.categoryId,
+          sport_session_id: updated.sportSessionId || null,
           assignments: updated.assignments,
           sub_objectives: updated.subObjectives || []
         }).eq('id', updated.id);

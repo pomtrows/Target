@@ -1,12 +1,18 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Minus, Check, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Minus, Check, Pencil, Trash2, Play } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
+import { useSport } from '../../contexts/SportContext';
 import { getObjectiveProgress, getProgressColor, isBitSet } from '../../utils/progressUtils';
+import WorkoutPlayer from '../Sport/WorkoutPlayer';
 
 export default function ObjectiveCard({ objective, weekId, index, onEdit, onDelete }) {
   const { state, dispatch } = useTarget();
+  const { sessions } = useSport();
+  const [sessionToPlay, setSessionToPlay] = useState(null);
 
   const category = state.categories.find((c) => c.id === objective.categoryId);
+  const sportSession = objective.sportSessionId ? sessions.find(s => s.id === objective.sportSessionId) : null;
   const weekProgress = state.progress[weekId] || {};
   const current = weekProgress[objective.id] || 0;
   
@@ -78,81 +84,94 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
         </h3>
 
         {/* Counter Section OR Sub-objectives */}
-        <div className="flex flex-col gap-6 mb-8 px-1">
-          {hasSubObjectives ? (
-            <div className="space-y-2.5">
-              {objective.subObjectives.map((sub, i) => {
-                const isSubChecked = isBitSet(current, i);
-                return (
-                  <button
-                    key={sub.id}
-                    onClick={() => handleToggleSub(i)}
-                    className="flex items-start gap-3 w-full group/sub text-left transition-colors"
-                  >
-                    <div className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-all flex-shrink-0 ${
-                      isSubChecked
-                        ? 'bg-accent-green/20 border-accent-green/50'
-                        : 'border-dark-500 group-hover/sub:border-dark-400'
-                    }`}>
-                      {isSubChecked && <Check size={12} className="text-accent-green" strokeWidth={3} />}
-                    </div>
-                    <span className={`text-sm leading-tight transition-all ${isSubChecked ? 'text-dark-500 line-through' : 'text-dark-200'}`}>
-                      {sub.title}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          ) : !isCheckbox ? (
-            <div className="flex items-center gap-4">
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={handleDecrement}
-                disabled={current <= 0}
-                className="w-10 h-10 rounded-xl bg-dark-600/60 flex items-center justify-center text-dark-300 hover:bg-dark-600/80 hover:text-dark-100 disabled:opacity-10 disabled:cursor-not-allowed transition-all"
-              >
-                <Minus size={18} />
-              </motion.button>
-
-              <div className="flex flex-col items-center min-w-[60px]">
-                <motion.span
-                  key={current}
-                  initial={{ scale: 1.2 }}
-                  animate={{ scale: 1 }}
-                  className={`text-2xl font-black tabular-nums ${isCompleted ? 'text-accent-green' : 'text-dark-100'}`}
+        <div className="flex items-center mb-6 px-1" style={{ gap: '35px' }}>
+          <div className={hasSubObjectives ? "flex-1" : ""}>
+            {hasSubObjectives ? (
+              <div className="space-y-2.5">
+                {objective.subObjectives.map((sub, i) => {
+                  const isSubChecked = isBitSet(current, i);
+                  return (
+                    <button
+                      key={sub.id}
+                      onClick={() => handleToggleSub(i)}
+                      className="flex items-start gap-3 w-full group/sub text-left transition-colors"
+                    >
+                      <div className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-all flex-shrink-0 ${
+                        isSubChecked
+                          ? 'bg-accent-green/20 border-accent-green/50'
+                          : 'border-dark-500 group-hover/sub:border-dark-400'
+                      }`}>
+                        {isSubChecked && <Check size={12} className="text-accent-green" strokeWidth={3} />}
+                      </div>
+                      <span className={`text-sm leading-tight transition-all ${isSubChecked ? 'text-dark-500 line-through' : 'text-dark-200'}`}>
+                        {sub.title}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : !isCheckbox ? (
+              <div className="flex items-center gap-3">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleDecrement}
+                  disabled={current <= 0}
+                  className="w-10 h-10 rounded-xl bg-dark-600/60 flex items-center justify-center text-dark-300 hover:bg-dark-600/80 hover:text-dark-100 disabled:opacity-10 disabled:cursor-not-allowed transition-all"
                 >
-                  {current}/{objective.target}
-                </motion.span>
-              </div>
+                  <Minus size={18} />
+                </motion.button>
 
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={handleIncrement}
-                disabled={isCompleted}
-                className={`w-10 h-10 rounded-xl bg-dark-600/60 flex items-center justify-center transition-all ${
-                  isCompleted 
-                    ? 'opacity-0 cursor-default' 
-                    : 'text-dark-300 hover:text-dark-100 hover:bg-dark-600/80'
-                }`}
-              >
-                <Plus size={18} />
-              </motion.button>
-            </div>
-          ) : (
-            <button
-              onClick={handleToggle}
-              className="flex items-center gap-4 group/check"
-            >
-              <div className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center transition-all ${
-                isChecked
-                  ? 'bg-accent-green/20 border-accent-green'
-                  : 'border-dark-600 group-hover/check:border-dark-500'
-              }`}>
-                {isChecked && <Check size={20} className="text-accent-green" />}
+                <div className="flex flex-col items-center min-w-[50px]">
+                  <motion.span
+                    key={current}
+                    initial={{ scale: 1.2 }}
+                    animate={{ scale: 1 }}
+                    className={`text-2xl font-black tabular-nums ${isCompleted ? 'text-accent-green' : 'text-dark-100'}`}
+                  >
+                    {current}/{objective.target}
+                  </motion.span>
+                </div>
+
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleIncrement}
+                  disabled={isCompleted}
+                  className={`w-10 h-10 rounded-xl bg-dark-600/60 flex items-center justify-center transition-all ${
+                    isCompleted 
+                      ? 'opacity-0 cursor-default' 
+                      : 'text-dark-300 hover:text-dark-100 hover:bg-dark-600/80'
+                  }`}
+                >
+                  <Plus size={18} />
+                </motion.button>
               </div>
-              <span className={`text-lg font-bold ${isChecked ? 'text-accent-green' : 'text-dark-300'}`}>
-                {isChecked ? 'Terminé' : 'Marquer comme fait'}
-              </span>
+            ) : (
+              <button
+                onClick={handleToggle}
+                className="flex items-center gap-4 group/check"
+              >
+                <div className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center transition-all ${
+                  isChecked
+                    ? 'bg-accent-green/20 border-accent-green'
+                    : 'border-dark-600 group-hover/check:border-dark-500'
+                }`}>
+                  {isChecked && <Check size={20} className="text-accent-green" />}
+                </div>
+                <span className={`text-lg font-bold ${isChecked ? 'text-accent-green' : 'text-dark-300'}`}>
+                  {isChecked ? 'Terminé' : 'Marquer comme fait'}
+                </span>
+              </button>
+            )}
+          </div>
+
+          {sportSession && (
+            <button
+              onClick={() => setSessionToPlay(sportSession)}
+              className="flex items-center bg-accent-cyan/15 text-accent-cyan font-bold rounded-xl hover:bg-accent-cyan/25 transition-all text-xs shadow-lg shadow-accent-cyan/5 border border-accent-cyan/30 flex-shrink-0"
+              style={{ padding: '8px 18px', gap: '6px' }}
+            >
+              <Play size={14} fill="currentColor" />
+              <span>Lancer</span>
             </button>
           )}
         </div>
@@ -183,6 +202,18 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
           </motion.div>
         )}
       </div>
+
+      {sessionToPlay && (
+        <WorkoutPlayer
+          session={sessionToPlay}
+          onClose={() => setSessionToPlay(null)}
+          onFinish={() => {
+            if (!isCompleted) {
+              handleIncrement();
+            }
+          }}
+        />
+      )}
     </motion.div>
   );
 }

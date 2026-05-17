@@ -1,15 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Dumbbell } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
+import { useSport } from '../../contexts/SportContext';
 import Modal from '../Shared/Modal';
 import { getCurrentWeekId, getSelectableWeeks, formatWeekLabel } from '../../utils/weekUtils';
 
 export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObjective = null }) {
   const { state, dispatch } = useTarget();
+  const { sessions } = useSport();
 
   const [title, setTitle] = useState(editObjective?.title || '');
   const [target, setTarget] = useState(editObjective?.target || 1);
   const [categoryId, setCategoryId] = useState(editObjective?.categoryId || 'autre');
+  const [sportSessionId, setSportSessionId] = useState(editObjective?.sportSessionId || '');
   const [subObjectives, setSubObjectives] = useState(editObjective?.subObjectives || []);
   const [assignType, setAssignType] = useState(
     editObjective
@@ -41,6 +44,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
       setTitle(editObjective?.title || '');
       setTarget(editObjective?.target || 1);
       setCategoryId(editObjective?.categoryId || 'autre');
+      setSportSessionId(editObjective?.sportSessionId || '');
       setSubObjectives(editObjective?.subObjectives || []);
       setAssignType(
         editObjective
@@ -89,6 +93,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           title: title.trim(),
           target: Number(target),
           categoryId,
+          sportSessionId: sportSessionId || null,
           assignments,
           subObjectives: finalSubObjectives
         },
@@ -100,6 +105,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           title: title.trim(),
           target: Number(target),
           categoryId,
+          sportSessionId: sportSessionId || null,
           assignments,
           subObjectives: finalSubObjectives
         },
@@ -111,11 +117,15 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
     setTitle('');
     setTarget(1);
     setCategoryId('autre');
+    setSportSessionId('');
     setSubObjectives([]);
     setAssignType(weekId ? 'week' : 'backlog');
     setAssignWeeks(weekId ? [weekId] : [getCurrentWeekId()]);
     setIsDropdownOpen(false);
   };
+
+  const selectedCategory = state.categories.find(c => c.id === categoryId);
+  const isSportCategory = selectedCategory && (selectedCategory.id === 'sport' || selectedCategory.label.toLowerCase() === 'sport');
 
   return (
     <Modal
@@ -240,6 +250,31 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
               </button>
             ))}
           </div>
+
+          {isSportCategory && (
+            <div className="mt-4 bg-accent-cyan/5 p-4 rounded-2xl border border-accent-cyan/20 transition-all">
+              <label className="block text-xs font-bold text-accent-cyan mb-2 flex items-center gap-2">
+                <Dumbbell size={14} /> Associer une séance de sport (Optionnel)
+              </label>
+              <select
+                value={sportSessionId || ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSportSessionId(val);
+                  if (!title.trim() && val) {
+                    const selectedSession = sessions.find(s => s.id === val);
+                    if (selectedSession) setTitle(selectedSession.name);
+                  }
+                }}
+                className="w-full bg-dark-800 border border-dark-600/50 rounded-xl py-2.5 px-3 text-sm text-dark-100 focus:outline-none focus:border-accent-cyan/50 transition-colors"
+              >
+                <option value="">-- Aucune séance associée --</option>
+                {sessions.map(s => (
+                  <option key={s.id} value={s.id}>{s.name} ({s.exercises?.length || 0} ex)</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Assignment */}
