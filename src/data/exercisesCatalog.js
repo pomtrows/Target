@@ -51,6 +51,30 @@ export const exercisesCatalog = [
     mediaUrl: '/images/sport/hollow_body_hold_1779033213722.png',
     level: LEVEL.ADVANCED
   },
+  {
+    id: 'ex_core_005',
+    name: 'Planche à l\'envers',
+    category: EXERCISE_CATEGORIES.CORE,
+    goalType: GOAL_TYPES.TIME,
+    mediaUrl: '/images/sport/planche_envers_1779089420229.png',
+    level: LEVEL.INTERMEDIATE
+  },
+  {
+    id: 'ex_core_006',
+    name: 'Planche avec torsion (Gauche)',
+    category: EXERCISE_CATEGORIES.CORE,
+    goalType: GOAL_TYPES.REPS,
+    mediaUrl: '/images/sport/planche_torsion_gauche_1779090481943.png',
+    level: LEVEL.INTERMEDIATE
+  },
+  {
+    id: 'ex_core_007',
+    name: 'Planche avec torsion (Droite)',
+    category: EXERCISE_CATEGORIES.CORE,
+    goalType: GOAL_TYPES.REPS,
+    mediaUrl: '/images/sport/planche_torsion_droite_coherente_1779090626890.png',
+    level: LEVEL.INTERMEDIATE
+  },
   
   // ABDOS
   {
