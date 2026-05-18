@@ -36,6 +36,41 @@ export default function WorkoutPlayer({ session, onClose, onFinish }) {
     };
   }, []);
 
+  // Gestion du Screen Wake Lock (garder l'écran allumé pendant la séance)
+  useEffect(() => {
+    let wakeLock = null;
+
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+          console.log('Screen Wake Lock activé.');
+        }
+      } catch (err) {
+        console.warn(`Erreur Wake Lock : ${err.name}, ${err.message}`);
+      }
+    };
+
+    requestWakeLock();
+
+    const handleVisibilityChange = () => {
+      if (wakeLock !== null && document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (wakeLock !== null) {
+        wakeLock.release().then(() => {
+          console.log('Screen Wake Lock relâché.');
+        }).catch(err => console.warn(`Erreur relâchement Wake Lock : ${err.message}`));
+      }
+    };
+  }, []);
+
   const playBeep = useCallback((frequency = 800, duration = 0.1, type = 'sine') => {
     if (isMuted || !audioContextRef.current) return;
     
