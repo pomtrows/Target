@@ -110,6 +110,9 @@ function targetReducer(state, action) {
         ),
       };
 
+    case 'REORDER_CATEGORIES':
+      return { ...state, categories: action.payload };
+
     case 'DELETE_CATEGORY':
       return {
         ...state,
@@ -192,10 +195,18 @@ export function TargetProvider({ children }) {
           createdAt: o.created_at
         }));
 
+        let fetchedCategories = categories && categories.length > 0 ? categories : defaultCategories;
+        const savedOrder = JSON.parse(localStorage.getItem(`target_categories_order_${user.id}`)) || {};
+        fetchedCategories.sort((a, b) => {
+          const orderA = a.order_index !== undefined && a.order_index !== null ? a.order_index : (savedOrder[a.id] !== undefined ? savedOrder[a.id] : 999);
+          const orderB = b.order_index !== undefined && b.order_index !== null ? b.order_index : (savedOrder[b.id] !== undefined ? savedOrder[b.id] : 999);
+          return orderA - orderB;
+        });
+
         dispatch({
           type: 'INITIALIZE',
           payload: {
-            categories: categories && categories.length > 0 ? categories : defaultCategories,
+            categories: fetchedCategories,
             objectives: transformedObjectives,
             progress: transformedProgress,
             progressTimestamps: transformedTimestamps,
@@ -348,6 +359,26 @@ export function TargetProvider({ children }) {
           icon: updated.icon,
           color: updated.color
         }).eq('id', updated.id);
+        break;
+      }
+
+      case 'REORDER_CATEGORIES': {
+        const newCategories = action.payload;
+        dispatch({ type: 'REORDER_CATEGORIES', payload: newCategories });
+        
+        const orderMap = {};
+        newCategories.forEach((cat, index) => {
+          orderMap[cat.id] = index;
+        });
+        localStorage.setItem(`target_categories_order_${user.id}`, JSON.stringify(orderMap));
+
+        for (let i = 0; i < newCategories.length; i++) {
+          const cat = newCategories[i];
+          const { error } = await supabase.from('categories').update({ order_index: i }).eq('id', cat.id);
+          if (error) {
+            console.warn(`Supabase order_index update error for ${cat.id}:`, error.message);
+          }
+        }
         break;
       }
 

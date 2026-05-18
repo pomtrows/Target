@@ -76,7 +76,17 @@ export default function WeekView() {
       }
       groups[key].items.push(obj);
     });
-    return Object.values(groups);
+
+    const categoryOrderMap = {};
+    state.categories.forEach((cat, idx) => {
+      categoryOrderMap[cat.id] = idx;
+    });
+
+    return Object.values(groups).sort((a, b) => {
+      const orderA = categoryOrderMap[a.category.id] !== undefined ? categoryOrderMap[a.category.id] : 999;
+      const orderB = categoryOrderMap[b.category.id] !== undefined ? categoryOrderMap[b.category.id] : 999;
+      return orderA - orderB;
+    });
   }, [objectives, state.categories]);
 
   return (
