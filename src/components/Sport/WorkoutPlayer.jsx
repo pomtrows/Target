@@ -16,9 +16,22 @@ export default function WorkoutPlayer({ session, onClose, onFinish }) {
   const [timeLeft, setTimeLeft] = useState(5); // 5s prep
   const [isPaused, setIsPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [resetTrigger, setResetTrigger] = useState(0);
   
   const timerRef = useRef(null);
   const audioContextRef = useRef(null);
+  const timeLeftRef = useRef(timeLeft);
+  const lastProcessedTimeRef = useRef(null);
+
+  // Garder timeLeftRef à jour avec timeLeft
+  useEffect(() => {
+    timeLeftRef.current = timeLeft;
+  }, [timeLeft]);
+
+  // Réinitialiser lastProcessedTimeRef lors du changement d'exercice ou d'état
+  useEffect(() => {
+    lastProcessedTimeRef.current = null;
+  }, [currentState, currentIndex]);
   
   const currentExercise = session.exercises[currentIndex];
   const nextExercise = session.exercises[currentIndex + 1];
@@ -125,12 +138,14 @@ export default function WorkoutPlayer({ session, onClose, onFinish }) {
     }
   }, [session, speak]);
 
-  const startExercise = useCallback(() => {
-    // Assuming next exercise is now currentExercise since we incremented index before calling or it's the first one
-    const ex = session.exercises[currentIndex];
+  const startExercise = useCallback((index = currentIndex) => {
+    const ex = session.exercises[index];
+    if (!ex) return;
+    
     setCurrentState(STATES.EXERCISE);
     if (ex.goalType === GOAL_TYPES.TIME) {
       setTimeLeft(ex.targetValue);
+      setResetTrigger(prev => prev + 1);
       speak(`Début de l'exercice : ${ex.name} pour ${ex.targetValue} secondes`);
     } else {
       setTimeLeft(0); // Not a timer for reps
@@ -142,7 +157,7 @@ export default function WorkoutPlayer({ session, onClose, onFinish }) {
     clearInterval(timerRef.current);
     
     if (currentState === STATES.PREPARATION) {
-      startExercise();
+      startExercise(currentIndex);
     } 
     else if (currentState === STATES.EXERCISE) {
       playBeep(400, 0.5, 'square'); // Gong final
@@ -151,6 +166,7 @@ export default function WorkoutPlayer({ session, onClose, onFinish }) {
         // Go to rest
         setCurrentState(STATES.REST);
         setTimeLeft(currentExercise.restTime);
+        setResetTrigger(prev => prev + 1);
         if (nextExercise) {
           speak(`Récupération. Prochain exercice : ${nextExercise.name}`);
         }
@@ -160,6 +176,7 @@ export default function WorkoutPlayer({ session, onClose, onFinish }) {
           setCurrentIndex(prev => prev + 1);
           setCurrentState(STATES.PREPARATION);
           setTimeLeft(3); // Short prep between without rest
+          setResetTrigger(prev => prev + 1);
         } else {
           setCurrentState(STATES.FINISHED);
           onFinish?.();
@@ -170,8 +187,9 @@ export default function WorkoutPlayer({ session, onClose, onFinish }) {
     } 
     else if (currentState === STATES.REST) {
       if (currentIndex < totalExercises - 1) {
-        setCurrentIndex(prev => prev + 1);
-        startExercise(); // Start next directly
+        const nextIndex = currentIndex + 1;
+        setCurrentIndex(nextIndex);
+        startExercise(nextIndex); // Start next directly
       } else {
         setCurrentState(STATES.FINISHED);
         onFinish?.();
@@ -181,21 +199,45 @@ export default function WorkoutPlayer({ session, onClose, onFinish }) {
     }
   }, [currentState, currentIndex, currentExercise, nextExercise, totalExercises, playBeep, speak, startExercise, playApplause, onFinish]);
 
-  // Handle State Transitions and Timer Logic
+  // Minuteur précis basé sur Date.now() pour éviter les dérives et resets lors des re-renders
   useEffect(() => {
-    if (isPaused || currentState === STATES.FINISHED) return;
+    if (isPaused || currentState === STATES.FINISHED) {
+      return;
+    }
 
-    // Ne pas utiliser le chronomètre si on est sur un exercice à répétitions
     if (currentState === STATES.EXERCISE && currentExercise?.goalType === GOAL_TYPES.REPS) {
       return;
     }
+
+    const targetEndTime = Date.now() + timeLeftRef.current * 1000;
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.round((targetEndTime - now) / 1000));
+      setTimeLeft(remaining);
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [isPaused, currentState, currentExercise, resetTrigger]);
+
+  // Gestion des effets sonores, de la synthèse vocale et de la transition à la fin du temps imparti
+  useEffect(() => {
+    if (isPaused || currentState === STATES.FINISHED) return;
+
+    if (currentState === STATES.EXERCISE && currentExercise?.goalType === GOAL_TYPES.REPS) {
+      return;
+    }
+
+    // Éviter de traiter la même seconde plusieurs fois (par exemple lors de re-renders externes)
+    if (timeLeft === lastProcessedTimeRef.current) return;
+    lastProcessedTimeRef.current = timeLeft;
 
     if (timeLeft <= 0) {
       handleNextState();
       return;
     }
 
-    // --- Side Effects during countdown ---
+    // --- Effets sonores et vocaux pendant le compte à rebours ---
     if (currentState === STATES.EXERCISE && currentExercise?.goalType === GOAL_TYPES.TIME) {
       // Bips de fin
       if (timeLeft <= 5 && timeLeft > 0) {
@@ -211,13 +253,7 @@ export default function WorkoutPlayer({ session, onClose, onFinish }) {
     if (currentState === STATES.REST && timeLeft <= 3 && timeLeft > 0) {
       playBeep(600, 0.1);
     }
-
-    timerRef.current = setTimeout(() => {
-      setTimeLeft(timeLeft - 1);
-    }, 1000);
-
-    return () => clearTimeout(timerRef.current);
-  }, [isPaused, currentState, timeLeft, handleNextState, currentExercise, playBeep, speak]);
+  }, [timeLeft, isPaused, currentState, currentExercise, handleNextState, playBeep, speak]);
 
 
   // Controls
@@ -239,13 +275,14 @@ export default function WorkoutPlayer({ session, onClose, onFinish }) {
         setCurrentIndex(prev => prev - 1);
         setCurrentState(STATES.PREPARATION);
         setTimeLeft(3);
+        setResetTrigger(prev => prev + 1);
       } else {
         // Reboot current
-        startExercise();
+        startExercise(currentIndex);
       }
     } else if (currentState === STATES.REST) {
        // Restart current exercise
-       startExercise();
+       startExercise(currentIndex);
     }
   };
 
@@ -253,6 +290,7 @@ export default function WorkoutPlayer({ session, onClose, onFinish }) {
     setCurrentIndex(0);
     setCurrentState(STATES.PREPARATION);
     setTimeLeft(5);
+    setResetTrigger(prev => prev + 1);
     setIsPaused(false);
   };
 
