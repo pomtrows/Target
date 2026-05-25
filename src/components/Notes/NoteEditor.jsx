@@ -8,6 +8,37 @@ import {
   Clock, Type, AlignLeft, AlignCenter, AlignRight,
   Undo2, Redo2
 } from 'lucide-react';
+import { exportNoteToDocx } from '../../utils/docxExport';
+
+const WordIcon = ({ size = 20 }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    {/* Paper backdrop */}
+    <path d="M9.5 3h11.5a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H9.5V3z" fill="#ffffff" stroke="#185abd" strokeWidth="1.8"/>
+    {/* Blue lines on paper */}
+    <path d="M12.5 7.5h6.5M12.5 10.5h6.5M12.5 13.5h6.5M12.5 16.5h6.5" stroke="#185abd" strokeWidth="1.5" strokeLinecap="round"/>
+    {/* Tilted Blue Cover Panel */}
+    <path d="M2 4.8L11.5 2v20L2 19.2V4.8z" fill="#185abd"/>
+    {/* Stylized 'W' */}
+    <text 
+      x="6.75" 
+      y="12" 
+      fill="#ffffff" 
+      fontFamily="Segoe UI, Arial, sans-serif" 
+      fontWeight="900" 
+      fontSize="8.5" 
+      textAnchor="middle" 
+      dominantBaseline="central"
+    >
+      W
+    </text>
+  </svg>
+);
 
 const ToolbarButton = ({ icon: Icon, action, title, shortcut, isActive, onClick }) => (
   <button
@@ -100,6 +131,21 @@ export default function NoteEditor({ noteId }) {
     setTitle(e.target.value);
     scheduleSave(e.target.value);
   };
+
+  const handleExport = useCallback(async () => {
+    if (!note) return;
+    const currentNote = {
+      ...note,
+      title: title || 'Sans titre',
+      content: getEditorContent(),
+      updated_at: new Date().toISOString()
+    };
+    try {
+      await exportNoteToDocx(currentNote);
+    } catch (err) {
+      alert("Erreur lors de l'exportation : " + err.message);
+    }
+  }, [note, title]);
 
   const handleContentInput = () => {
     if (isInitializing.current) return;
@@ -398,6 +444,15 @@ export default function NoteEditor({ noteId }) {
               </div>
             )}
           </div>
+
+          <button
+            onClick={handleExport}
+            className="p-1.5 rounded-xl hover:bg-dark-700/50 text-dark-400 hover:text-accent-cyan transition-all active:scale-95 cursor-pointer flex items-center justify-center opacity-75 hover:opacity-100 transition-opacity"
+            style={{ marginRight: '24px' }}
+            title="Exporter la note au format Word .docx"
+          >
+            <WordIcon size={24} />
+          </button>
         </div>
 
         {/* Desktop Toolbar */}
