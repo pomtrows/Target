@@ -79,7 +79,10 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
 
       <div className="flex-1">
         {/* Title */}
-        <h3 className="font-bold text-lg text-dark-100 mb-6 px-1 pr-12">
+        <h3 
+          className="font-bold text-lg text-dark-100 mb-6 pl-1"
+          style={{ paddingRight: '100px' }}
+        >
           {objective.title}
         </h3>
 
