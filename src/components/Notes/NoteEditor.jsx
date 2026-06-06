@@ -62,6 +62,8 @@ const Separator = () => <div className="w-px h-5 bg-dark-600/40 mx-1" />;
 export default function NoteEditor({ noteId }) {
   const { state, updateNote } = useNotes();
   const note = state.notes.find(n => n.id === noteId);
+  const folder = state.folders.find(f => f.id === note?.folder_id);
+  const isObjectiveNote = folder?.name === 'Objectifs';
   const [title, setTitle] = useState('');
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
@@ -470,16 +472,20 @@ export default function NoteEditor({ noteId }) {
       <div className="flex-1 overflow-y-auto pl-12 pr-4 py-6 md:p-12 custom-scrollbar overflow-x-hidden">
         <div className="max-w-3xl mx-auto space-y-6">
           {/* Title */}
-          <input
-            type="text"
-            value={title}
-            onChange={handleTitleChange}
-            placeholder="Titre de la note"
-            className="w-full bg-transparent text-4xl font-black text-dark-100 placeholder-dark-600 focus:outline-none tracking-tight border-none p-0 text-center"
-          />
+          {!isObjectiveNote && (
+            <>
+              <input
+                type="text"
+                value={title}
+                onChange={handleTitleChange}
+                placeholder="Titre de la note"
+                className="w-full bg-transparent text-4xl font-black text-dark-100 placeholder-dark-600 focus:outline-none tracking-tight border-none p-0 text-center"
+              />
 
-          {/* Divider */}
-          <div className="h-px bg-gradient-to-r from-accent-cyan/20 via-dark-600/30 to-transparent" />
+              {/* Divider */}
+              <div className="h-px bg-gradient-to-r from-accent-cyan/20 via-dark-600/30 to-transparent" />
+            </>
+          )}
 
           {/* Rich text editor */}
           <div

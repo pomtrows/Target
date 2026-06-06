@@ -1,15 +1,62 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Minus, Check, Pencil, Trash2, Play } from 'lucide-react';
+import { Plus, Minus, Check, Pencil, Trash2, Play, FileText } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useSport } from '../../contexts/SportContext';
+import { useNotes } from '../../contexts/NotesContext';
 import { getObjectiveProgress, getProgressColor, isBitSet } from '../../utils/progressUtils';
 import WorkoutPlayer from '../Sport/WorkoutPlayer';
+import Modal from '../Shared/Modal';
+import NoteEditor from '../Notes/NoteEditor';
 
 export default function ObjectiveCard({ objective, weekId, index, onEdit, onDelete }) {
   const { state, dispatch } = useTarget();
   const { sessions } = useSport();
+  const { state: notesState, createFolder, createNote } = useNotes();
   const [sessionToPlay, setSessionToPlay] = useState(null);
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [objectiveNoteId, setObjectiveNoteId] = useState(null);
+
+  const handleOpenNotes = async (e) => {
+    e.stopPropagation();
+    
+    // Find or create "Objectifs" folder
+    let folder = notesState.folders.find(f => f.name === 'Objectifs');
+    let folderId = folder?.id;
+    
+    if (!folderId) {
+      try {
+        const newFolder = await createFolder('Objectifs');
+        folderId = newFolder.id;
+      } catch (err) {
+        console.error('Error creating Objectifs folder:', err);
+        alert('Impossible de créer le dossier pour les notes des objectifs.');
+        return;
+      }
+    }
+    
+    // Find or create note for this objective
+    let note = notesState.notes.find(n => n.folder_id === folderId && n.title === objective.id);
+    let noteId = note?.id;
+    
+    if (!noteId) {
+      try {
+        const newNote = await createNote(objective.id, folderId);
+        noteId = newNote.id;
+      } catch (err) {
+        console.error('Error creating note for objective:', err);
+        alert('Impossible de créer la note pour cet objectif.');
+        return;
+      }
+    }
+    
+    setObjectiveNoteId(noteId);
+    setShowNotesModal(true);
+  };
+
+  const notesFolder = notesState.folders.find(f => f.name === 'Objectifs');
+  const objectiveNote = notesFolder ? notesState.notes.find(n => n.folder_id === notesFolder.id && n.title === objective.id) : null;
+  const hasNotes = !!(objectiveNote && objectiveNote.content && objectiveNote.content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim() !== '');
 
   const category = state.categories.find((c) => c.id === objective.categoryId);
   const sportSession = objective.sportSessionId ? sessions.find(s => s.id === objective.sportSessionId) : null;
@@ -62,22 +109,25 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
       className="group relative h-full min-h-[110px] rounded-[24px] bg-dark-700/40 border border-dark-600 transition-all duration-300 hover:bg-dark-700/60 flex flex-col justify-between shadow-xl hover:shadow-2xl"
     >
       {/* Edit/Delete Icons (Top Right) */}
-      <div className="absolute top-3 right-4 flex gap-4 opacity-60 group-hover:opacity-100 transition-opacity">
+      <div 
+        className="absolute top-3 flex gap-2.5 opacity-60 group-hover:opacity-100 transition-opacity z-10"
+        style={{ right: '20px' }}
+      >
         <button
           onClick={(e) => { e.stopPropagation(); onEdit?.(objective); }}
-          className="p-2 rounded-lg text-dark-200 hover:text-dark-100 hover:bg-dark-600/50 transition-all"
+          className="p-1.5 rounded-lg text-dark-200 hover:text-dark-100 hover:bg-dark-600/50 transition-all"
         >
           <Pencil size={18} />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete?.(objective.id); }}
-          className="p-2 rounded-lg text-dark-300 hover:text-accent-red hover:bg-accent-red/10 transition-all"
+          className="p-1.5 rounded-lg text-dark-300 hover:text-accent-red hover:bg-accent-red/10 transition-all"
         >
           <Trash2 size={18} />
         </button>
       </div>
 
-      <div className="flex-1">
+      <div className="flex-1 w-full">
         {/* Title */}
         <h3 
           className="font-bold text-lg text-dark-100 mb-6 pl-1"
@@ -91,8 +141,8 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
         </h3>
 
         {/* Counter Section OR Sub-objectives */}
-        <div className="flex items-center mb-6 px-1" style={{ gap: '35px' }}>
-          <div className={hasSubObjectives ? "flex-1" : ""}>
+        <div className="flex items-center mb-6 pl-1 pr-0 w-full" style={{ gap: '35px' }}>
+          <div className={hasSubObjectives ? "flex-1" : "grow"}>
             {hasSubObjectives ? (
               <div className="space-y-2.5">
                 {objective.subObjectives.map((sub, i) => {
@@ -171,16 +221,31 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
             )}
           </div>
 
-          {sportSession && (
+          <div className="flex items-center gap-2.5 flex-shrink-0 ml-auto">
+            {sportSession && (
+              <button
+                onClick={() => setSessionToPlay(sportSession)}
+                className="flex items-center bg-accent-cyan/15 text-accent-cyan font-bold rounded-xl hover:bg-accent-cyan/25 transition-all text-xs shadow-lg shadow-accent-cyan/5 border border-accent-cyan/30"
+                style={{ padding: '8px 18px', gap: '6px' }}
+              >
+                <Play size={14} fill="currentColor" />
+                <span>Lancer</span>
+              </button>
+            )}
+
             <button
-              onClick={() => setSessionToPlay(sportSession)}
-              className="flex items-center bg-accent-cyan/15 text-accent-cyan font-bold rounded-xl hover:bg-accent-cyan/25 transition-all text-xs shadow-lg shadow-accent-cyan/5 border border-accent-cyan/30 flex-shrink-0"
-              style={{ padding: '8px 18px', gap: '6px' }}
+              onClick={handleOpenNotes}
+              className={`flex items-center justify-center w-[30px] h-10 rounded-lg transition-all cursor-pointer bg-transparent ${
+                hasNotes 
+                  ? 'text-accent-cyan hover:bg-accent-cyan/10'
+                  : 'text-dark-300 hover:bg-dark-600/50 hover:text-dark-100'
+              }`}
+              style={{ border: 'none', marginRight: '-5px' }}
+              title={hasNotes ? "Voir les notes (contient du texte)" : "Prendre des notes"}
             >
-              <Play size={14} fill="currentColor" />
-              <span>Lancer</span>
+              <FileText size={18} />
             </button>
-          )}
+          </div>
         </div>
       </div>
 
@@ -220,6 +285,19 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
             }
           }}
         />
+      )}
+
+      {showNotesModal && objectiveNoteId && (
+        <Modal
+          isOpen={showNotesModal}
+          onClose={() => setShowNotesModal(false)}
+          title={`Notes : ${objective.title}`}
+          maxWidth="max-w-4xl"
+        >
+          <div className="h-[65vh] flex flex-col -m-5 overflow-hidden rounded-b-2xl">
+            <NoteEditor noteId={objectiveNoteId} />
+          </div>
+        </Modal>
       )}
     </motion.div>
   );

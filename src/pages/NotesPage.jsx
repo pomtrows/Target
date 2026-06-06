@@ -13,6 +13,11 @@ export default function NotesPage() {
   const [creatingNoteInFolderId, setCreatingNoteInFolderId] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
 
+  const isRegularNote = (note) => {
+    const folder = state.folders.find(f => f.id === note.folder_id);
+    return folder?.name !== 'Objectifs';
+  };
+
   const toggleFolder = (id) => {
     const next = new Set(expandedFolders);
     if (next.has(id)) next.delete(id);
@@ -164,11 +169,11 @@ export default function NotesPage() {
             <FileText size={16} />
             <span className="text-sm font-bold truncate flex-1">Toutes les notes</span>
             <span className="text-[10px] text-dark-500 font-medium opacity-60">
-              {state.notes.filter(n => matchesSearch(n)).length}
+              {state.notes.filter(n => isRegularNote(n) && matchesSearch(n)).length}
             </span>
           </div>
           {expandedFolders.has('all-notes') && state.notes
-            .filter(n => matchesSearch(n))
+            .filter(n => isRegularNote(n) && matchesSearch(n))
             .map(note => (
               <NoteItem
                 key={note.id}
@@ -182,7 +187,7 @@ export default function NotesPage() {
         </div>
 
         {/* Folder tree */}
-        {state.folders.filter(f => !f.parent_id).map(folder => (
+        {state.folders.filter(f => !f.parent_id && f.name !== 'Objectifs').map(folder => (
           <FolderItem
             key={folder.id}
             folder={folder}
