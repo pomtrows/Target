@@ -3,19 +3,98 @@ import { useNotes } from '../contexts/NotesContext';
 import { FolderPlus, FilePlus, ChevronRight, Folder, FileText, Trash2, Edit2, Search, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import NoteEditor from '../components/Notes/NoteEditor';
+import Modal from '../components/Shared/Modal';
 
 export default function NotesPage() {
-  const { state, createFolder, deleteFolder, createNote, deleteNote } = useNotes();
+  const { state, createFolder, deleteFolder, createNote, deleteNote, updateNote } = useNotes();
   const [selectedNoteId, setSelectedNoteId] = useState(null);
   const [expandedFolders, setExpandedFolders] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [creatingFolderParentId, setCreatingFolderParentId] = useState(null);
   const [creatingNoteInFolderId, setCreatingNoteInFolderId] = useState(null);
+  const [movingNoteId, setMovingNoteId] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
 
   const isRegularNote = (note) => {
     const folder = state.folders.find(f => f.id === note.folder_id);
     return folder?.name !== 'Objectifs';
+  };
+
+  const getFolderPath = (folderId) => {
+    if (!folderId) return 'Racine';
+    const path = [];
+    let current = state.folders.find(f => f.id === folderId);
+    while (current) {
+      path.unshift(current.name);
+      current = state.folders.find(f => f.id === current.parent_id);
+    }
+    return path.join(' / ');
+  };
+
+  const renderMoveModal = () => {
+    if (!movingNoteId) return null;
+    const regularFolders = state.folders.filter(f => f.name !== 'Objectifs');
+    const folderOptions = regularFolders.map(f => ({
+      id: f.id,
+      path: getFolderPath(f.id)
+    })).sort((a, b) => a.path.localeCompare(b.path));
+
+    return (
+      <Modal
+        isOpen={!!movingNoteId}
+        onClose={() => setMovingNoteId(null)}
+        title="Déplacer la note"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4 p-2 select-none">
+          <p className="text-sm text-dark-300">
+            Choisissez le dossier de destination pour la note :
+          </p>
+          <div className="max-h-[300px] overflow-y-auto border border-dark-600/30 rounded-xl divide-y divide-dark-600/20 bg-dark-800/40 custom-scrollbar">
+            {/* Root option */}
+            <button
+              onClick={async () => {
+                try {
+                  await updateNote(movingNoteId, { folder_id: null });
+                  setMovingNoteId(null);
+                } catch (err) {
+                  alert('Erreur : ' + err.message);
+                }
+              }}
+              className="w-full text-left px-4 py-3 text-sm hover:bg-dark-600/40 text-dark-100 flex items-center gap-3 transition-colors cursor-pointer border-none"
+            >
+              <Folder className="text-dark-400" size={16} />
+              <span className="font-semibold">Racine (aucun dossier)</span>
+            </button>
+
+            {/* Folders list */}
+            {folderOptions.map((opt) => (
+              <button
+                key={opt.id}
+                onClick={async () => {
+                  try {
+                    await updateNote(movingNoteId, { folder_id: opt.id });
+                    setMovingNoteId(null);
+                  } catch (err) {
+                    alert('Erreur : ' + err.message);
+                  }
+                }}
+                className="w-full text-left px-4 py-3 text-sm hover:bg-dark-600/40 text-dark-100 flex items-center gap-3 transition-colors cursor-pointer border-none"
+              >
+                <Folder className="text-accent-cyan" size={16} />
+                <span>{opt.path}</span>
+              </button>
+            ))}
+            
+            {folderOptions.length === 0 && (
+              <div className="p-4 text-center text-sm text-dark-500">
+                Aucun dossier créé pour le moment.
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
+    );
   };
 
   const toggleFolder = (id) => {
@@ -81,22 +160,34 @@ export default function NotesPage() {
     return (
       <div className="fixed inset-0 md:relative md:h-full flex flex-col animate-in fade-in duration-300 z-[60] bg-dark-900 md:bg-transparent">
         {/* Mobile Header (Fixed at top) */}
-        <div className="flex-none flex items-center gap-3 px-4 h-14 md:h-auto md:static relative z-50" style={{ paddingLeft: '80px' }}>
-          <button
-            onClick={() => setSelectedNoteId(null)}
-            className="flex items-center gap-2 px-2 py-1 rounded-xl hover:bg-dark-700/50 text-dark-400 hover:text-accent-cyan transition-all"
-          >
-            <ArrowLeft size={18} />
-            <span className="text-sm font-bold">Retour</span>
-          </button>
-          <span className="text-dark-500 text-sm">•</span>
-          <span className="text-dark-400 text-sm font-medium truncate max-w-[150px]">{selectedNote?.title || 'Sans titre'}</span>
+        <div className="flex-none flex items-center justify-between px-4 h-14 md:h-auto md:static relative z-50" style={{ paddingLeft: '80px' }}>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSelectedNoteId(null)}
+              className="flex items-center gap-2 px-2 py-1 rounded-xl hover:bg-dark-700/50 text-dark-400 hover:text-accent-cyan transition-all"
+            >
+              <ArrowLeft size={18} />
+              <span className="text-sm font-bold">Retour</span>
+            </button>
+            <span className="text-dark-500 text-sm">•</span>
+            <span className="text-dark-400 text-sm font-medium truncate max-w-[150px]">{selectedNote?.title || 'Sans titre'}</span>
+          </div>
+          {selectedNote && isRegularNote(selectedNote) && (
+            <button
+              onClick={() => setMovingNoteId(selectedNoteId)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-dark-800/60 border border-dark-700/50 hover:border-accent-cyan/50 text-dark-300 hover:text-accent-cyan transition-all text-xs font-bold cursor-pointer"
+            >
+              <Folder size={14} />
+              <span>Déplacer</span>
+            </button>
+          )}
         </div>
 
         {/* Editor Container */}
         <div className="flex-1 flex flex-col md:glass md:rounded-3xl md:border border-dark-600/30 overflow-hidden md:shadow-2xl relative">
           <NoteEditor noteId={selectedNoteId} />
         </div>
+        {renderMoveModal()}
       </div>
     );
   }
@@ -181,6 +272,7 @@ export default function NotesPage() {
                 level={1}
                 onSelect={setSelectedNoteId}
                 onDelete={deleteNote}
+                onMove={setMovingNoteId}
               />
             ))
           }
@@ -202,6 +294,7 @@ export default function NotesPage() {
             onDelete={deleteFolder}
             onDeleteNote={deleteNote}
             onSelectNote={setSelectedNoteId}
+            onMoveNote={setMovingNoteId}
             creatingFolderParentId={creatingFolderParentId}
             onSubmitFolder={submitCreateFolder}
             creatingNoteInFolderId={creatingNoteInFolderId}
@@ -251,12 +344,13 @@ export default function NotesPage() {
           </div>
         )}
       </div>
+      {renderMoveModal()}
     </div>
   );
 }
 
 // ─── NoteItem ────────────────────────────────────────────────
-function NoteItem({ note, level, onSelect, onDelete }) {
+function NoteItem({ note, level, onSelect, onDelete, onMove }) {
   return (
     <div
       className="flex items-center gap-2 px-2 py-2.5 md:py-1.5 rounded-lg cursor-pointer group transition-all hover:bg-dark-700/50 text-dark-400 hover:text-dark-200"
@@ -266,6 +360,18 @@ function NoteItem({ note, level, onSelect, onDelete }) {
       <FileText size={15} className="text-dark-500 group-hover:text-accent-cyan transition-colors flex-shrink-0" />
       <span className="text-sm font-medium truncate flex-1">{note.title || 'Sans titre'}</span>
       <div className="md:opacity-0 md:group-hover:opacity-100 flex items-center gap-1 transition-opacity opacity-100">
+        {onMove && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onMove(note.id);
+            }}
+            className="p-2 hover:text-accent-cyan"
+            title="Déplacer"
+          >
+            <Folder size={18} />
+          </button>
+        )}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -321,7 +427,7 @@ function NoteCreationInput({ level, folderId, onSubmit }) {
 // ─── FolderItem ──────────────────────────────────────────────
 function FolderItem({
   folder, level, expandedFolders, toggleFolder, folders, notes, matchesSearch,
-  onAddSub, onAddNote, onDelete, onDeleteNote, onSelectNote,
+  onAddSub, onAddNote, onDelete, onDeleteNote, onSelectNote, onMoveNote,
   creatingFolderParentId, onSubmitFolder,
   creatingNoteInFolderId, onSubmitNote,
 }) {
@@ -437,6 +543,7 @@ function FolderItem({
               onDelete={onDelete}
               onDeleteNote={onDeleteNote}
               onSelectNote={onSelectNote}
+              onMoveNote={onMoveNote}
               creatingFolderParentId={creatingFolderParentId}
               onSubmitFolder={onSubmitFolder}
               creatingNoteInFolderId={creatingNoteInFolderId}
@@ -452,6 +559,7 @@ function FolderItem({
               level={level + 1}
               onSelect={onSelectNote}
               onDelete={onDeleteNote}
+              onMove={onMoveNote}
             />
           ))}
 

@@ -57,6 +57,91 @@ const ToolbarButton = ({ icon: Icon, action, title, shortcut, isActive, onClick 
   </button>
 );
 
+const COLORS = [
+  // Neutrals
+  { name: 'Défaut', value: '#e2e8f0' },
+  { name: 'Blanc', value: '#ffffff' },
+  { name: 'Gris clair', value: '#cbd5e1' },
+  { name: 'Gris moyen', value: '#94a3b8' },
+  { name: 'Gris foncé', value: '#64748b' },
+  { name: 'Noir', value: '#000000' },
+
+  // Reds / Pinks / Purple-reds
+  { name: 'Rouge foncé', value: '#991b1b' },
+  { name: 'Rouge', value: '#ef4444' },
+  { name: 'Rouge clair', value: '#f87171' },
+  { name: 'Rose intense', value: '#f43f5e' },
+  { name: 'Rose', value: '#ec4899' },
+  { name: 'Fuchsia', value: '#d946ef' },
+
+  // Warm Oranges & Yellows
+  { name: 'Orange', value: '#f97316' },
+  { name: 'Orange clair', value: '#fb923c' },
+  { name: 'Ambre', value: '#f59e0b' },
+  { name: 'Jaune', value: '#fbbf24' },
+  { name: 'Jaune clair', value: '#fef08a' },
+  { name: 'Pêche', value: '#fed7aa' },
+
+  // Greens & Teals
+  { name: 'Vert foncé', value: '#166534' },
+  { name: 'Vert', value: '#22c55e' },
+  { name: 'Menthe', value: '#86efac' },
+  { name: 'Citron vert', value: '#84cc16' },
+  { name: 'Émeraude', value: '#10b981' },
+  { name: 'Teal', value: '#14b8a6' },
+
+  // Blues & Purples
+  { name: 'Cyan', value: '#06b6d4' },
+  { name: 'Bleu ciel', value: '#38bdf8' },
+  { name: 'Bleu', value: '#3b82f6' },
+  { name: 'Indigo', value: '#6366f1' },
+  { name: 'Violet', value: '#8b5cf6' },
+  { name: 'Pourpre', value: '#a855f7' }
+];
+
+const colorsMatch = (c1, c2) => {
+  if (!c1 || !c2) return false;
+  c1 = c1.toLowerCase().trim();
+  c2 = c2.toLowerCase().trim();
+  if (c1 === c2) return true;
+  
+  const hexToRgb = (hex) => {
+    const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+    return result ? `rgb(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)})` : null;
+  };
+  
+  if (c1.startsWith('#')) c1 = hexToRgb(c1) || c1;
+  if (c2.startsWith('#')) c2 = hexToRgb(c2) || c2;
+  
+  return c1.replace(/\s+/g, '') === c2.replace(/\s+/g, '');
+};
+
+const isDarkColor = (color) => {
+  if (!color) return false;
+  let r, g, b;
+  
+  if (color.startsWith('#')) {
+    const c = color.substring(1);
+    const rgb = parseInt(c, 16);
+    r = (rgb >> 16) & 0xff;
+    g = (rgb >> 8) & 0xff;
+    b = (rgb >> 0) & 0xff;
+  } else if (color.startsWith('rgb')) {
+    const matches = color.match(/\d+/g);
+    if (!matches || matches.length < 3) return false;
+    r = parseInt(matches[0]);
+    g = parseInt(matches[1]);
+    b = parseInt(matches[2]);
+  } else {
+    return false;
+  }
+  
+  const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luma < 120;
+};
+
 const Separator = () => <div className="w-px h-5 bg-dark-600/40 mx-1" />;
 
 export default function NoteEditor({ noteId }) {
@@ -68,9 +153,22 @@ export default function NoteEditor({ noteId }) {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [activeFormats, setActiveFormats] = useState({});
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [currentColor, setCurrentColor] = useState('#e2e8f0');
   const saveTimeoutRef = useRef(null);
   const editorRef = useRef(null);
   const isInitializing = useRef(false);
+
+  // Close color picker on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest('.color-picker-container')) {
+        setShowColorPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
 
   // Initialize content when note changes
   useEffect(() => {
@@ -168,6 +266,19 @@ export default function NoteEditor({ noteId }) {
       justifyCenter: document.queryCommandState('justifyCenter'),
       justifyRight: document.queryCommandState('justifyRight'),
     });
+
+    // Check text color at cursor
+    try {
+      const colorVal = document.queryCommandValue('foreColor');
+      if (colorVal) {
+        setCurrentColor(colorVal);
+      } else {
+        setCurrentColor('#e2e8f0');
+      }
+    } catch (e) {
+      setCurrentColor('#e2e8f0');
+    }
+
     // Check if cursor is inside a checklist or starred item
     const sel = window.getSelection();
     if (sel.rangeCount > 0) {
@@ -186,6 +297,12 @@ export default function NoteEditor({ noteId }) {
       setActiveFormats(prev => ({ ...prev, checklist: inChecklist, star: inStar }));
     }
   };
+
+  const execColor = useCallback((color) => {
+    document.execCommand('foreColor', false, color);
+    setCurrentColor(color);
+    scheduleSave(title);
+  }, [title, scheduleSave]);
 
   // Execute formatting command
   const execFormat = useCallback((action) => {
@@ -395,6 +512,53 @@ export default function NoteEditor({ noteId }) {
         <ToolbarButton icon={Underline} action="underline" title="Souligné" isActive={activeFormats.underline} onClick={execFormat} />
         <ToolbarButton icon={Strikethrough} action="strikeThrough" title="Barré" isActive={activeFormats.strikeThrough} onClick={execFormat} />
 
+        <div className="relative color-picker-container">
+          <button
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setShowColorPicker(!showColorPicker);
+            }}
+            className={`p-1.5 rounded-lg transition-all active:scale-90 flex items-center justify-center ${
+              showColorPicker
+                ? 'bg-accent-cyan/20 text-accent-cyan'
+                : 'hover:bg-dark-600/40'
+            }`}
+            title="Couleur du texte"
+          >
+            <span 
+              className="w-4 h-4 rounded-full border border-dark-800 flex-shrink-0 transition-colors duration-200" 
+              style={{ backgroundColor: colorsMatch(currentColor, '#e2e8f0') ? '#e2e8f0' : currentColor }} 
+            />
+          </button>
+
+          {showColorPicker && (
+            <div 
+              className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 p-2 rounded-xl bg-dark-700 border border-dark-600 shadow-2xl z-50 grid grid-cols-6 gap-1.5 min-w-[200px]"
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              {COLORS.map((col) => (
+                <button
+                  key={col.value}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    execColor(col.value);
+                    setShowColorPicker(false);
+                  }}
+                  className="w-6 h-6 rounded-full border border-dark-600 hover:scale-110 transition-transform cursor-pointer flex items-center justify-center"
+                  style={{ backgroundColor: col.value }}
+                  title={col.name}
+                >
+                  {colorsMatch(currentColor, col.value) && (
+                    <div className={`w-1.5 h-1.5 rounded-full ${
+                      isDarkColor(col.value) ? 'bg-white' : 'bg-dark-900'
+                    }`} />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <Separator />
 
         {/* Lists & blocks */}
@@ -426,7 +590,7 @@ export default function NoteEditor({ noteId }) {
   return (
     <div className="h-full flex flex-col bg-dark-800/20">
       {/* Top bar: save status */}
-      <div className="flex-none border-b border-dark-600/30 bg-dark-800/40">
+      <div className="flex-none border-b border-dark-600/30 bg-dark-800/40 relative z-30">
         <div className="flex items-center justify-between px-6 py-3">
           <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest">
             {saving ? (

@@ -1,5 +1,45 @@
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 
+function parseHexColor(colorStr) {
+  if (!colorStr) return null;
+  colorStr = colorStr.trim().toLowerCase();
+  
+  // Match hex format (e.g., #ffffff, #fff)
+  if (colorStr.startsWith('#')) {
+    const hex = colorStr.substring(1);
+    if (hex.length === 3) {
+      return hex.split('').map(x => x + x).join('');
+    }
+    return hex;
+  }
+  
+  // Match rgb(r, g, b) or rgba(r, g, b, a) format
+  if (colorStr.startsWith('rgb')) {
+    const matches = colorStr.match(/\d+/g);
+    if (matches && matches.length >= 3) {
+      const r = parseInt(matches[0]).toString(16).padStart(2, '0');
+      const g = parseInt(matches[1]).toString(16).padStart(2, '0');
+      const b = parseInt(matches[2]).toString(16).padStart(2, '0');
+      return `${r}${g}${b}`;
+    }
+  }
+  
+  // Basic colors fallback
+  const basicColors = {
+    black: '000000',
+    white: 'ffffff',
+    red: 'ff0000',
+    green: '00ff00',
+    blue: '0000ff',
+    yellow: 'ffff00',
+    cyan: '00ffff',
+    magenta: 'ff00ff',
+    gray: '808080'
+  };
+  
+  return basicColors[colorStr] || null;
+}
+
 /**
  * Parses rich text editor HTML content and returns an array of docx Paragraph objects.
  * Supports recursive block parsing to handle arbitrarily nested tags (e.g. lists inside divs).
@@ -38,7 +78,7 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
             underline: currentFormat.underline ? {} : undefined,
             strike: currentFormat.strike || undefined,
             font: currentFormat.code ? "Courier New" : "Calibri",
-            color: currentFormat.code ? "06B6D4" : (currentFormat.link ? "06B6D4" : undefined),
+            color: currentFormat.color || (currentFormat.code ? "06B6D4" : (currentFormat.link ? "06B6D4" : undefined)),
             shading: currentFormat.code ? { fill: "F1F5F9" } : undefined,
             size: currentFormat.size || 22, // 11pt
           }));
@@ -69,6 +109,17 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
         if (tag === 'STRIKE' || tag === 'DEL' || tag === 'S') format.strike = true;
         if (tag === 'CODE') format.code = true;
         if (tag === 'A') format.link = true;
+        
+        // Extract inline color if present
+        let inlineColor = null;
+        if (node.style && node.style.color) {
+          inlineColor = parseHexColor(node.style.color);
+        } else if (tag === 'FONT' && node.hasAttribute('color')) {
+          inlineColor = parseHexColor(node.getAttribute('color'));
+        }
+        if (inlineColor) {
+          format.color = inlineColor;
+        }
         
         for (const child of node.childNodes) {
           walk(child, format);
@@ -117,7 +168,7 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
     const isStarred = node.getAttribute?.('data-star') === 'true';
 
     // If it's a known inline element, collect its text runs
-    const inlineTags = ['SPAN', 'B', 'STRONG', 'I', 'EM', 'U', 'STRIKE', 'DEL', 'S', 'CODE', 'A', 'BR'];
+    const inlineTags = ['SPAN', 'B', 'STRONG', 'I', 'EM', 'U', 'STRIKE', 'DEL', 'S', 'CODE', 'A', 'BR', 'FONT'];
     if (inlineTags.includes(tag)) {
       const runs = parseInline(node);
       accumulatedInlineRuns.push(...runs);
