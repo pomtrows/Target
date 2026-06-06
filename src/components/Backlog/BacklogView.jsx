@@ -119,7 +119,12 @@ export default function BacklogView() {
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-sm text-dark-100">{obj.title}</h3>
+                    <h3 
+                      className="font-semibold text-sm text-dark-100"
+                      style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                    >
+                      {obj.title}
+                    </h3>
                     <div className="flex items-center gap-2 mt-1">
                       {cat && <Badge label={cat.label} color={cat.color} size="xs" />}
                       {obj.target > 0 && (
