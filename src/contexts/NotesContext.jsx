@@ -22,12 +22,24 @@ function notesReducer(state, action) {
         ...state,
         folders: state.folders.map(f => f.id === folderIdToUpdate ? { ...f, ...action.payload, id: action.payload.id } : f)
       };
-    case 'DELETE_FOLDER':
+    case 'DELETE_FOLDER': {
+      // Collect all descendant folder IDs recursively (mirrors DB cascade delete)
+      const getAllDescendantIds = (folderId, allFolders) => {
+        const children = allFolders.filter(f => f.parent_id === folderId);
+        return children.reduce(
+          (acc, child) => [...acc, child.id, ...getAllDescendantIds(child.id, allFolders)],
+          []
+        );
+      };
+      const deletedId = action.payload;
+      const descendantIds = getAllDescendantIds(deletedId, state.folders);
+      const allDeletedIds = new Set([deletedId, ...descendantIds]);
       return {
         ...state,
-        folders: state.folders.filter(f => f.id !== action.payload),
-        notes: state.notes.filter(n => n.folder_id !== action.payload) // Recursive delete handled by DB, but local update helps
+        folders: state.folders.filter(f => !allDeletedIds.has(f.id)),
+        notes: state.notes.filter(n => !allDeletedIds.has(n.folder_id))
       };
+    }
     case 'ADD_NOTE':
       return { ...state, notes: [...state.notes, action.payload] };
     case 'UPDATE_NOTE':

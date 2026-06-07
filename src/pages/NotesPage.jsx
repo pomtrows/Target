@@ -1,19 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useNotes } from '../contexts/NotesContext';
-import { FolderPlus, FilePlus, ChevronRight, Folder, FileText, Trash2, Edit2, Search, ArrowLeft } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { FolderPlus, FilePlus, ChevronRight, Folder, FileText, Trash2, Search, ArrowLeft } from 'lucide-react';
 import NoteEditor from '../components/Notes/NoteEditor';
 import Modal from '../components/Shared/Modal';
 
 export default function NotesPage() {
   const { state, createFolder, deleteFolder, createNote, deleteNote, updateNote } = useNotes();
   const [selectedNoteId, setSelectedNoteId] = useState(null);
-  const [expandedFolders, setExpandedFolders] = useState(new Set());
+  const [currentFolderId, setCurrentFolderId] = useState(null); // null (root), folderId, or 'all-notes'
   const [searchQuery, setSearchQuery] = useState('');
   const [creatingFolderParentId, setCreatingFolderParentId] = useState(null);
   const [creatingNoteInFolderId, setCreatingNoteInFolderId] = useState(null);
   const [movingNoteId, setMovingNoteId] = useState(null);
+  const [moveModalFolderId, setMoveModalFolderId] = useState(null);   // navigation inside move modal
+  const [moveSelectedFolderId, setMoveSelectedFolderId] = useState(undefined); // undefined = not chosen yet
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // Auto-navigate to root if current folder is deleted by background sync or another client
+  useEffect(() => {
+    if (currentFolderId && currentFolderId !== 'all-notes') {
+      const exists = state.folders.some(f => f.id === currentFolderId);
+      if (!exists) {
+        setCurrentFolderId(null);
+      }
+    }
+  }, [state.folders, currentFolderId]);
 
   const isRegularNote = (note) => {
     const folder = state.folders.find(f => f.id === note.folder_id);
@@ -31,86 +42,174 @@ export default function NotesPage() {
     return path.join(' / ');
   };
 
+  const getBreadcrumbs = () => {
+    if (currentFolderId === 'all-notes') {
+      return [
+        { id: null, name: 'Racine' },
+        { id: 'all-notes', name: 'Toutes les notes' }
+      ];
+    }
+    const crumbs = [{ id: null, name: 'Racine' }];
+    if (!currentFolderId) return crumbs;
+
+    let path = [];
+    let current = state.folders.find(f => f.id === currentFolderId);
+    while (current) {
+      path.unshift({ id: current.id, name: current.name });
+      current = state.folders.find(f => f.id === current.parent_id);
+    }
+    return [...crumbs, ...path];
+  };
+
   const renderMoveModal = () => {
     if (!movingNoteId) return null;
-    const regularFolders = state.folders.filter(f => f.name !== 'Objectifs');
-    const folderOptions = regularFolders.map(f => ({
-      id: f.id,
-      path: getFolderPath(f.id)
-    })).sort((a, b) => a.path.localeCompare(b.path));
+
+    // Folders visible at current navigation level (excluding Objectifs)
+    const visibleFolders = state.folders.filter(
+      f => f.parent_id === moveModalFolderId && f.name !== 'Objectifs'
+    );
+
+    // Breadcrumb path inside the modal
+    const getModalBreadcrumbs = () => {
+      const crumbs = [{ id: null, name: 'Racine' }];
+      if (!moveModalFolderId) return crumbs;
+      let path = [];
+      let cur = state.folders.find(f => f.id === moveModalFolderId);
+      while (cur) {
+        path.unshift({ id: cur.id, name: cur.name });
+        cur = state.folders.find(f => f.id === cur.parent_id);
+      }
+      return [...crumbs, ...path];
+    };
+
+    const handleConfirm = async () => {
+      // moveSelectedFolderId: undefined = nothing selected, null = Racine, string = folderId
+      if (moveSelectedFolderId === undefined) return;
+      try {
+        await updateNote(movingNoteId, { folder_id: moveSelectedFolderId });
+        setMovingNoteId(null);
+        setMoveModalFolderId(null);
+        setMoveSelectedFolderId(undefined);
+      } catch (err) {
+        alert('Erreur : ' + err.message);
+      }
+    };
+
+    const modalCrumbs = getModalBreadcrumbs();
 
     return (
       <Modal
         isOpen={!!movingNoteId}
-        onClose={() => setMovingNoteId(null)}
+        onClose={() => { setMovingNoteId(null); setMoveModalFolderId(null); setMoveSelectedFolderId(undefined); }}
         title="Déplacer la note"
         maxWidth="max-w-md"
       >
-        <div className="space-y-4 p-2 select-none">
-          <p className="text-sm text-dark-300">
-            Choisissez le dossier de destination pour la note :
-          </p>
-          <div className="max-h-[300px] overflow-y-auto border border-dark-600/30 rounded-xl divide-y divide-dark-600/20 bg-dark-800/40 custom-scrollbar">
-            {/* Root option */}
-            <button
-              onClick={async () => {
-                try {
-                  await updateNote(movingNoteId, { folder_id: null });
-                  setMovingNoteId(null);
-                } catch (err) {
-                  alert('Erreur : ' + err.message);
-                }
-              }}
-              className="w-full text-left px-4 py-3 text-sm hover:bg-dark-600/40 text-dark-100 flex items-center gap-3 transition-colors cursor-pointer border-none"
-            >
-              <Folder className="text-dark-400" size={16} />
-              <span className="font-semibold">Racine (aucun dossier)</span>
-            </button>
+        <div className="space-y-3 p-2 select-none">
 
-            {/* Folders list */}
-            {folderOptions.map((opt) => (
-              <button
-                key={opt.id}
-                onClick={async () => {
-                  try {
-                    await updateNote(movingNoteId, { folder_id: opt.id });
-                    setMovingNoteId(null);
-                  } catch (err) {
-                    alert('Erreur : ' + err.message);
-                  }
-                }}
-                className="w-full text-left px-4 py-3 text-sm hover:bg-dark-600/40 text-dark-100 flex items-center gap-3 transition-colors cursor-pointer border-none"
-              >
-                <Folder className="text-accent-cyan" size={16} />
-                <span>{opt.path}</span>
-              </button>
+          {/* Navigation breadcrumb inside modal */}
+          <div className="flex items-center gap-1 text-xs text-dark-400 flex-wrap">
+            {modalCrumbs.map((crumb, idx, arr) => (
+              <span key={crumb.id ?? 'root'} className="flex items-center gap-1">
+                {idx > 0 && <ChevronRight size={11} className="text-dark-600" />}
+                <button
+                  onClick={() => setMoveModalFolderId(crumb.id)}
+                  className={`hover:text-accent-cyan transition-colors ${
+                    idx === arr.length - 1 ? 'text-dark-200 font-semibold' : 'text-dark-400'
+                  }`}
+                >
+                  {crumb.name}
+                </button>
+              </span>
             ))}
-            
-            {folderOptions.length === 0 && (
-              <div className="p-4 text-center text-sm text-dark-500">
-                Aucun dossier créé pour le moment.
+          </div>
+
+          {/* Folder list */}
+          <div className="max-h-[260px] overflow-y-auto border border-dark-600/30 rounded-xl bg-dark-800/40 custom-scrollbar divide-y divide-dark-600/20">
+
+            {/* Racine — always selectable */}
+            <div
+              className={`flex items-center px-4 py-3.5 text-sm gap-3 transition-colors cursor-pointer ${
+                moveSelectedFolderId === null
+                  ? 'bg-accent-cyan/10 text-accent-cyan'
+                  : 'hover:bg-dark-600/40 text-dark-300'
+              }`}
+              onClick={() => setMoveSelectedFolderId(null)}
+            >
+              <input
+                type="radio"
+                readOnly
+                checked={moveSelectedFolderId === null}
+                className="accent-cyan-400 w-3.5 h-3.5 flex-shrink-0"
+              />
+              <Folder size={15} className="flex-shrink-0 text-dark-400" />
+              <span className="flex-1 font-semibold">Racine</span>
+            </div>
+
+            {/* Sub-folders: radio to select, chevron to navigate */}
+            {visibleFolders.map(folder => {
+              const hasChildren = state.folders.some(f => f.parent_id === folder.id && f.name !== 'Objectifs');
+              return (
+                <div
+                  key={folder.id}
+                  className={`flex items-center px-4 py-3.5 text-sm gap-3 transition-colors cursor-pointer ${
+                    moveSelectedFolderId === folder.id
+                      ? 'bg-accent-cyan/10 text-accent-cyan'
+                      : 'hover:bg-dark-600/40 text-dark-200'
+                  }`}
+                  onClick={() => setMoveSelectedFolderId(folder.id)}
+                >
+                  <input
+                    type="radio"
+                    readOnly
+                    checked={moveSelectedFolderId === folder.id}
+                    className="accent-cyan-400 w-3.5 h-3.5 flex-shrink-0"
+                  />
+                  <Folder size={15} className="text-accent-cyan flex-shrink-0" />
+                  <span className="flex-1">{folder.name}</span>
+                  {hasChildren && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setMoveModalFolderId(folder.id); setMoveSelectedFolderId(undefined); }}
+                      className="p-1 rounded hover:bg-dark-600/60 text-dark-400 hover:text-dark-100 transition-colors"
+                      title="Explorer ce dossier"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+
+            {visibleFolders.length === 0 && moveModalFolderId && (
+              <div className="p-4 text-center text-xs text-dark-500">
+                Aucun sous-dossier
               </div>
             )}
+
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              onClick={() => { setMovingNoteId(null); setMoveModalFolderId(null); setMoveSelectedFolderId(undefined); }}
+              className="px-4 py-2 rounded-xl text-sm text-dark-300 hover:bg-dark-600/40 transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={moveSelectedFolderId === undefined}
+              className="px-4 py-2 rounded-xl text-sm font-semibold bg-accent-cyan/20 text-accent-cyan hover:bg-accent-cyan/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Valider
+            </button>
           </div>
         </div>
       </Modal>
     );
   };
 
-  const toggleFolder = (id) => {
-    const next = new Set(expandedFolders);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setExpandedFolders(next);
-  };
-
   const handleCreateFolder = (parentId = null) => {
     setCreatingFolderParentId(parentId === null ? 'root' : parentId);
-    if (parentId !== null) {
-      const next = new Set(expandedFolders);
-      next.add(parentId);
-      setExpandedFolders(next);
-    }
   };
 
   const submitCreateFolder = async (name, parentId) => {
@@ -126,11 +225,6 @@ export default function NotesPage() {
 
   const handleCreateNote = (folderId = null) => {
     setCreatingNoteInFolderId(folderId === null ? 'root' : folderId);
-    if (folderId !== null) {
-      const next = new Set(expandedFolders);
-      next.add(folderId);
-      setExpandedFolders(next);
-    }
   };
 
   const submitCreateNote = async (title, folderId) => {
@@ -145,7 +239,6 @@ export default function NotesPage() {
     }
   };
 
-  // Filter notes by search
   const matchesSearch = (note) => {
     if (!searchQuery) return true;
     const title = note.title || '';
@@ -154,12 +247,20 @@ export default function NotesPage() {
            content.toLowerCase().includes(searchQuery.toLowerCase());
   };
 
+  const currentFolders = currentFolderId === 'all-notes'
+    ? []
+    : state.folders.filter(f => f.parent_id === currentFolderId && f.name !== 'Objectifs');
+
+  const currentNotes = currentFolderId === 'all-notes'
+    ? state.notes.filter(n => isRegularNote(n) && matchesSearch(n))
+    : state.notes.filter(n => n.folder_id === currentFolderId && isRegularNote(n) && matchesSearch(n));
+
   // If a note is selected, show full-screen editor
   if (selectedNoteId) {
     const selectedNote = state.notes.find(n => n.id === selectedNoteId);
     return (
       <div className="fixed inset-0 md:relative md:h-full flex flex-col animate-in fade-in duration-300 z-[60] bg-dark-900 md:bg-transparent">
-        {/* Mobile Header (Fixed at top) */}
+        {/* Mobile/Desktop Header (Fixed at top) */}
         <div className="flex-none flex items-center justify-between px-4 h-14 md:h-auto md:static relative z-50" style={{ paddingLeft: '80px' }}>
           <div className="flex items-center gap-3">
             <button
@@ -192,7 +293,7 @@ export default function NotesPage() {
     );
   }
 
-  // Explorer view — full width, notes inside tree
+  // Explorer view — navigation-based
   return (
     <div className="flex flex-col h-full max-h-[100dvh] gap-4 animate-in fade-in duration-500 relative">
       {/* Header */}
@@ -205,30 +306,30 @@ export default function NotesPage() {
             Notes
           </h1>
           <div className="absolute right-4 md:right-0 top-1/2 -translate-y-1/2 flex gap-1 sm:gap-2">
-          <button
-            onClick={() => { setSearchOpen(o => !o); if (searchOpen) setSearchQuery(''); }}
-            className={`p-2 rounded-xl transition-all ${searchOpen ? 'bg-accent-cyan/15 text-accent-cyan' : 'hover:bg-dark-700 text-dark-400 hover:text-accent-cyan'}`}
-            title="Rechercher"
-          >
-            <Search size={22} />
-          </button>
-          <button
-            onClick={() => handleCreateFolder(null)}
-            className="p-2 rounded-xl hover:bg-dark-700 text-dark-400 hover:text-accent-cyan transition-all"
-            title="Nouveau dossier"
-          >
-            <FolderPlus size={22} />
-          </button>
-          <button
-            onClick={() => handleCreateNote(null)}
-            className="p-2 rounded-xl hover:bg-dark-700 text-dark-400 hover:text-accent-cyan transition-all"
-            title="Nouvelle note"
-          >
-            <FilePlus size={22} />
-          </button>
+            <button
+              onClick={() => { setSearchOpen(o => !o); if (searchOpen) setSearchQuery(''); }}
+              className={`p-2 rounded-xl transition-all ${searchOpen ? 'bg-accent-cyan/15 text-accent-cyan' : 'hover:bg-dark-700 text-dark-400 hover:text-accent-cyan'}`}
+              title="Rechercher"
+            >
+              <Search size={22} />
+            </button>
+            <button
+              onClick={() => handleCreateFolder(currentFolderId === 'all-notes' ? null : currentFolderId)}
+              className="p-2 rounded-xl hover:bg-dark-700 text-dark-400 hover:text-accent-cyan transition-all"
+              title="Nouveau dossier"
+            >
+              <FolderPlus size={22} />
+            </button>
+            <button
+              onClick={() => handleCreateNote(currentFolderId === 'all-notes' ? null : currentFolderId)}
+              className="p-2 rounded-xl hover:bg-dark-700 text-dark-400 hover:text-accent-cyan transition-all"
+              title="Nouvelle note"
+            >
+              <FilePlus size={22} />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
       {searchOpen && (
         <div className="relative animate-in slide-in-from-top-2 duration-200">
@@ -243,101 +344,157 @@ export default function NotesPage() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto glass rounded-2xl border border-dark-600/30 p-2 custom-scrollbar">
-        {/* "Toutes les notes" — flat list of ALL notes, no folders */}
-        <div className="select-none">
-          <div
-            className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer group transition-all hover:bg-dark-700/50 text-dark-400 hover:text-dark-200"
-            style={{ paddingLeft: '8px' }}
-            onClick={() => toggleFolder('all-notes')}
-          >
-            <button
-              onClick={(e) => { e.stopPropagation(); toggleFolder('all-notes'); }}
-              className={`p-0.5 rounded hover:bg-dark-600 transition-transform ${expandedFolders.has('all-notes') ? 'rotate-90' : ''}`}
-            >
-              <ChevronRight size={14} />
-            </button>
-            <FileText size={16} />
-            <span className="text-sm font-bold truncate flex-1">Toutes les notes</span>
-            <span className="text-[10px] text-dark-500 font-medium opacity-60">
-              {state.notes.filter(n => isRegularNote(n) && matchesSearch(n)).length}
-            </span>
-          </div>
-          {expandedFolders.has('all-notes') && state.notes
-            .filter(n => isRegularNote(n) && matchesSearch(n))
-            .map(note => (
-              <NoteItem
-                key={note.id}
-                note={note}
-                level={1}
-                onSelect={setSelectedNoteId}
-                onDelete={deleteNote}
-                onMove={setMovingNoteId}
-              />
-            ))
-          }
+      <div className="flex-1 overflow-y-auto glass rounded-2xl border border-dark-600/30 p-4 custom-scrollbar flex flex-col gap-2.5">
+        {/* Breadcrumbs */}
+        <div style={{ marginTop: '6px', marginLeft: '6px', paddingLeft: '8px', paddingTop: '6px', paddingRight: '6px', paddingBottom: '5px' }} className="flex items-center flex-wrap gap-1.5 border-b border-dark-600/20 mb-3 text-xs text-dark-400 select-none">
+          {getBreadcrumbs().map((crumb, idx, arr) => (
+            <div key={crumb.id ?? 'crumb-' + idx} className="flex items-center gap-1.5">
+              {idx > 0 && <ChevronRight size={12} className="text-dark-500" />}
+              <button
+                onClick={() => {
+                  setCurrentFolderId(crumb.id);
+                  setCreatingFolderParentId(null);
+                  setCreatingNoteInFolderId(null);
+                }}
+                className={`hover:text-accent-cyan transition-colors font-medium flex items-center gap-1 border-none bg-transparent cursor-pointer ${
+                  idx === arr.length - 1 ? 'text-accent-cyan font-bold pointer-events-none' : ''
+                }`}
+              >
+                {crumb.id === null && <Folder size={14} className="text-dark-400" />}
+                <span>{crumb.name}</span>
+              </button>
+            </div>
+          ))}
         </div>
 
-        {/* Folder tree */}
-        {state.folders.filter(f => !f.parent_id && f.name !== 'Objectifs').map(folder => (
-          <FolderItem
-            key={folder.id}
-            folder={folder}
-            level={0}
-            expandedFolders={expandedFolders}
-            toggleFolder={toggleFolder}
-            folders={state.folders}
-            notes={state.notes}
-            matchesSearch={matchesSearch}
-            onAddSub={handleCreateFolder}
-            onAddNote={handleCreateNote}
-            onDelete={deleteFolder}
-            onDeleteNote={deleteNote}
-            onSelectNote={setSelectedNoteId}
-            onMoveNote={setMovingNoteId}
-            creatingFolderParentId={creatingFolderParentId}
-            onSubmitFolder={submitCreateFolder}
-            creatingNoteInFolderId={creatingNoteInFolderId}
-            onSubmitNote={submitCreateNote}
+        {/* Back option (..) */}
+        {currentFolderId && (
+          <div
+            onClick={() => {
+              if (currentFolderId === 'all-notes') {
+                setCurrentFolderId(null);
+              } else {
+                const folder = state.folders.find(f => f.id === currentFolderId);
+                setCurrentFolderId(folder ? folder.parent_id : null);
+              }
+              setCreatingFolderParentId(null);
+              setCreatingNoteInFolderId(null);
+            }}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-dark-700/40 text-dark-400 hover:text-accent-cyan transition-all select-none"
+          >
+            <ArrowLeft size={16} className="text-dark-500" />
+            <span className="text-sm font-semibold">Dossier parent (..)</span>
+          </div>
+        )}
+
+        {/* "Toutes les notes" row (only at root) */}
+        {currentFolderId === null && (
+          <div
+            onClick={() => {
+              setCurrentFolderId('all-notes');
+              setCreatingFolderParentId(null);
+              setCreatingNoteInFolderId(null);
+            }}
+            style={{ marginLeft: '6px' }}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-dark-700/40 text-dark-400 hover:text-accent-cyan transition-all select-none"
+          >
+            <FileText size={16} className="text-accent-cyan flex-shrink-0" />
+            <span className="text-sm font-bold flex-1">Toutes les notes</span>
+
+          </div>
+        )}
+
+        {/* Folders */}
+        {currentFolders.map(folder => {
+          return (
+            <div
+              key={folder.id}
+              onClick={() => {
+                setCurrentFolderId(folder.id);
+                setCreatingFolderParentId(null);
+                setCreatingNoteInFolderId(null);
+              }}
+              style={{ marginLeft: '6px' }}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer group hover:bg-dark-700/40 text-dark-300 hover:text-dark-100 transition-all select-none"
+            >
+              <Folder size={16} className="text-accent-cyan flex-shrink-0" />
+              <span className="text-sm font-bold flex-1 truncate">{folder.name}</span>
+      <div style={{ marginRight: '6px' }} className="md:opacity-0 md:group-hover:opacity-100 flex items-center gap-2.5">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Supprimer le dossier "${folder.name}" et tout son contenu ?`)) {
+                      deleteFolder(folder.id);
+                    }
+                  }}
+                  className="p-1.5 hover:text-accent-red hover:bg-dark-600/40 rounded-lg transition-all"
+                  title="Supprimer"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Notes */}
+        {currentNotes.map(note => (
+          <NoteItem
+            key={note.id}
+            note={note}
+            onSelect={setSelectedNoteId}
+            onDelete={deleteNote}
+            onMove={setMovingNoteId}
           />
         ))}
 
-        {/* Root-level folder creation */}
-        {creatingFolderParentId === 'root' && (
-          <div className="flex items-center gap-2 px-2 py-1.5" style={{ paddingLeft: '20px' }}>
-            <Folder size={16} className="text-dark-500" />
+        {/* Empty state */}
+        {currentFolders.length === 0 && currentNotes.length === 0 && currentFolderId !== null && (
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center select-none animate-in fade-in duration-300">
+            <Folder size={48} className="text-dark-600 mb-3 opacity-40" />
+            <p className="text-sm font-semibold text-dark-400">Ce dossier est vide</p>
+            <p className="text-xs text-dark-500 mt-1 max-w-[200px]">
+              Créez un sous-dossier ou une note pour commencer.
+            </p>
+          </div>
+        )}
+
+        {/* Inline Folder Creation */}
+        {creatingFolderParentId && (
+          <div className="flex items-center gap-3 px-3 py-2.5">
+            <Folder size={16} className="text-accent-cyan flex-shrink-0" />
             <input
               autoFocus
               type="text"
               placeholder="Nom du dossier..."
-              className="bg-dark-700 border border-accent-cyan/30 rounded px-2 py-0.5 text-xs text-dark-100 focus:outline-none focus:border-accent-cyan w-full"
+              className="bg-dark-800/80 border border-accent-cyan/30 rounded-xl px-3 py-1 text-xs text-dark-100 focus:outline-none focus:border-accent-cyan w-full"
               onKeyDown={(e) => {
-                if (e.key === 'Enter') submitCreateFolder(e.target.value, 'root');
+                if (e.key === 'Enter') submitCreateFolder(e.target.value, creatingFolderParentId);
                 if (e.key === 'Escape') setCreatingFolderParentId(null);
               }}
               onBlur={(e) => {
-                if (e.target.value) submitCreateFolder(e.target.value, 'root');
+                if (e.target.value) submitCreateFolder(e.target.value, creatingFolderParentId);
                 else setCreatingFolderParentId(null);
               }}
             />
           </div>
         )}
 
-        {/* Root-level note creation */}
-        {creatingNoteInFolderId === 'root' && (
-          <div className="flex items-center gap-2 px-2 py-1.5" style={{ paddingLeft: '20px' }}>
-            <FileText size={16} className="text-dark-500" />
+        {/* Inline Note Creation */}
+        {creatingNoteInFolderId && (
+          <div className="flex items-center gap-3 px-3 py-2.5">
+            <FileText size={16} className="text-accent-violet flex-shrink-0" />
             <input
               autoFocus
               type="text"
               placeholder="Titre de la note..."
-              className="bg-dark-700 border border-accent-cyan/30 rounded px-2 py-0.5 text-xs text-dark-100 focus:outline-none focus:border-accent-cyan w-full"
+              className="bg-dark-800/80 border border-accent-cyan/30 rounded-xl px-3 py-1 text-xs text-dark-100 focus:outline-none focus:border-accent-cyan w-full"
               onKeyDown={(e) => {
-                if (e.key === 'Enter') submitCreateNote(e.target.value, 'root');
+                if (e.key === 'Enter') submitCreateNote(e.target.value, creatingNoteInFolderId);
                 if (e.key === 'Escape') setCreatingNoteInFolderId(null);
               }}
               onBlur={(e) => {
-                if (e.target.value) submitCreateNote(e.target.value, 'root');
+                if (e.target.value) submitCreateNote(e.target.value, creatingNoteInFolderId);
                 else setCreatingNoteInFolderId(null);
               }}
             />
@@ -350,26 +507,26 @@ export default function NotesPage() {
 }
 
 // ─── NoteItem ────────────────────────────────────────────────
-function NoteItem({ note, level, onSelect, onDelete, onMove }) {
+function NoteItem({ note, onSelect, onDelete, onMove }) {
   return (
     <div
-      className="flex items-center gap-2 px-2 py-2.5 md:py-1.5 rounded-lg cursor-pointer group transition-all hover:bg-dark-700/50 text-dark-400 hover:text-dark-200"
-      style={{ paddingLeft: `${level * 12 + 8}px` }}
+      style={{ marginLeft: '6px' }}
+      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer group hover:bg-dark-700/40 text-dark-300 hover:text-dark-100 transition-all select-none"
       onClick={() => onSelect(note.id)}
     >
-      <FileText size={15} className="text-dark-500 group-hover:text-accent-cyan transition-colors flex-shrink-0" />
-      <span className="text-sm font-medium truncate flex-1">{note.title || 'Sans titre'}</span>
-      <div className="md:opacity-0 md:group-hover:opacity-100 flex items-center gap-1 transition-opacity opacity-100">
+      <FileText size={16} className="text-dark-500 group-hover:text-accent-cyan transition-colors flex-shrink-0" />
+      <span className="text-sm font-semibold truncate flex-1">{note.title || 'Sans titre'}</span>
+      <div style={{ marginRight: '6px' }} className="md:opacity-0 md:group-hover:opacity-100 flex items-center gap-2.5">
         {onMove && (
           <button
             onClick={(e) => {
               e.stopPropagation();
               onMove(note.id);
             }}
-            className="p-2 hover:text-accent-cyan"
+            className="p-1.5 hover:text-accent-cyan hover:bg-dark-600/40 rounded-lg transition-all"
             title="Déplacer"
           >
-            <Folder size={18} />
+            <Folder size={16} />
           </button>
         )}
         <button
@@ -379,196 +536,12 @@ function NoteItem({ note, level, onSelect, onDelete, onMove }) {
               onDelete(note.id);
             }
           }}
-          className="p-2 hover:text-accent-red"
+          className="p-1.5 hover:text-accent-red hover:bg-dark-600/40 rounded-lg transition-all"
           title="Supprimer"
         >
-          <Trash2 size={18} />
+          <Trash2 size={16} />
         </button>
       </div>
-    </div>
-  );
-}
-
-// ─── NoteCreationInput ───────────────────────────────────────
-function NoteCreationInput({ level, folderId, onSubmit }) {
-  const [name, setName] = useState('');
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      onSubmit(name, folderId);
-      setName('');
-    }
-    if (e.key === 'Escape') {
-      onSubmit('', folderId);
-      setName('');
-    }
-  };
-
-  return (
-    <div className="flex items-center gap-2 px-2 py-1.5" style={{ paddingLeft: `${level * 12 + 8}px` }}>
-      <FileText size={15} className="text-accent-cyan flex-shrink-0" />
-      <input
-        autoFocus
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onBlur={() => {
-          if (name) onSubmit(name, folderId);
-          else onSubmit('', folderId);
-        }}
-        placeholder="Titre de la note..."
-        className="bg-dark-700 border border-accent-cyan/30 rounded px-2 py-0.5 text-xs text-dark-100 focus:outline-none focus:border-accent-cyan w-full"
-      />
-    </div>
-  );
-}
-
-// ─── FolderItem ──────────────────────────────────────────────
-function FolderItem({
-  folder, level, expandedFolders, toggleFolder, folders, notes, matchesSearch,
-  onAddSub, onAddNote, onDelete, onDeleteNote, onSelectNote, onMoveNote,
-  creatingFolderParentId, onSubmitFolder,
-  creatingNoteInFolderId, onSubmitNote,
-}) {
-  const id = folder.id;
-  const isExpanded = expandedFolders.has(id);
-  const childFolders = folders.filter(f => f.parent_id === id);
-  const childNotes = notes.filter(n => n.folder_id === id && matchesSearch(n));
-  const [newName, setNewName] = useState('');
-
-  useEffect(() => {
-    if (creatingFolderParentId !== id) setNewName('');
-  }, [creatingFolderParentId, id]);
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      const n = newName;
-      setNewName('');
-      onSubmitFolder(n, id);
-    }
-    if (e.key === 'Escape') {
-      setNewName('');
-      onSubmitFolder('', id);
-    }
-  };
-
-  return (
-    <div className="select-none">
-      {/* Folder row */}
-      <div
-        className={`flex items-center gap-2 px-2 py-2.5 md:py-1.5 rounded-lg cursor-pointer group transition-all hover:bg-dark-700/50 text-dark-400 hover:text-dark-200`}
-        style={{ paddingLeft: `${level * 12 + 8}px` }}
-        onClick={() => toggleFolder(id)}
-      >
-        <button
-          onClick={(e) => { e.stopPropagation(); toggleFolder(id); }}
-          className={`p-0.5 rounded hover:bg-dark-600 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-        >
-          <ChevronRight size={14} />
-        </button>
-        <Folder size={16} />
-        <span className="text-sm font-bold truncate flex-1">
-          {folder.name}
-        </span>
-        {/* Item count badge */}
-        {(childNotes.length > 0 || childFolders.length > 0) && (
-          <span className="text-[10px] text-dark-500 font-medium opacity-60">
-            {childNotes.length}
-          </span>
-        )}
-        {/* Action buttons */}
-        <div className="md:opacity-0 md:group-hover:opacity-100 flex items-center gap-4 transition-opacity opacity-100">
-          <button onClick={(e) => { e.stopPropagation(); onAddNote(id); }} className="p-2 hover:text-accent-cyan" title="Nouvelle note">
-            <FilePlus size={18} />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); onAddSub(id); }} className="p-2 hover:text-accent-cyan" title="Nouveau sous-dossier">
-            <FolderPlus size={18} />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (window.confirm(`Supprimer le dossier "${folder.name}" et tout son contenu ?`)) {
-                onDelete(id);
-              }
-            }}
-            className="p-2 hover:text-accent-red"
-            title="Supprimer"
-          >
-            <Trash2 size={18} />
-          </button>
-        </div>
-      </div>
-
-      {/* New subfolder input */}
-      {creatingFolderParentId === id && (
-        <div className="flex items-center gap-2 px-2 py-1.5" style={{ paddingLeft: `${(level + 1) * 12 + 8}px` }}>
-          <Folder size={16} className="text-dark-500" />
-          <input
-            autoFocus
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onBlur={() => {
-              if (newName) {
-                const n = newName;
-                setNewName('');
-                onSubmitFolder(n, id);
-              } else {
-                onSubmitFolder('', id);
-              }
-            }}
-            placeholder="Nom du dossier..."
-            className="bg-dark-700 border border-accent-cyan/30 rounded px-2 py-0.5 text-xs text-dark-100 focus:outline-none focus:border-accent-cyan w-full"
-          />
-        </div>
-      )}
-
-      {/* Expanded children: sub-folders then notes */}
-      {isExpanded && (
-        <>
-          {childFolders.map(child => (
-            <FolderItem
-              key={child.id}
-              folder={child}
-              level={level + 1}
-              expandedFolders={expandedFolders}
-              toggleFolder={toggleFolder}
-              folders={folders}
-              notes={notes}
-              matchesSearch={matchesSearch}
-              onAddSub={onAddSub}
-              onAddNote={onAddNote}
-              onDelete={onDelete}
-              onDeleteNote={onDeleteNote}
-              onSelectNote={onSelectNote}
-              onMoveNote={onMoveNote}
-              creatingFolderParentId={creatingFolderParentId}
-              onSubmitFolder={onSubmitFolder}
-              creatingNoteInFolderId={creatingNoteInFolderId}
-              onSubmitNote={onSubmitNote}
-            />
-          ))}
-
-          {/* Notes inside this folder */}
-          {childNotes.map(note => (
-            <NoteItem
-              key={note.id}
-              note={note}
-              level={level + 1}
-              onSelect={onSelectNote}
-              onDelete={onDeleteNote}
-              onMove={onMoveNote}
-            />
-          ))}
-
-          {/* Note creation input inside this folder */}
-          {creatingNoteInFolderId === id && (
-            <NoteCreationInput level={level + 1} folderId={id} onSubmit={onSubmitNote} />
-          )}
-        </>
-      )}
     </div>
   );
 }
