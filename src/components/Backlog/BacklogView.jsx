@@ -25,7 +25,7 @@ export default function BacklogView() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto flex flex-col gap-8">
+    <div className="max-w-3xl mx-auto flex flex-col gap-8 pb-28">
       {/* Header */}
       <div className="flex flex-col items-center justify-center">
         <h1 className="text-2xl font-bold text-dark-100 flex items-center gap-3">
@@ -182,6 +182,9 @@ export default function BacklogView() {
           </p>
         </motion.div>
       )}
+
+      {/* Spacer to allow scrolling past the floating action button */}
+      <div className="h-32 flex-shrink-0" />
 
       {/* Form Modal */}
       <ObjectiveForm

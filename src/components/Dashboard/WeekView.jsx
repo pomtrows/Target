@@ -90,14 +90,14 @@ export default function WeekView() {
   }, [objectives, state.categories]);
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto pb-28">
       {/* Week Navigation */}
       <div className="flex items-center justify-center gap-4 mb-16">
         <button
           onClick={goToPrev}
-          className="p-2 rounded-xl text-dark-400 hover:text-white hover:bg-dark-700/50 transition-all flex-shrink-0"
+          className="p-2 rounded-xl text-dark-400 hover:text-accent-cyan hover:bg-dark-700/50 transition-all flex-shrink-0"
         >
-          <ChevronLeft size={24} />
+          <ChevronLeft size={32} />
         </button>
 
         <div className="text-center px-4">
@@ -144,9 +144,9 @@ export default function WeekView() {
 
         <button
           onClick={goToNext}
-          className="p-2 rounded-xl text-dark-400 hover:text-white hover:bg-dark-700/50 transition-all flex-shrink-0"
+          className="p-2 rounded-xl text-dark-400 hover:text-accent-cyan hover:bg-dark-700/50 transition-all flex-shrink-0"
         >
-          <ChevronRight size={24} />
+          <ChevronRight size={32} />
         </button>
       </div>
 
@@ -242,6 +242,9 @@ export default function WeekView() {
       >
         <Plus size={28} strokeWidth={2.5} />
       </motion.button>
+
+      {/* Spacer to allow scrolling past the floating action button */}
+      <div className="h-32 flex-shrink-0" />
 
       {/* Form Modal */}
       <ObjectiveForm
