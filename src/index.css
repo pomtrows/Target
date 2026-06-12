@@ -450,7 +450,7 @@ body {
   content: '';
   position: absolute;
   left: -1.5rem;
-  top: 0.35rem; /* Reverted to match 1.4 line-height center */
+  top: 0.25rem; /* Adjusted to center checkbox vertically with line-height */
   width: 1.1rem;
   height: 1.1rem;
   border: 2px solid var(--color-dark-500);
