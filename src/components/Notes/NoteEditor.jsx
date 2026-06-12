@@ -661,6 +661,21 @@ export default function NoteEditor({ noteId }) {
             onMouseUp={checkActiveFormats}
             onKeyUp={checkActiveFormats}
             onClick={(e) => {
+              // Open links in a new window/tab
+              const link = e.target.closest('a');
+              if (link) {
+                const url = link.getAttribute('href');
+                if (url) {
+                  e.preventDefault();
+                  let targetUrl = url;
+                  if (!/^https?:\/\//i.test(targetUrl)) {
+                    targetUrl = 'https://' + targetUrl;
+                  }
+                  window.open(targetUrl, '_blank', 'noopener,noreferrer');
+                  return;
+                }
+              }
+
               // Toggle data-checked if clicking on the checkbox area (pseudo-element)
               const li = e.target.closest('li');
               if (li && li.parentNode.classList.contains('checklist')) {
