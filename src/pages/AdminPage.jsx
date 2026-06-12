@@ -22,12 +22,12 @@ export default function AdminPage({ defaultTab = 'categories' }) {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-dark-600/30 pb-6">
-        <div>
-          <h1 className="text-3xl font-black text-dark-100 tracking-tight mb-2">
+      <div className="flex flex-col items-center justify-center text-center gap-6 border-b border-dark-600/30 pb-6">
+        <div className="text-center w-full flex flex-col items-center">
+          <h1 className="text-3xl font-black text-dark-100 tracking-tight mb-2 text-center">
             {activeTab === 'categories' ? 'Gestion des Catégories' : 'Administration des Utilisateurs'}
           </h1>
-          <p className="text-dark-400">
+          <p className="text-dark-400 text-center">
             {activeTab === 'categories' 
               ? 'Personnalisez les catégories d\'objectifs disponibles pour tous les utilisateurs.' 
               : 'Consultez les statistiques de performance et gérez les comptes utilisateurs.'}
