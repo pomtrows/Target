@@ -1,4 +1,41 @@
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ImageRun } from 'docx';
+
+function base64ToUint8Array(base64String) {
+  const base64Data = base64String.split(',')[1] || base64String;
+  const binaryString = window.atob(base64Data);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function getImageDimensions(dataUrl) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      resolve({ width: img.width, height: img.height });
+    };
+    img.onerror = () => {
+      resolve({ width: 300, height: 200 });
+    };
+    img.src = dataUrl;
+  });
+}
+
+function getImageType(dataUrl) {
+  const match = dataUrl.match(/^data:image\/([a-zA-Z+]+);base64,/);
+  if (match && match[1]) {
+    const ext = match[1].toLowerCase();
+    if (ext === 'jpg' || ext === 'jpeg') return 'jpeg';
+    if (ext === 'png') return 'png';
+    if (ext === 'gif') return 'gif';
+    if (ext === 'bmp') return 'bmp';
+    if (ext === 'svg+xml' || ext === 'svg') return 'svg';
+  }
+  return 'jpeg'; // default
+}
 
 function parseHexColor(colorStr) {
   if (!colorStr) return null;
@@ -46,7 +83,7 @@ function parseHexColor(colorStr) {
  * @param {string} htmlContent - Raw HTML from note editor
  * @returns {Paragraph[]}
  */
-export function parseHTMLToDocxParagraphs(htmlContent) {
+export async function parseHTMLToDocxParagraphs(htmlContent) {
   if (!htmlContent) return [];
   
   const parser = new DOMParser();
@@ -54,7 +91,7 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
   const body = doc.body;
   const paragraphs = [];
 
-  const blockTags = ['H1', 'H2', 'H3', 'P', 'DIV', 'BLOCKQUOTE', 'UL', 'OL', 'LI', 'HR', 'TABLE', 'PRE'];
+  const blockTags = ['H1', 'H2', 'H3', 'P', 'DIV', 'BLOCKQUOTE', 'UL', 'OL', 'LI', 'HR', 'TABLE', 'PRE', 'IMG'];
   
   function isBlockElement(node) {
     if (!node || node.nodeType !== 1) return false;
@@ -62,12 +99,12 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
   }
 
   /**
-   * Recursively walks inline elements and returns TextRun objects.
+   * Recursively walks inline elements and returns TextRun or ImageRun objects.
    */
-  function parseInline(element, parentFormat = {}) {
+  async function parseInline(element, parentFormat = {}) {
     let runs = [];
     
-    function walk(node, currentFormat) {
+    async function walk(node, currentFormat) {
       if (node.nodeType === 3) { // TEXT_NODE
         const text = node.textContent;
         if (text) {
@@ -94,10 +131,38 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
           return;
         }
 
+        if (tag === 'IMG') {
+          const src = node.getAttribute('src');
+          if (src) {
+            try {
+              const dimensions = await getImageDimensions(src);
+              const maxWidth = 550;
+              let width = dimensions.width;
+              let height = dimensions.height;
+              if (width > maxWidth) {
+                height = (maxWidth / width) * height;
+                width = maxWidth;
+              }
+              const arrayBuffer = base64ToUint8Array(src);
+              runs.push(new ImageRun({
+                data: arrayBuffer,
+                transformation: {
+                  width: width,
+                  height: height,
+                },
+                type: getImageType(src),
+              }));
+            } catch (err) {
+              console.error("Failed to parse inline image for docx export:", err);
+            }
+          }
+          return;
+        }
+
         // Avoid double-processing if block tags are nested inside inline contexts
         if (isBlockElement(node)) {
           for (const child of node.childNodes) {
-            walk(child, currentFormat);
+            await walk(child, currentFormat);
           }
           return;
         }
@@ -122,13 +187,13 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
         }
         
         for (const child of node.childNodes) {
-          walk(child, format);
+          await walk(child, format);
         }
       }
     }
     
     for (const child of element.childNodes) {
-      walk(child, parentFormat);
+      await walk(child, parentFormat);
     }
     
     return runs;
@@ -149,7 +214,7 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
   /**
    * Recursively processes nodes, identifying structural blocks vs. inline runs.
    */
-  function processNode(node) {
+  async function processNode(node) {
     if (node.nodeType === 3) { // TEXT_NODE
       const text = node.textContent;
       if (text && text.trim()) {
@@ -168,15 +233,48 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
     const isStarred = node.getAttribute?.('data-star') === 'true';
 
     // If it's a known inline element, collect its text runs
-    const inlineTags = ['SPAN', 'B', 'STRONG', 'I', 'EM', 'U', 'STRIKE', 'DEL', 'S', 'CODE', 'A', 'BR', 'FONT'];
-    if (inlineTags.includes(tag)) {
-      const runs = parseInline(node);
+    const inlineTags = ['SPAN', 'B', 'STRONG', 'I', 'EM', 'U', 'STRIKE', 'DEL', 'S', 'CODE', 'A', 'BR', 'FONT', 'IMG'];
+    if (inlineTags.includes(tag) && tag !== 'IMG') {
+      const runs = await parseInline(node);
       accumulatedInlineRuns.push(...runs);
       return;
     }
 
     // Block element encountered: flush any accumulated inline runs
     flushAccumulated();
+
+    if (tag === 'IMG') {
+      const src = node.getAttribute('src');
+      if (src) {
+        try {
+          const dimensions = await getImageDimensions(src);
+          const maxWidth = 550;
+          let width = dimensions.width;
+          let height = dimensions.height;
+          if (width > maxWidth) {
+            height = (maxWidth / width) * height;
+            width = maxWidth;
+          }
+          const arrayBuffer = base64ToUint8Array(src);
+          paragraphs.push(new Paragraph({
+            children: [
+              new ImageRun({
+                data: arrayBuffer,
+                transformation: {
+                  width: width,
+                  height: height
+                },
+                type: getImageType(src),
+              })
+            ],
+            spacing: { before: 120, after: 120 }
+          }));
+        } catch (err) {
+          console.error("Failed to parse block image for docx export:", err);
+        }
+      }
+      return;
+    }
 
     // Check if it's a container element containing other block elements
     if (tag === 'DIV' || tag === 'P') {
@@ -186,11 +284,11 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
 
       if (hasBlockChildren) {
         for (const child of node.childNodes) {
-          processNode(child);
+          await processNode(child);
         }
         flushAccumulated();
       } else {
-        const runs = parseInline(node);
+        const runs = await parseInline(node);
         if (isStarred) runs.unshift(new TextRun({ text: "⭐ " }));
         paragraphs.push(new Paragraph({
           children: runs,
@@ -202,7 +300,7 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
 
     // Structural elements
     if (tag === 'H1') {
-      const runs = parseInline(node, { bold: true, size: 40 });
+      const runs = await parseInline(node, { bold: true, size: 40 });
       if (isStarred) runs.unshift(new TextRun({ text: "⭐ ", size: 40 }));
       paragraphs.push(new Paragraph({
         children: runs,
@@ -210,7 +308,7 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
         spacing: { before: 240, after: 120 },
       }));
     } else if (tag === 'H2') {
-      const runs = parseInline(node, { bold: true, size: 32 });
+      const runs = await parseInline(node, { bold: true, size: 32 });
       if (isStarred) runs.unshift(new TextRun({ text: "⭐ ", size: 32 }));
       paragraphs.push(new Paragraph({
         children: runs,
@@ -218,7 +316,7 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
         spacing: { before: 180, after: 80 },
       }));
     } else if (tag === 'H3') {
-      const runs = parseInline(node, { bold: true, size: 28 });
+      const runs = await parseInline(node, { bold: true, size: 28 });
       if (isStarred) runs.unshift(new TextRun({ text: "⭐ ", size: 28 }));
       paragraphs.push(new Paragraph({
         children: runs,
@@ -226,7 +324,7 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
         spacing: { before: 140, after: 60 },
       }));
     } else if (tag === 'BLOCKQUOTE') {
-      const runs = parseInline(node, { italics: true });
+      const runs = await parseInline(node, { italics: true });
       if (isStarred) runs.unshift(new TextRun({ text: "⭐ " }));
       paragraphs.push(new Paragraph({
         children: runs,
@@ -249,7 +347,7 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
         if (li.nodeType !== 1 || li.tagName.toUpperCase() !== 'LI') continue;
         const liStarred = li.getAttribute?.('data-star') === 'true';
         const isChecked = li.getAttribute?.('data-checked') === 'true';
-        const runs = parseInline(li);
+        const runs = await parseInline(li);
         
         if (isChecklist) {
           const prefix = isChecked ? "☑  " : "☐  ";
@@ -283,7 +381,7 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
       }
     } else {
       // Fallback block container
-      const runs = parseInline(node);
+      const runs = await parseInline(node);
       if (isStarred) runs.unshift(new TextRun({ text: "⭐ " }));
       paragraphs.push(new Paragraph({
         children: runs,
@@ -293,7 +391,7 @@ export function parseHTMLToDocxParagraphs(htmlContent) {
   }
 
   for (const child of body.childNodes) {
-    processNode(child);
+    await processNode(child);
   }
 
   flushAccumulated();
@@ -324,7 +422,7 @@ export async function exportNoteToDocx(note) {
         minute: '2-digit'
       });
 
-  const contentParagraphs = parseHTMLToDocxParagraphs(note.content);
+  const contentParagraphs = await parseHTMLToDocxParagraphs(note.content);
 
   const doc = new Document({
     sections: [

@@ -6,7 +6,7 @@ import {
   Heading1, Heading2, Heading3,
   List, ListOrdered, CheckSquare, Quote, Code, Link2, Minus, Star,
   Clock, Type, AlignLeft, AlignCenter, AlignRight,
-  Undo2, Redo2
+  Undo2, Redo2, Image
 } from 'lucide-react';
 import { exportNoteToDocx } from '../../utils/docxExport';
 
@@ -142,6 +142,47 @@ const isDarkColor = (color) => {
   return luma < 120;
 };
 
+const compressImage = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Compress as JPEG with 0.7 quality
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        resolve(dataUrl);
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
+
 const Separator = () => <div className="w-px h-5 bg-dark-600/40 mx-1" />;
 
 export default function NoteEditor({ noteId }) {
@@ -157,6 +198,7 @@ export default function NoteEditor({ noteId }) {
   const [currentColor, setCurrentColor] = useState('#e2e8f0');
   const saveTimeoutRef = useRef(null);
   const editorRef = useRef(null);
+  const fileInputRef = useRef(null);
   const isInitializing = useRef(false);
 
   // Close color picker on outside click
@@ -205,6 +247,73 @@ export default function NoteEditor({ noteId }) {
       handleSave(newTitle ?? title, getEditorContent());
     }, 1000);
   }, [title, noteId, handleSave]);
+
+  const insertImage = useCallback((dataUrl) => {
+    editorRef.current?.focus();
+    document.execCommand('insertImage', false, dataUrl);
+    scheduleSave(title);
+  }, [title, scheduleSave]);
+
+  const handleFileChange = async (e) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        try {
+          const compressed = await compressImage(file);
+          insertImage(compressed);
+        } catch (err) {
+          console.error("Compression error:", err);
+        }
+      }
+      e.target.value = '';
+    }
+  };
+
+  const handlePaste = useCallback(async (e) => {
+    const items = e.clipboardData?.items;
+    if (items) {
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            try {
+              const compressed = await compressImage(file);
+              insertImage(compressed);
+            } catch (err) {
+              console.error("Paste compression error:", err);
+            }
+          }
+          break;
+        }
+      }
+    }
+  }, [insertImage]);
+
+  const handleDrop = useCallback(async (e) => {
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        for (const file of imageFiles) {
+          try {
+            const compressed = await compressImage(file);
+            insertImage(compressed);
+          } catch (err) {
+            console.error("Drop compression error:", err);
+          }
+        }
+      }
+    }
+  }, [insertImage]);
+
+  const handleDragOver = useCallback((e) => {
+    if (e.dataTransfer?.types.includes('Files')) {
+      e.preventDefault();
+    }
+  }, []);
 
   // MutationObserver to catch ALL changes (including inside nested contentEditable spans)
   useEffect(() => {
@@ -360,6 +469,9 @@ export default function NoteEditor({ noteId }) {
         if (url) document.execCommand('createLink', false, url);
         break;
       }
+      case 'image':
+        fileInputRef.current?.click();
+        break;
       case 'checklist': {
         const sel = window.getSelection();
         if (sel.rangeCount > 0) {
@@ -581,6 +693,7 @@ export default function NoteEditor({ noteId }) {
         {/* Insert */}
         <ToolbarButton icon={Minus} action="hr" title="Séparateur" onClick={execFormat} />
         <ToolbarButton icon={Link2} action="link" title="Lien" onClick={execFormat} />
+        <ToolbarButton icon={Image} action="image" title="Image" onClick={execFormat} />
       </div>
     </div>
   );
@@ -660,6 +773,9 @@ export default function NoteEditor({ noteId }) {
             onKeyDown={handleKeyDown}
             onMouseUp={checkActiveFormats}
             onKeyUp={checkActiveFormats}
+            onPaste={handlePaste}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
             onClick={(e) => {
               // Open links in a new window/tab
               const link = e.target.closest('a');
@@ -695,6 +811,14 @@ export default function NoteEditor({ noteId }) {
               fontSize: '1.1rem',
               lineHeight: '1.8',
             }}
+          />
+
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileChange}
           />
         </div>
       </div>

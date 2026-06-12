@@ -299,10 +299,7 @@ export default function NotesPage() {
       {/* Header */}
       <div className="md:relative md:flex-none md:flex md:flex-col md:items-center md:mb-6 fixed top-3 left-0 w-full z-40 pointer-events-none md:pointer-events-auto">
         <div className="pointer-events-auto flex items-center justify-center relative w-full max-w-7xl mx-auto px-4 md:px-0">
-          <h1 className="text-3xl font-black text-dark-100 flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-br from-accent-cyan/20 to-accent-violet/20 rounded-2xl shadow-lg shadow-accent-cyan/10">
-              <FileText className="text-accent-cyan" size={28} />
-            </div>
+          <h1 className="text-3xl font-black text-dark-100">
             Notes
           </h1>
           <div className="absolute right-4 md:right-0 top-1/2 -translate-y-1/2 flex gap-1 sm:gap-2">
@@ -315,17 +312,17 @@ export default function NotesPage() {
             </button>
             <button
               onClick={() => handleCreateFolder(currentFolderId === 'all-notes' ? null : currentFolderId)}
-              className="p-2 rounded-xl hover:bg-dark-700 text-dark-400 hover:text-accent-cyan transition-all"
+              className="p-2 rounded-xl hover:bg-dark-700 text-dark-400 hover:text-accent-cyan transition-all cursor-pointer"
               title="Nouveau dossier"
             >
-              <FolderPlus size={22} />
+              <Folder size={22} fill="#fbbf24" stroke="#d97706" />
             </button>
             <button
               onClick={() => handleCreateNote(currentFolderId === 'all-notes' ? null : currentFolderId)}
-              className="p-2 rounded-xl hover:bg-dark-700 text-dark-400 hover:text-accent-cyan transition-all"
+              className="p-2 rounded-xl hover:bg-dark-700 text-dark-400 hover:text-accent-cyan transition-all cursor-pointer"
               title="Nouvelle note"
             >
-              <FilePlus size={22} />
+              <FileText size={22} fill="#ddd6fe" stroke="#8b5cf6" />
             </button>
           </div>
         </div>

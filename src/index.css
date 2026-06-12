@@ -408,6 +408,16 @@ body {
   color: var(--color-accent-violet);
 }
 
+.note-editor-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  margin: 1rem 0;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  display: block;
+}
+
 /* ===== Note Gutter & Markers ===== */
 .note-editor-content {
   padding-left: 1.5rem !important;
