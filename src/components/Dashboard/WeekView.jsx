@@ -97,8 +97,8 @@ function CompactObjectiveCard({ objective, weekId, onEdit, onDelete }) {
       className="group/card relative rounded-2xl bg-dark-800 border border-dark-600/60 hover:bg-dark-700/50 hover:border-dark-400/80 shadow-sm hover:shadow transition-all flex flex-col justify-between overflow-hidden flex-shrink-0"
       style={{ padding: '16px' }}
     >
-      {/* Edit/Delete Icons (Top Right on hover) */}
-      <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover/card:opacity-100 transition-opacity z-10">
+      {/* Edit/Delete Icons (Visible on mobile, top right on hover for desktop) */}
+      <div className="absolute top-2 right-2 flex gap-1.5 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 transition-opacity z-10">
         <button
           onClick={(e) => { e.stopPropagation(); onEdit?.(objective); }}
           className="p-1 rounded text-dark-300 hover:text-dark-100 hover:bg-dark-600/50 transition-all cursor-pointer"
