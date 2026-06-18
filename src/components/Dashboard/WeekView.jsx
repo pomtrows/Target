@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Pencil, AlertTriangle, List, Clock, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Pencil, AlertTriangle, List, Clock, Check, FileText } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
+import { useNotes } from '../../contexts/NotesContext';
+import NoteEditor from '../Notes/NoteEditor';
 import { getCurrentWeekId, getAdjacentWeeks, formatWeekLabelParts, isCurrentWeek, getWeeksInMonth } from '../../utils/weekUtils';
 import { getObjectivesForWeek, getWeekProgressPercent, isWeekComplete, getWeekProgress, getObjectiveProgress, getProgressColor, countSetBits, isBitSet } from '../../utils/progressUtils';
 import ProgressRing from './ProgressRing';
@@ -44,10 +46,53 @@ const compareTimes = (a, b) => {
 
 function CompactObjectiveCard({ objective, weekId, onEdit, onDelete }) {
   const { state, dispatch } = useTarget();
+  const { state: notesState, createFolder, createNote } = useNotes();
   const { startTime, endTime } = getObjectiveSchedule(objective);
   const weekProgress = state.progress[weekId] || {};
   const current = weekProgress[objective.id] || 0;
   
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [objectiveNoteId, setObjectiveNoteId] = useState(null);
+
+  const handleOpenNotes = async (e) => {
+    e.stopPropagation();
+    
+    // Find or create "Objectifs" folder
+    let folder = notesState.folders.find(f => f.name === 'Objectifs');
+    let folderId = folder?.id;
+    
+    if (!folderId) {
+      try {
+        const newFolder = await createFolder('Objectifs');
+        folderId = newFolder.id;
+      } catch (err) {
+        console.error('Error creating Objectifs folder:', err);
+        return;
+      }
+    }
+    
+    // Find or create note for this objective
+    let note = notesState.notes.find(n => n.folder_id === folderId && n.title === objective.id);
+    let noteId = note?.id;
+    
+    if (!noteId) {
+      try {
+        const newNote = await createNote(objective.id, folderId);
+        noteId = newNote.id;
+      } catch (err) {
+        console.error('Error creating note for objective:', err);
+        return;
+      }
+    }
+    
+    setObjectiveNoteId(noteId);
+    setShowNotesModal(true);
+  };
+
+  const notesFolder = notesState.folders.find(f => f.name === 'Objectifs');
+  const objectiveNote = notesFolder ? notesState.notes.find(n => n.folder_id === notesFolder.id && n.title === objective.id) : null;
+  const hasNotes = !!(objectiveNote && objectiveNote.content && objectiveNote.content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim() !== '');
+
   const hasSubObjectives = Number(objective.target) === 1 && objective.subObjectives?.length > 0;
   const isCheckbox = objective.target < 1;
   const isChecked = current >= 1;
@@ -97,25 +142,9 @@ function CompactObjectiveCard({ objective, weekId, onEdit, onDelete }) {
       className="group/card relative rounded-2xl bg-dark-800 border border-dark-600/60 hover:bg-dark-700/50 hover:border-dark-400/80 shadow-sm hover:shadow transition-all flex flex-col justify-between overflow-hidden flex-shrink-0"
       style={{ padding: '16px' }}
     >
-      {/* Edit/Delete Icons (Visible on mobile, top right on hover for desktop) */}
-      <div className="absolute top-2 right-2 flex gap-1.5 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 transition-opacity z-10">
-        <button
-          onClick={(e) => { e.stopPropagation(); onEdit?.(objective); }}
-          className="p-1 rounded text-dark-300 hover:text-dark-100 hover:bg-dark-600/50 transition-all cursor-pointer"
-        >
-          <Pencil size={12} />
-        </button>
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete?.(objective.id); }}
-          className="p-1 rounded text-dark-400 hover:text-accent-red hover:bg-accent-red/10 transition-all cursor-pointer"
-        >
-          <Trash2 size={12} />
-        </button>
-      </div>
-
       <div>
-        {/* Header: Time & Icon */}
-        <div className="flex items-center justify-between gap-2 mb-2 pr-12">
+        {/* Header: Time & Icon & Edit/Delete Actions */}
+        <div className="flex items-center justify-between gap-2 mb-2">
           {timeText ? (
             <span className="text-[10px] font-bold text-accent-cyan bg-accent-cyan/10 px-2 py-0.5 rounded-md flex items-center gap-1">
               <Clock size={10} />
@@ -124,7 +153,36 @@ function CompactObjectiveCard({ objective, weekId, onEdit, onDelete }) {
           ) : (
             <div />
           )}
-          <span className="text-xs" title={category?.label}>{category?.icon}</span>
+          
+          <div className="flex items-center gap-3.5">
+            {/* Edit/Delete Icons (Visible on mobile, hover-triggered for desktop) */}
+            <div className="flex gap-3 opacity-100 md:opacity-0 md:group-hover/card:opacity-100 transition-opacity z-10">
+              <button
+                onClick={handleOpenNotes}
+                className={`p-1 rounded transition-all cursor-pointer border-none bg-transparent ${
+                  hasNotes 
+                    ? 'text-accent-cyan hover:bg-accent-cyan/10'
+                    : 'text-dark-400 hover:text-dark-100 hover:bg-dark-600/50'
+                }`}
+                title={hasNotes ? "Voir les notes (contient du texte)" : "Prendre des notes"}
+              >
+                <FileText size={12} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onEdit?.(objective); }}
+                className="p-1 rounded text-dark-300 hover:text-dark-100 hover:bg-dark-600/50 transition-all cursor-pointer border-none bg-transparent"
+              >
+                <Pencil size={12} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete?.(objective.id); }}
+                className="p-1 rounded text-dark-400 hover:text-accent-red hover:bg-accent-red/10 transition-all cursor-pointer border-none bg-transparent"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
+            <span className="text-xs" title={category?.label}>{category?.icon}</span>
+          </div>
         </div>
 
         {/* Title */}
@@ -232,6 +290,19 @@ function CompactObjectiveCard({ objective, weekId, onEdit, onDelete }) {
           </div>
         )}
       </div>
+
+      {showNotesModal && objectiveNoteId && (
+        <Modal
+          isOpen={showNotesModal}
+          onClose={() => setShowNotesModal(false)}
+          title={`Notes : ${objective.title}`}
+          maxWidth="max-w-4xl"
+        >
+          <div className="h-[65vh] flex flex-col -m-5 overflow-hidden rounded-b-2xl">
+            <NoteEditor noteId={objectiveNoteId} />
+          </div>
+        </Modal>
+      )}
     </motion.div>
   );
 }
@@ -368,15 +439,18 @@ export default function WeekView() {
               </motion.div>
             </AnimatePresence>
 
-            <div className="mt-2 min-h-[24px]">
+            <div className="mt-2 min-h-[24px] flex justify-center items-center">
               {isCurrentWeek(currentWeek) ? (
-                <span className="inline-block text-xs font-medium text-accent-cyan bg-accent-cyan/10 px-3 py-1 rounded-full">
+                <span 
+                  className="inline-block text-xs font-medium text-accent-cyan bg-accent-cyan/10 rounded-full"
+                  style={{ padding: '3px 8px' }}
+                >
                   Semaine en cours
                 </span>
               ) : (
                 <button
                   onClick={goToCurrentWeek}
-                  className="text-xs text-accent-cyan hover:underline flex items-center gap-1 mx-auto bg-transparent border-none cursor-pointer"
+                  className="text-xs text-accent-cyan hover:underline flex items-center gap-1 bg-transparent border-none cursor-pointer"
                 >
                   <Calendar size={12} />
                   Revenir à cette semaine
