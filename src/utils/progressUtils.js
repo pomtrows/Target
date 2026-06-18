@@ -91,9 +91,11 @@ export function getProgressColor(progress) {
  */
 export function getObjectivesForWeek(objectives, weekId, getWeeksInMonthFn) {
   return objectives.filter((obj) => {
-    if (!obj.assignments || obj.assignments.length === 0) return false;
+    if (!obj.assignments || !Array.isArray(obj.assignments) || obj.assignments.length === 0) return false;
 
     return obj.assignments.some((assignment) => {
+      if (typeof assignment !== 'string') return false;
+
       // Direct week assignment
       if (assignment === weekId) return true;
 

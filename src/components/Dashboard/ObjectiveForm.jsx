@@ -5,9 +5,50 @@ import { useSport } from '../../contexts/SportContext';
 import Modal from '../Shared/Modal';
 import { getCurrentWeekId, getSelectableWeeks, formatWeekLabel } from '../../utils/weekUtils';
 
+const getInitialSchedule = (objective) => {
+  const assignments = objective?.assignments || [];
+  const daysStr = assignments.find(a => typeof a === 'string' && a.startsWith('days:'));
+  const timeStr = assignments.find(a => typeof a === 'string' && a.startsWith('time:'));
+  
+  let days = [];
+  if (daysStr) {
+    days = daysStr.replace('days:', '').split(',').map(Number).filter(d => !isNaN(d));
+  }
+  
+  let startTime = '';
+  let endTime = '';
+  if (timeStr) {
+    const parts = timeStr.replace('time:', '').split('-');
+    startTime = parts[0] || '';
+    endTime = parts[1] || '';
+  }
+  
+  return { days, startTime, endTime };
+};
+
+const getInitialWeeks = (objective, defaultWeek) => {
+  const assignments = objective?.assignments || [];
+  const weeks = assignments.filter(a => typeof a === 'string' && !a.startsWith('days:') && !a.startsWith('time:'));
+  return weeks;
+};
+
+const TIME_SLOTS = (() => {
+  const slots = [];
+  for (let h = 6; h <= 22; h++) {
+    const padH = String(h).padStart(2, '0');
+    slots.push(`${padH}:00`);
+    slots.push(`${padH}:30`);
+  }
+  slots.push('23:00');
+  return slots;
+})();
+
 export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObjective = null }) {
   const { state, dispatch } = useTarget();
   const { sessions } = useSport();
+
+  const initialSchedule = getInitialSchedule(editObjective);
+  const initialWeeks = getInitialWeeks(editObjective, weekId);
 
   const [title, setTitle] = useState(editObjective?.title || '');
   const [target, setTarget] = useState(editObjective?.target || 1);
@@ -16,17 +57,99 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
   const [subObjectives, setSubObjectives] = useState(editObjective?.subObjectives || []);
   const [assignType, setAssignType] = useState(
     editObjective
-      ? (editObjective.assignments?.length > 0 ? 'week' : 'backlog')
+      ? (initialWeeks.length > 0 ? 'week' : 'backlog')
       : (weekId ? 'week' : 'backlog')
   );
   
   const [assignWeeks, setAssignWeeks] = useState(
-    editObjective?.assignments?.length > 0 
-      ? editObjective.assignments 
+    initialWeeks.length > 0 
+      ? initialWeeks 
       : (weekId ? [weekId] : [getCurrentWeekId()])
+  );
+  const [scheduleDays, setScheduleDays] = useState(initialSchedule.days);
+  const [startTime, setStartTime] = useState(initialSchedule.startTime);
+  const [endTime, setEndTime] = useState(initialSchedule.endTime);
+  const [showPlanningSection, setShowPlanningSection] = useState(
+    initialSchedule.days.length > 0 || !!initialSchedule.startTime || !!initialSchedule.endTime
   );
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  // Dedicated planning modal states
+  const [isPlanningModalOpen, setIsPlanningModalOpen] = useState(false);
+  const [tempDays, setTempDays] = useState([]);
+  const [tempStartTime, setTempStartTime] = useState('');
+  const [tempEndTime, setTempEndTime] = useState('');
+
+  // Sync temp planning state when modal opens
+  useEffect(() => {
+    if (isPlanningModalOpen) {
+      setTempDays(scheduleDays);
+      setTempStartTime(startTime);
+      setTempEndTime(endTime);
+    }
+  }, [isPlanningModalOpen, scheduleDays, startTime, endTime]);
+
+  const handleTimeSlotClick = (time) => {
+    if (!tempStartTime || (tempStartTime && tempEndTime)) {
+      setTempStartTime(time);
+      setTempEndTime('');
+    } else {
+      if (time > tempStartTime) {
+        setTempEndTime(time);
+      } else {
+        setTempStartTime(time);
+        setTempEndTime('');
+      }
+    }
+  };
+
+  const selectedDay = tempDays.length === 1 ? tempDays[0] : null;
+  const otherPlannedObjectives = selectedDay 
+    ? state.objectives.filter(obj => {
+        if (editObjective && obj.id === editObjective.id) return false;
+        
+        const assignments = obj.assignments || [];
+        const inCurrentWeek = assignments.includes(weekId);
+        if (!inCurrentWeek) return false;
+        
+        const daysStr = assignments.find(a => typeof a === 'string' && a.startsWith('days:'));
+        if (!daysStr) return false;
+        
+        const days = daysStr.replace('days:', '').split(',').map(Number);
+        return days.includes(selectedDay);
+      })
+    : [];
+
+  const getConflictForTime = (time) => {
+    if (tempDays.length !== 1) return null;
+    const day = tempDays[0];
+    
+    for (const obj of state.objectives) {
+      if (editObjective && obj.id === editObjective.id) continue;
+      
+      const assignments = obj.assignments || [];
+      const inCurrentWeek = assignments.includes(weekId);
+      if (!inCurrentWeek) continue;
+      
+      const daysStr = assignments.find(a => typeof a === 'string' && a.startsWith('days:'));
+      if (!daysStr) continue;
+      const days = daysStr.replace('days:', '').split(',').map(Number);
+      if (!days.includes(day)) continue;
+      
+      const timeStr = assignments.find(a => typeof a === 'string' && a.startsWith('time:'));
+      if (!timeStr) continue;
+      
+      const parts = timeStr.replace('time:', '').split('-');
+      const start = parts[0];
+      const end = parts[1];
+      
+      if (start && end && time >= start && time < end) {
+        return obj;
+      }
+    }
+    return null;
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -41,6 +164,9 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
   // Sync state when editObjective or isOpen changes
   useEffect(() => {
     if (isOpen) {
+      const initSched = getInitialSchedule(editObjective);
+      const initWks = getInitialWeeks(editObjective, weekId);
+
       setTitle(editObjective?.title || '');
       setTarget(editObjective?.target || 1);
       setCategoryId(editObjective?.categoryId || 'autre');
@@ -48,14 +174,18 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
       setSubObjectives(editObjective?.subObjectives || []);
       setAssignType(
         editObjective
-          ? (editObjective.assignments?.length > 0 ? 'week' : 'backlog')
+          ? (initWks.length > 0 ? 'week' : 'backlog')
           : (weekId ? 'week' : 'backlog')
       );
       setAssignWeeks(
-        editObjective?.assignments?.length > 0 
-          ? editObjective.assignments 
+        initWks.length > 0 
+          ? initWks 
           : (weekId ? [weekId] : [getCurrentWeekId()])
       );
+      setScheduleDays(initSched.days);
+      setStartTime(initSched.startTime);
+      setEndTime(initSched.endTime);
+      setShowPlanningSection(initSched.days.length > 0 || !!initSched.startTime || !!initSched.endTime);
     }
   }, [isOpen, editObjective, weekId]);
 
@@ -76,14 +206,34 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
     if (!title.trim()) return;
 
     const assignments = [];
-    if (assignType === 'week' && assignWeeks.length > 0) {
+    const isScheduled = scheduleDays.length > 0 || startTime || endTime;
+    const finalAssignType = isScheduled ? 'week' : assignType;
+
+    if (finalAssignType === 'week' && assignWeeks.length > 0) {
       assignments.push(...assignWeeks);
+    }
+
+    // Add schedule info
+    if (scheduleDays.length > 0) {
+      assignments.push(`days:${scheduleDays.join(',')}`);
+    }
+    if (startTime || endTime) {
+      assignments.push(`time:${startTime}-${endTime}`);
     }
 
     // Only keep sub-objectives if target is 1 and they have a title
     const finalSubObjectives = Number(target) === 1 
       ? subObjectives.filter(s => s.title.trim() !== '')
       : [];
+
+    console.log('--- Submitting Objective ---');
+    console.log('Title:', title);
+    console.log('assignType:', assignType);
+    console.log('assignWeeks:', assignWeeks);
+    console.log('scheduleDays:', scheduleDays);
+    console.log('startTime:', startTime);
+    console.log('endTime:', endTime);
+    console.log('Generated assignments:', assignments);
 
     if (editObjective) {
       dispatch({
@@ -119,6 +269,10 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
     setCategoryId('autre');
     setSportSessionId('');
     setSubObjectives([]);
+    setScheduleDays([]);
+    setStartTime('');
+    setEndTime('');
+    setShowPlanningSection(false);
     setAssignType(weekId ? 'week' : 'backlog');
     setAssignWeeks(weekId ? [weekId] : [getCurrentWeekId()]);
     setIsDropdownOpen(false);
@@ -128,11 +282,12 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
   const isSportCategory = selectedCategory && (selectedCategory.id === 'sport' || selectedCategory.label.toLowerCase() === 'sport');
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={editObjective ? 'Modifier l\'objectif' : 'Nouvel objectif'}
-    >
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={editObjective ? 'Modifier l\'objectif' : 'Nouvel objectif'}
+      >
       <form 
         onSubmit={handleSubmit} 
         style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}
@@ -277,6 +432,55 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           )}
         </div>
 
+        {/* Planning (Jours et Horaires) */}
+        {!showPlanningSection ? (
+          <button
+            type="button"
+            onClick={() => {
+              setIsPlanningModalOpen(true);
+              setAssignType('week');
+            }}
+            className="w-full flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all py-2.5 bg-dark-800/40 text-dark-300 border border-dark-600/30 hover:border-accent-cyan/50 hover:text-accent-cyan cursor-pointer"
+          >
+            📅 Planifier l'objectif
+          </button>
+        ) : (
+          <div className="bg-dark-900/30 p-4 rounded-2xl border border-dark-600/20 flex items-center justify-between">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-bold text-dark-400 uppercase tracking-wider">
+                Planification
+              </span>
+              <span className="text-sm text-dark-200">
+                {scheduleDays.length > 0
+                  ? `${scheduleDays.map(d => ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'][d - 1]).join(', ')}`
+                  : 'Aucun jour sélectionné'}
+                {startTime || endTime ? ` à ${startTime || '00:00'} - ${endTime || '23:59'}` : ''}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setIsPlanningModalOpen(true)}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/20 hover:bg-accent-cyan/20 transition-all"
+              >
+                Modifier
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPlanningSection(false);
+                  setScheduleDays([]);
+                  setStartTime('');
+                  setEndTime('');
+                }}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-accent-red bg-accent-red/10 border border-accent-red/20 hover:bg-accent-red/20 transition-all"
+              >
+                Retirer
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Assignment */}
         <div>
           <label className="block text-sm font-medium text-dark-200 mb-3">
@@ -372,6 +576,191 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           </button>
         </div>
       </form>
-    </Modal>
+      </Modal>
+
+      {/* Dedicated Planning Modal */}
+      <Modal
+        isOpen={isPlanningModalOpen}
+        onClose={() => setIsPlanningModalOpen(false)}
+        title="Planification de l'objectif"
+        maxWidth="max-w-md"
+      >
+        <div className="flex flex-col gap-5" style={{ marginTop: '-10px' }}>
+
+          {/* Days selector */}
+          <div className="flex flex-col gap-3">
+            <label className="block text-xs font-bold text-dark-400 uppercase tracking-wider">
+              Jours de la semaine
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].map((day, idx) => {
+                const dayNum = idx + 1;
+                const isSelected = tempDays.includes(dayNum);
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => {
+                      if (isSelected) {
+                        setTempDays(tempDays.filter(d => d !== dayNum));
+                      } else {
+                        setTempDays([...tempDays, dayNum].sort());
+                      }
+                    }}
+                    className={`py-3 rounded-xl text-xs font-bold transition-all border cursor-pointer text-center ${
+                      isSelected
+                        ? 'bg-accent-cyan/20 border-accent-cyan text-accent-cyan shadow-lg shadow-accent-cyan/10'
+                        : 'bg-dark-800/40 border-dark-600/30 text-dark-300 hover:border-dark-500/50'
+                    } ${idx === 6 ? 'col-span-2' : ''}`}
+                  >
+                    {day}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Visual Agenda / Timeline (Outlook style) */}
+          <div className="flex flex-col gap-3">
+            <label className="block text-xs font-bold text-dark-400 uppercase tracking-wider">
+              Créneau horaire (Vue Agenda)
+            </label>
+            <div className="border border-dark-600/35 rounded-xl bg-dark-900/40 overflow-hidden">
+              <div 
+                style={{ padding: '5px 10px' }} 
+                className="bg-dark-800/80 border-b border-dark-600/35 flex justify-between items-center text-xs font-bold text-dark-300 uppercase"
+              >
+                <span>Sélection Agenda</span>
+                <span className="text-accent-cyan font-mono">
+                  {tempStartTime && tempEndTime 
+                    ? `De ${tempStartTime} à ${tempEndTime}` 
+                    : tempStartTime 
+                      ? `Début à ${tempStartTime} (cliquez sur l'heure de fin)`
+                      : 'Choisissez un créneau'
+                  }
+                </span>
+              </div>
+              <div className="max-h-[320px] overflow-y-auto custom-scrollbar p-2 space-y-1 bg-dark-950/20">
+                {TIME_SLOTS.map((time) => {
+                  const isStart = tempStartTime === time;
+                  const isEnd = tempEndTime === time;
+                  const isInRange = tempStartTime && tempEndTime && time > tempStartTime && time < tempEndTime;
+                  const isSelected = isStart || isEnd || isInRange;
+                  const conflictObj = getConflictForTime(time);
+                  const cat = conflictObj ? state.categories.find(c => c.id === conflictObj.categoryId) : null;
+
+                  return (
+                    <button
+                      key={time}
+                      type="button"
+                      onClick={() => handleTimeSlotClick(time)}
+                      className={`w-full flex items-center gap-4 px-3 py-1.5 rounded-lg text-left transition-all border cursor-pointer ${
+                        isStart
+                          ? 'bg-accent-cyan/25 border-accent-cyan text-accent-cyan font-bold shadow-sm'
+                          : isEnd
+                            ? 'bg-accent-violet/25 border-accent-violet text-accent-violet font-bold shadow-sm'
+                            : isInRange
+                              ? 'bg-accent-cyan/10 border-accent-cyan/20 text-accent-cyan/85'
+                              : conflictObj
+                                ? 'bg-dark-800/20 border-dashed border-dark-700/50 text-dark-400 opacity-60 hover:opacity-95'
+                                : 'bg-transparent border-transparent text-dark-300 hover:bg-dark-850/50 hover:border-dark-700/30'
+                      }`}
+                    >
+                      <span className="text-xs font-mono w-10 flex-shrink-0 text-dark-400">
+                        {time}
+                      </span>
+                      <span className="flex-1 text-[11px] font-medium flex items-center gap-1.5">
+                        {conflictObj ? (
+                          <>
+                            <span style={{ color: cat?.color }}>
+                              {cat?.icon || '📅'}
+                            </span>
+                            <span className="font-semibold text-dark-300">{conflictObj.title}</span>
+                            <span className="text-[10px] text-dark-500">(Déjà planifié)</span>
+                          </>
+                        ) : (
+                          isStart ? '🏁 Heure de début' : isEnd ? '🛑 Heure de fin' : isInRange ? '⚡ Durée réservée' : ''
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Time fields (Precise Adjustment) */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-dark-400 uppercase tracking-wider mb-2">
+                Ajustement Début
+              </label>
+              <input
+                type="time"
+                value={tempStartTime}
+                onChange={(e) => setTempStartTime(e.target.value)}
+                className="w-full bg-dark-800/50 border border-dark-600/35 rounded-xl py-2 px-3 text-sm text-dark-100 focus:outline-none focus:border-accent-cyan/50"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-dark-400 uppercase tracking-wider mb-2">
+                Ajustement Fin
+              </label>
+              <input
+                type="time"
+                value={tempEndTime}
+                onChange={(e) => setTempEndTime(e.target.value)}
+                className="w-full bg-dark-800/50 border border-dark-600/35 rounded-xl py-2 px-3 text-sm text-dark-100 focus:outline-none focus:border-accent-cyan/50"
+              />
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-4 pt-4 border-t border-dark-600/20">
+            <button
+              type="button"
+              onClick={() => {
+                setTempDays([]);
+                setTempStartTime('');
+                setTempEndTime('');
+              }}
+              style={{ padding: '5px 12px' }}
+              className="rounded-xl text-xs font-semibold text-accent-red bg-accent-red/10 border border-accent-red/25 hover:bg-accent-red/20 transition-all cursor-pointer"
+            >
+              Réinitialiser
+            </button>
+            <div className="flex-1 flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setIsPlanningModalOpen(false)}
+                style={{ padding: '5px 12px' }}
+                className="rounded-xl text-xs font-medium text-dark-400 hover:text-dark-200 cursor-pointer bg-transparent border-none"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setScheduleDays(tempDays);
+                  setStartTime(tempStartTime);
+                  setEndTime(tempEndTime);
+                  if (tempDays.length > 0 || tempStartTime || tempEndTime) {
+                    setShowPlanningSection(true);
+                    setAssignType('week');
+                  } else {
+                    setShowPlanningSection(false);
+                  }
+                  setIsPlanningModalOpen(false);
+                }}
+                style={{ padding: '5px 12px' }}
+                className="rounded-xl text-xs font-bold text-white bg-gradient-to-r from-accent-cyan to-accent-violet hover:opacity-90 transition-opacity cursor-pointer border-none"
+              >
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+    </>
   );
 }
