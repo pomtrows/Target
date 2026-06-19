@@ -315,6 +315,8 @@ export default function WeekView() {
   const [direction, setDirection] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [showPlanning, setShowPlanning] = useState(false);
+  const [filterIncomplete, setFilterIncomplete] = useState(false);
+  const [filterToday, setFilterToday] = useState(false);
 
   const objectives = useMemo(
     () => getObjectivesForWeek(state.objectives, currentWeek, getWeeksInMonth),
@@ -325,6 +327,23 @@ export default function WeekView() {
   const progress = getWeekProgress(objectives, weekProgress);
   const progressPercent = getWeekProgressPercent(objectives, weekProgress);
   const unlocked = isWeekComplete(objectives, weekProgress) && objectives.length > 0;
+
+  const todayDayId = new Date().getDay() === 0 ? 7 : new Date().getDay();
+
+  const filteredObjectives = useMemo(() => {
+    return objectives.filter((obj) => {
+      if (filterIncomplete) {
+        const wp = weekProgress[obj.id] || 0;
+        const t = obj.target || 1;
+        if (wp >= t) return false;
+      }
+      if (filterToday) {
+        const { days } = getObjectiveSchedule(obj);
+        if (!days.includes(todayDayId)) return false;
+      }
+      return true;
+    });
+  }, [objectives, filterIncomplete, filterToday, weekProgress, todayDayId]);
 
   const { prev, next } = getAdjacentWeeks(currentWeek);
 
@@ -363,7 +382,7 @@ export default function WeekView() {
   // Group objectives by category
   const groupedObjectives = useMemo(() => {
     const groups = {};
-    objectives.forEach((obj) => {
+    filteredObjectives.forEach((obj) => {
       const cat = state.categories.find((c) => c.id === obj.categoryId);
       const key = cat?.id || 'autre';
       if (!groups[key]) {
@@ -385,7 +404,7 @@ export default function WeekView() {
       const orderB = categoryOrderMap[b.category.id] !== undefined ? categoryOrderMap[b.category.id] : 999;
       return orderA - orderB;
     });
-  }, [objectives, state.categories]);
+  }, [filteredObjectives, state.categories]);
 
   const dayColumns = useMemo(() => [
     { id: 1, label: 'Lundi' },
@@ -439,24 +458,6 @@ export default function WeekView() {
               </motion.div>
             </AnimatePresence>
 
-            <div className="mt-2 min-h-[24px] flex justify-center items-center">
-              {isCurrentWeek(currentWeek) ? (
-                <span 
-                  className="inline-block text-xs font-medium text-accent-cyan bg-accent-cyan/10 rounded-full"
-                  style={{ padding: '3px 8px' }}
-                >
-                  Semaine en cours
-                </span>
-              ) : (
-                <button
-                  onClick={goToCurrentWeek}
-                  className="text-xs text-accent-cyan hover:underline flex items-center gap-1 bg-transparent border-none cursor-pointer"
-                >
-                  <Calendar size={12} />
-                  Revenir à cette semaine
-                </button>
-              )}
-            </div>
           </div>
 
           <button
@@ -541,14 +542,56 @@ export default function WeekView() {
         </div>
       )}
 
+      {/* Filters Bar */}
+      <div 
+        className="flex flex-wrap items-center justify-center gap-3 animate-in fade-in duration-300"
+        style={{ marginTop: showPlanning ? '12px' : '0px', marginBottom: '24px' }}
+      >
+        <button
+          onClick={() => setFilterIncomplete(!filterIncomplete)}
+          className={`flex items-center gap-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+            filterIncomplete
+              ? 'bg-accent-violet/15 text-accent-violet border border-accent-violet/50 shadow-sm font-bold'
+              : 'bg-dark-800/40 text-dark-400 border border-dark-600/25 hover:border-dark-500/40 hover:text-dark-200'
+          }`}
+          style={{ padding: '5px 12px' }}
+        >
+          <Clock size={14} />
+          <span>Non complétés</span>
+        </button>
+
+        <button
+          onClick={() => {
+            const newVal = !filterToday;
+            setFilterToday(newVal);
+            if (newVal) {
+              setCurrentWeek(getCurrentWeekId());
+            }
+          }}
+          className={`flex items-center gap-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+            filterToday
+              ? 'bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/50 shadow-sm font-bold'
+              : 'bg-dark-800/40 text-dark-400 border border-dark-600/25 hover:border-dark-500/40 hover:text-dark-200'
+          }`}
+          style={{ padding: '5px 12px' }}
+        >
+          <Calendar size={14} />
+          <span>Aujourd'hui</span>
+        </button>
+      </div>
+
       {/* Main Content Area */}
       {showPlanning ? (
         <div 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in duration-300 mt-12 sm:mt-0"
+          className={`animate-in fade-in duration-300 mt-12 sm:mt-0 ${
+            filterToday 
+              ? 'flex justify-center max-w-md mx-auto w-full' 
+              : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'
+          }`}
           style={{ paddingLeft: '0px', paddingRight: '0px', marginTop: '24px' }}
         >
-          {dayColumns.map((col) => {
-            const items = objectives.filter((obj) => {
+          {(filterToday ? dayColumns.filter((col) => col.id === todayDayId) : dayColumns).map((col) => {
+            const items = filteredObjectives.filter((obj) => {
               const { days } = getObjectiveSchedule(obj);
               if (col.id === 'unscheduled') {
                 return days.length === 0;
@@ -559,7 +602,7 @@ export default function WeekView() {
             return (
               <div 
                 key={col.id} 
-                className="glass rounded-3xl border border-dark-600/25 flex flex-col min-h-[220px]"
+                className="glass rounded-3xl border border-dark-600/25 flex flex-col min-h-[220px] w-full"
                 style={{ padding: '16px 0' }}
               >
                 <div 
@@ -567,11 +610,6 @@ export default function WeekView() {
                   style={{ marginLeft: '16px', marginRight: '16px' }}
                 >
                   <h4 className="text-sm font-bold text-dark-200 tracking-wide">{col.label}</h4>
-                  {items.length > 0 && (
-                    <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-accent-cyan/15 text-accent-cyan">
-                      {items.length}
-                    </span>
-                  )}
                 </div>
                 <div 
                   className="flex flex-col gap-3 flex-1 pb-2"
