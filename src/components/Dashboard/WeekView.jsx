@@ -468,37 +468,39 @@ export default function WeekView() {
         </div>
 
         {/* Header Actions: Toggle view */}
-        <div className="fixed top-[12px] left-1/2 -translate-x-1/2 z-[80] md:absolute md:top-1/2 md:right-0 md:-translate-y-1/2 md:left-auto md:translate-x-0 flex-shrink-0">
-          <div 
-            className="flex items-center gap-3 bg-dark-800/95 rounded-full border border-dark-600/30 backdrop-blur-md flex-shrink-0 shadow-sm"
-            style={{ padding: '4px 6px' }}
-          >
-            <button
-              onClick={() => setShowPlanning(false)}
-              className={`flex items-center gap-1.5 rounded-full text-xs font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
-                !showPlanning
-                  ? 'bg-accent-cyan/15 text-accent-cyan'
-                  : 'text-dark-400 hover:text-dark-200'
-              }`}
-              style={{ padding: '3px 8px' }}
+        {!showForm && (
+          <div className="fixed top-[12px] left-1/2 -translate-x-1/2 z-[80] md:absolute md:top-1/2 md:right-0 md:-translate-y-1/2 md:left-auto md:translate-x-0 flex-shrink-0">
+            <div 
+              className="flex items-center gap-3 bg-dark-800/95 rounded-full border border-dark-600/30 backdrop-blur-md flex-shrink-0 shadow-sm"
+              style={{ padding: '4px 6px' }}
             >
-              <List size={13} />
-              <span>Liste</span>
-            </button>
-            <button
-              onClick={() => setShowPlanning(true)}
-              className={`flex items-center gap-1.5 rounded-full text-xs font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
-                showPlanning
-                  ? 'bg-accent-cyan/15 text-accent-cyan'
-                  : 'text-dark-400 hover:text-dark-200'
-              }`}
-              style={{ padding: '3px 8px' }}
-            >
-              <Calendar size={13} />
-              <span>Planning</span>
-            </button>
+              <button
+                onClick={() => setShowPlanning(false)}
+                className={`flex items-center gap-1.5 rounded-full text-xs font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
+                  !showPlanning
+                    ? 'bg-accent-cyan/15 text-accent-cyan'
+                    : 'text-dark-400 hover:text-dark-200'
+                }`}
+                style={{ padding: '3px 8px' }}
+              >
+                <List size={13} />
+                <span>Liste</span>
+              </button>
+              <button
+                onClick={() => setShowPlanning(true)}
+                className={`flex items-center gap-1.5 rounded-full text-xs font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
+                  showPlanning
+                    ? 'bg-accent-cyan/15 text-accent-cyan'
+                    : 'text-dark-400 hover:text-dark-200'
+                }`}
+                style={{ padding: '3px 8px' }}
+              >
+                <Calendar size={13} />
+                <span>Planning</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Progress Ring + Stats (Only in list view) */}

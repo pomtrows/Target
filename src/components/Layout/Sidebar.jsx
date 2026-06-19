@@ -31,7 +31,7 @@ export default function Sidebar() {
       {/* Mobile toggle */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed top-4 left-4 z-[100] md:hidden p-2 rounded-xl glass text-dark-200 hover:text-dark-100 transition-colors"
+        className="fixed top-4 left-4 z-[100] md:hidden p-2 rounded-xl glass text-dark-200 hover:text-dark-100 transition-colors mobile-sidebar-toggle"
       >
         <Menu size={22} />
       </button>
