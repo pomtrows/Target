@@ -572,7 +572,7 @@ export default function WeekView() {
                   )}
                 </div>
                 <div 
-                  className="flex flex-col gap-3 flex-1 overflow-y-auto max-h-[400px] custom-scrollbar pb-2"
+                  className="flex flex-col gap-3 flex-1 pb-2"
                   style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '4px' }}
                 >
                   {items.map((obj) => (
