@@ -373,21 +373,21 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           </div>
         )}
 
-        {/* Category */}
+         {/* Category */}
         <div>
-          <label className="block text-sm font-medium text-dark-200 mb-3">
+          <label className="block text-sm font-medium text-dark-200 mb-1.5">
             Catégorie
           </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
             {state.categories.map((cat) => (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => setCategoryId(cat.id)}
-                className={`flex items-center gap-2 rounded-xl text-sm transition-all ${
+                className={`flex items-center gap-2 rounded-xl text-sm transition-all border ${
                   categoryId === cat.id
-                    ? 'border-2'
-                    : 'border border-dark-600/30 hover:border-dark-500/50'
+                    ? ''
+                    : 'border-dark-600/30 hover:border-dark-500/50'
                 }`}
                 style={
                   categoryId === cat.id
@@ -395,13 +395,13 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
                         borderColor: cat.color,
                         backgroundColor: `${cat.color}15`,
                         color: cat.color,
-                        padding: '2px 12px',
+                        padding: '0px 8px',
                       }
-                    : { color: 'var(--color-dark-200)', padding: '2px 12px' }
+                    : { color: 'var(--color-dark-200)', padding: '0px 8px' }
                 }
               >
                 <span className="text-lg">{cat.icon}</span>
-                <span className="text-base font-medium">{cat.label}</span>
+                <span className="text-sm font-medium">{cat.label}</span>
               </button>
             ))}
           </div>
