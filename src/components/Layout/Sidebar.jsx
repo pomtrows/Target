@@ -1,9 +1,16 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Target, Inbox, BarChart3, Settings, Menu, X, Sun, Moon, LogOut, Users, FileText, Dumbbell } from 'lucide-react';
-import { useState } from 'react';
+import { Target, Inbox, BarChart3, Settings, Menu, X, Sun, Moon, LogOut, Users, FileText, Dumbbell, Bell, BellOff, Info, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+import Modal from '../Shared/Modal';
+import {
+  isNotificationSupported,
+  getNotificationStatus,
+  requestNotificationPermission,
+  sendTestNotification
+} from '../../utils/notificationService';
 
 const navItems = [
   { path: '/', label: 'Objectifs', icon: Target },
@@ -20,6 +27,47 @@ export default function Sidebar() {
   const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
   const { logout, isAdmin } = useAuth();
+
+  // Notification settings states
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [notifSupported, setNotifSupported] = useState(false);
+  const [notifPermission, setNotifPermission] = useState('default');
+  const [notifEnabled, setNotifEnabled] = useState(true);
+  const [testResult, setTestResult] = useState(null);
+
+  useEffect(() => {
+    setNotifSupported(isNotificationSupported());
+    setNotifPermission(getNotificationStatus());
+    const enabled = localStorage.getItem('notifications_enabled') !== 'false';
+    setNotifEnabled(enabled);
+  }, [showNotificationSettings]);
+
+  const handleRequestPermission = async () => {
+    const res = await requestNotificationPermission();
+    setNotifPermission(res);
+    if (res === 'granted') {
+      localStorage.setItem('notifications_enabled', 'true');
+      setNotifEnabled(true);
+    }
+  };
+
+  const handleToggleNotifications = () => {
+    const newVal = !notifEnabled;
+    setNotifEnabled(newVal);
+    localStorage.setItem('notifications_enabled', newVal ? 'true' : 'false');
+  };
+
+  const handleTestNotification = async () => {
+    setTestResult('sending');
+    const success = await sendTestNotification();
+    if (success) {
+      setTestResult('success');
+      setTimeout(() => setTestResult(null), 3000);
+    } else {
+      setTestResult('failed');
+      setTimeout(() => setTestResult(null), 3000);
+    }
+  };
 
   const filteredNavItems = navItems.filter(item => {
     if (item.path.startsWith('/admin')) return isAdmin;
@@ -110,7 +158,7 @@ export default function Sidebar() {
         <div className="px-4 py-4 border-t border-dark-600/30 mb-32" style={{ paddingLeft: '15px' }}>
           <button
             onClick={toggleTheme}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-400 hover:text-dark-200 hover:bg-dark-700/50 transition-all duration-200"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-400 hover:text-dark-200 hover:bg-dark-700/50 transition-all duration-200 animate-fade-in"
           >
             <motion.div
               key={isDark ? 'dark' : 'light'}
@@ -124,16 +172,119 @@ export default function Sidebar() {
           </button>
 
           <button
+            onClick={() => setShowNotificationSettings(true)}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-400 hover:text-dark-200 hover:bg-dark-700/50 transition-all duration-200 mt-2"
+          >
+            {notifEnabled && notifPermission === 'granted' ? <Bell size={20} className="text-accent-cyan animate-pulse" /> : <BellOff size={20} />}
+            Notifications
+          </button>
+
+          <button
             onClick={logout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-500 hover:text-accent-red hover:bg-accent-red/10 transition-all duration-200 mt-2"
           >
             <LogOut size={20} />
             Déconnexion
           </button>
-
-
         </div>
       </motion.aside>
+
+      {/* Notification Settings Modal */}
+      <Modal
+        isOpen={showNotificationSettings}
+        onClose={() => setShowNotificationSettings(false)}
+        title="Paramètres de Notifications ⏱️"
+        maxWidth="max-w-md"
+      >
+        <div className="flex flex-col gap-6 text-dark-200">
+          <p className="text-sm leading-relaxed text-dark-300">
+            Activez les notifications pour recevoir des alertes automatiques <strong>15 minutes</strong> avant le début de vos objectifs planifiés.
+          </p>
+
+          {!notifSupported ? (
+            <div className="flex gap-3 p-4 bg-accent-red/10 border border-accent-red/20 rounded-2xl text-accent-red text-sm">
+              <Info size={18} className="flex-shrink-0 mt-0.5" />
+              <span>Votre navigateur ou appareil ne supporte pas les notifications locales.</span>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {/* Permission Status */}
+              <div className="flex justify-between items-center bg-dark-900/40 p-4 rounded-2xl border border-dark-600/30">
+                <span className="text-sm font-semibold">Autorisation système</span>
+                <span className={`text-xs font-black uppercase px-2.5 py-1 rounded-lg ${
+                  notifPermission === 'granted' ? 'bg-accent-green/20 text-accent-green' :
+                  notifPermission === 'denied' ? 'bg-accent-red/20 text-accent-red' :
+                  'bg-dark-600/30 text-dark-300'
+                }`}>
+                  {notifPermission === 'granted' ? 'Autorisé' :
+                   notifPermission === 'denied' ? 'Bloqué' :
+                   'Non configuré'}
+                </span>
+              </div>
+
+              {/* Toggle to turn notifications on/off in app */}
+              {notifPermission === 'granted' && (
+                <div className="flex justify-between items-center bg-dark-900/40 p-4 rounded-2xl border border-dark-600/30">
+                  <span className="text-sm font-semibold">Activer les alertes de planning</span>
+                  <button
+                    onClick={handleToggleNotifications}
+                    className={`w-12 h-6 rounded-full transition-all relative border-none cursor-pointer ${
+                      notifEnabled ? 'bg-accent-cyan' : 'bg-dark-600'
+                    }`}
+                  >
+                    <motion.div
+                      layout
+                      className="w-5 h-5 bg-dark-900 rounded-full absolute top-0.5 left-0.5"
+                      style={{ x: notifEnabled ? '24px' : '0px' }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    />
+                  </button>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              {notifPermission === 'default' && (
+                <button
+                  onClick={handleRequestPermission}
+                  className="w-full py-4 rounded-xl bg-gradient-to-r from-accent-cyan to-accent-violet text-dark-900 font-black text-sm flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all cursor-pointer border-none"
+                >
+                  <Bell size={16} />
+                  Autoriser les notifications
+                </button>
+              )}
+
+              {notifPermission === 'denied' && (
+                <div className="flex gap-3 p-4 bg-accent-orange/10 border border-accent-orange/20 rounded-2xl text-accent-orange text-xs leading-relaxed">
+                  <Info size={16} className="flex-shrink-0 mt-0.5" />
+                  <span>
+                    Les notifications sont bloquées par votre navigateur. Veuillez ouvrir les paramètres de votre navigateur ou de votre système pour autoriser les notifications de TARGET.
+                  </span>
+                </div>
+              )}
+
+              {notifPermission === 'granted' && notifEnabled && (
+                <button
+                  onClick={handleTestNotification}
+                  disabled={testResult === 'sending'}
+                  className="w-full py-3 rounded-xl bg-dark-700 hover:bg-dark-600 text-dark-100 font-bold text-sm flex items-center justify-center gap-2 border border-dark-600 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {testResult === 'success' ? (
+                    <>
+                      <CheckCircle2 size={16} className="text-accent-green" />
+                      Notification envoyée !
+                    </>
+                  ) : (
+                    <>
+                      <Bell size={16} />
+                      {testResult === 'sending' ? 'Envoi...' : 'Tester la notification'}
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </Modal>
     </>
   );
 }

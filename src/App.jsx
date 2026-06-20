@@ -15,6 +15,30 @@ import { SportProvider } from './contexts/SportContext';
 import SportPage from './pages/SportPage';
 
 
+import { useEffect } from 'react';
+import { checkAndTriggerNotifications } from './utils/notificationService';
+import { useTarget } from './contexts/TargetContext';
+
+function NotificationScheduler() {
+  const { state } = useTarget();
+
+  useEffect(() => {
+    if (!state.objectives || state.objectives.length === 0) return;
+
+    // Check immediately on load/change
+    checkAndTriggerNotifications(state.objectives);
+
+    // Schedule checks every 60 seconds
+    const interval = setInterval(() => {
+      checkAndTriggerNotifications(state.objectives);
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [state.objectives]);
+
+  return null;
+}
+
 function AppContent() {
   const { user } = useAuth();
 
@@ -24,6 +48,7 @@ function AppContent() {
 
   return (
     <TargetProvider>
+      <NotificationScheduler />
       <NotesProvider>
         <SportProvider>
           <div className="flex h-screen overflow-hidden">

@@ -9,7 +9,7 @@ export default defineConfig({
     react(), 
     tailwindcss(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       includeAssets: ['pwa-icon.png'],
       manifest: {
         name: 'Target - Vos Objectifs',
