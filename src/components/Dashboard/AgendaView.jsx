@@ -175,7 +175,7 @@ export default function AgendaView({ currentWeekId, onEdit, onDelete }) {
             </div>
 
             {/* Calendar Grid Columns */}
-            <div className="flex-1 grid grid-cols-7 divide-x divide-dark-600/25 relative w-full" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
+            <div className="grid grid-cols-7 divide-x divide-dark-600/25 relative w-full" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
               
               {/* Horizontal Grid lines */}
               <div className="absolute inset-0 pointer-events-none flex flex-col">
