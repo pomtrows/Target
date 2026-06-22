@@ -29,7 +29,7 @@ const getObjectiveSchedule = (objective) => {
 
 const HOUR_HEIGHT = 60; // 60px per hour (1px per minute)
 const START_HOUR = 0;
-const END_HOUR = 23;
+const END_HOUR = 24;
 const HOURS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
 
 export default function AgendaView({ currentWeekId, onEdit, onDelete }) {
@@ -111,7 +111,7 @@ export default function AgendaView({ currentWeekId, onEdit, onDelete }) {
         {/* Fixed Left Hours Scale (Visible and sticky on the left) */}
         <div className="w-14 sm:w-16 flex flex-col bg-dark-800/20 border-r border-dark-600/30 flex-shrink-0 select-none z-30">
           {/* Top spacer to align with the Day Headers */}
-          <div className="h-[65px] border-b border-dark-600/30 flex-shrink-0" />
+          <div className="h-[70px] border-b border-dark-600/30 flex-shrink-0" />
           
           {/* Hours scale list (with local vertical sync via CSS or scroll) */}
           <div className="flex-1 overflow-y-hidden pointer-events-none relative" id="hours-scroll-sync">
@@ -146,14 +146,14 @@ export default function AgendaView({ currentWeekId, onEdit, onDelete }) {
           <div className="min-w-[650px] md:min-w-0 flex-1 flex flex-col relative">
             
             {/* Day Headers Row */}
-            <div className="flex border-b border-dark-600/30 bg-dark-800/60 sticky top-0 z-20 w-full">
-              <div className="flex-1 grid grid-cols-7 divide-x divide-dark-600/20">
+            <div className="flex border-b border-dark-600/30 bg-dark-800/60 sticky top-0 z-20 w-full h-[70px] flex-shrink-0">
+              <div className="flex-1 grid grid-cols-7 divide-x divide-dark-600/20 h-full">
                 {days.map((day) => {
                   const today = isToday(day.date);
                   return (
                     <div 
                       key={day.id} 
-                      className={`py-3 text-center flex flex-col items-center justify-center gap-1 ${
+                      className={`h-full text-center flex flex-col items-center justify-center gap-0.5 ${
                         today ? 'bg-accent-cyan/5' : ''
                       }`}
                     >
