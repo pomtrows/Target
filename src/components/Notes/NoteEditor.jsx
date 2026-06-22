@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNotes } from '../../contexts/NotesContext';
+import { useTarget } from '../../contexts/TargetContext';
 import { 
   Loader2, Check, CloudOff,
   Bold, Italic, Underline, Strikethrough,
@@ -341,11 +342,17 @@ export default function NoteEditor({ noteId }) {
     scheduleSave(e.target.value);
   };
 
+  const { state: targetState } = useTarget();
+  const linkedObjective = isObjectiveNote && targetState?.objectives 
+    ? targetState.objectives.find(o => o.id === note?.title) 
+    : null;
+  const exportTitle = linkedObjective ? linkedObjective.title : (title || 'Sans titre');
+
   const handleExport = useCallback(async () => {
     if (!note) return;
     const currentNote = {
       ...note,
-      title: title || 'Sans titre',
+      title: exportTitle,
       content: getEditorContent(),
       updated_at: new Date().toISOString()
     };
@@ -354,7 +361,7 @@ export default function NoteEditor({ noteId }) {
     } catch (err) {
       alert("Erreur lors de l'exportation : " + err.message);
     }
-  }, [note, title]);
+  }, [note, exportTitle]);
 
   const handleContentInput = () => {
     if (isInitializing.current) return;
