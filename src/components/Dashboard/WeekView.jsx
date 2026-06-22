@@ -1,16 +1,20 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Pencil, AlertTriangle, List, Clock, Check, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Pencil, AlertTriangle, List, Clock, Check, FileText, Columns3 } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useNotes } from '../../contexts/NotesContext';
 import NoteEditor from '../Notes/NoteEditor';
-import { getCurrentWeekId, getAdjacentWeeks, formatWeekLabelParts, isCurrentWeek, getWeeksInMonth } from '../../utils/weekUtils';
+import { getCurrentWeekId, getAdjacentWeeks, formatWeekLabelParts, isCurrentWeek, getWeeksInMonth, getWeekDates, getWeekIdFromDate } from '../../utils/weekUtils';
 import { getObjectivesForWeek, getWeekProgressPercent, isWeekComplete, getWeekProgress, getObjectiveProgress, getProgressColor, countSetBits, isBitSet } from '../../utils/progressUtils';
 import ProgressRing from './ProgressRing';
 import ObjectiveCard from './ObjectiveCard';
 import RewardBanner from './RewardBanner';
 import ObjectiveForm from './ObjectiveForm';
 import Modal from '../Shared/Modal';
+import AgendaView from './AgendaView';
+import MonthView from './MonthView';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 const getObjectiveSchedule = (objective) => {
   const assignments = objective?.assignments || [];
@@ -314,7 +318,7 @@ export default function WeekView() {
   const [editObjective, setEditObjective] = useState(null);
   const [direction, setDirection] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [showPlanning, setShowPlanning] = useState(false);
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('planning_view_mode') || 'list');
   const [filterIncomplete, setFilterIncomplete] = useState(false);
   const [filterToday, setFilterToday] = useState(false);
 
@@ -347,14 +351,33 @@ export default function WeekView() {
 
   const { prev, next } = getAdjacentWeeks(currentWeek);
 
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    localStorage.setItem('planning_view_mode', mode);
+  };
+
   const goToPrev = () => {
     setDirection(-1);
-    setCurrentWeek(prev);
+    if (viewMode === 'month') {
+      const dates = getWeekDates(currentWeek);
+      const date = dates ? new Date(dates.start) : new Date();
+      date.setMonth(date.getMonth() - 1);
+      setCurrentWeek(getWeekIdFromDate(date));
+    } else {
+      setCurrentWeek(prev);
+    }
   };
 
   const goToNext = () => {
     setDirection(1);
-    setCurrentWeek(next);
+    if (viewMode === 'month') {
+      const dates = getWeekDates(currentWeek);
+      const date = dates ? new Date(dates.start) : new Date();
+      date.setMonth(date.getMonth() + 1);
+      setCurrentWeek(getWeekIdFromDate(date));
+    } else {
+      setCurrentWeek(next);
+    }
   };
 
   const goToCurrentWeek = () => {
@@ -417,13 +440,13 @@ export default function WeekView() {
     { id: 'unscheduled', label: 'Non planifiés' }
   ], []);
 
+  const isWideLayout = viewMode !== 'list';
+
   return (
-    <div 
-      className={`mx-auto pb-28 transition-all duration-300 ${showPlanning ? 'max-w-7xl' : 'max-w-3xl'}`}
-      style={showPlanning ? { paddingLeft: '3px', paddingRight: '3px' } : undefined}
-    >
-      {/* Week Navigation & Header Actions */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-12 sm:mb-16 w-full relative">
+    <div className="mx-auto pb-28 transition-all duration-300 w-full">
+      {/* Week Navigation & Header Actions Wrapper */}
+      <div className="max-w-7xl mx-auto px-[3px]">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-12 sm:mb-16 w-full relative">
         {/* Week navigation controls */}
         <div className="flex items-center justify-center gap-4">
           <button
@@ -436,13 +459,28 @@ export default function WeekView() {
           <div className="text-center px-2 min-w-[180px]">
             <AnimatePresence mode="wait">
               <motion.div
-                key={currentWeek}
+                key={currentWeek + viewMode}
                 initial={{ opacity: 0, y: direction * 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: direction * -20 }}
                 transition={{ duration: 0.2 }}
               >
                 {(() => {
+                  if (viewMode === 'month') {
+                    const dates = getWeekDates(currentWeek);
+                    const date = dates ? new Date(dates.start) : new Date();
+                    const label = format(date, 'MMMM yyyy', { locale: fr });
+                    return (
+                      <>
+                        <h2 className="text-2xl font-bold text-dark-100 leading-tight uppercase first-letter:capitalize">
+                          {label}
+                        </h2>
+                        <p className="text-base text-dark-400 mt-0.5">
+                          Vue mensuelle
+                        </p>
+                      </>
+                    );
+                  }
                   const parts = formatWeekLabelParts(currentWeek);
                   return (
                     <>
@@ -457,7 +495,6 @@ export default function WeekView() {
                 })()}
               </motion.div>
             </AnimatePresence>
-
           </div>
 
           <button
@@ -470,190 +507,240 @@ export default function WeekView() {
 
         {/* Header Actions: Toggle view */}
         {!showForm && (
-          <div className="fixed top-[12px] left-1/2 -translate-x-1/2 z-[80] md:absolute md:top-1/2 md:right-0 md:-translate-y-1/2 md:left-auto md:translate-x-0 flex-shrink-0">
+          <div className="fixed top-[12px] left-1/2 -translate-x-1/2 z-[80] md:absolute md:top-1/2 md:right-[3px] md:-translate-y-1/2 md:left-auto md:translate-x-0 flex-shrink-0">
             <div 
-              className="flex items-center gap-3 bg-dark-800/95 rounded-full border border-dark-600/30 backdrop-blur-md flex-shrink-0 shadow-sm"
-              style={{ padding: '4px 6px' }}
+              className="flex items-center gap-0.5 bg-dark-800/95 rounded-full border border-dark-600/30 backdrop-blur-md flex-shrink-0 shadow-sm"
+              style={{ padding: '3px 4px' }}
             >
               <button
-                onClick={() => setShowPlanning(false)}
-                className={`flex items-center gap-1.5 rounded-full text-xs font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
-                  !showPlanning
+                onClick={() => handleViewModeChange('list')}
+                className={`flex items-center gap-1 rounded-full text-[11px] font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
+                  viewMode === 'list'
                     ? 'bg-accent-cyan/15 text-accent-cyan'
                     : 'text-dark-400 hover:text-dark-200'
                 }`}
-                style={{ padding: '3px 8px' }}
+                style={{ padding: '3px 6px' }}
               >
-                <List size={13} />
+                <List size={12} />
                 <span>Liste</span>
               </button>
               <button
-                onClick={() => setShowPlanning(true)}
-                className={`flex items-center gap-1.5 rounded-full text-xs font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
-                  showPlanning
+                onClick={() => handleViewModeChange('columns')}
+                className={`flex items-center gap-1 rounded-full text-[11px] font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
+                  viewMode === 'columns'
                     ? 'bg-accent-cyan/15 text-accent-cyan'
                     : 'text-dark-400 hover:text-dark-200'
                 }`}
-                style={{ padding: '3px 8px' }}
+                style={{ padding: '3px 6px' }}
               >
-                <Calendar size={13} />
-                <span>Planning</span>
+                <Columns3 size={12} />
+                <span>Jour</span>
+              </button>
+              <button
+                onClick={() => handleViewModeChange('agenda')}
+                className={`flex items-center gap-1 rounded-full text-[11px] font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
+                  viewMode === 'agenda'
+                    ? 'bg-accent-cyan/15 text-accent-cyan'
+                    : 'text-dark-400 hover:text-dark-200'
+                }`}
+                style={{ padding: '3px 6px' }}
+              >
+                <Clock size={12} />
+                <span>Semaine</span>
+              </button>
+              <button
+                onClick={() => handleViewModeChange('month')}
+                className={`flex items-center gap-1 rounded-full text-[11px] font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
+                  viewMode === 'month'
+                    ? 'bg-accent-cyan/15 text-accent-cyan'
+                    : 'text-dark-400 hover:text-dark-200'
+                }`}
+                style={{ padding: '3px 6px' }}
+              >
+                <Calendar size={12} />
+                <span>Mois</span>
               </button>
             </div>
           </div>
         )}
       </div>
-
-      {/* Progress Ring + Stats (Only in list view) */}
-      {!showPlanning && (
-        <div className="flex flex-col items-center relative" style={{ marginTop: '8px', marginBottom: '16px' }}>
-          <ProgressRing progress={progress} size={160} strokeWidth={12} />
-          
-          {/* Desktop Add Button (Next to ring) */}
-          <motion.button
-            whileHover={{ scale: 1.1, rotate: 90 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => {
-              setEditObjective(null);
-              setShowForm(true);
-            }}
-            className="hidden md:flex absolute right-[72px] top-[80px] -translate-y-1/2 w-14 h-14 rounded-full bg-dark-100 text-dark-900 shadow-xl items-center justify-center transition-all duration-300 cursor-pointer border-none"
-          >
-            <Plus size={28} strokeWidth={2.5} />
-          </motion.button>
-
-          <p className="text-sm text-dark-400" style={{ marginTop: '8px' }}>
-            {objectives.length === 0
-              ? 'Aucun objectif cette semaine'
-              : `${objectives.filter((o) => {
-                  const wp = weekProgress[o.id] || 0;
-                  const t = o.target || 1;
-                  return wp >= t;
-                }).length} / ${objectives.length} objectifs complétés`
-            }
-          </p>
-        </div>
-      )}
-
-      {/* Reward Banner (Only in list view) */}
-      {!showPlanning && (
-        <div className="group" style={{ marginBottom: '12px' }}>
-          <RewardBanner weekId={currentWeek} isUnlocked={unlocked} />
-        </div>
-      )}
-
-      {/* Filters Bar */}
-      <div 
-        className="flex flex-wrap items-center justify-center gap-3 animate-in fade-in duration-300"
-        style={{ marginTop: showPlanning ? '12px' : '0px', marginBottom: '24px' }}
-      >
-        <button
-          onClick={() => setFilterIncomplete(!filterIncomplete)}
-          className={`flex items-center gap-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-            filterIncomplete
-              ? 'bg-accent-violet/15 text-accent-violet border border-accent-violet/50 shadow-sm font-bold'
-              : 'bg-dark-800/40 text-dark-400 border border-dark-600/25 hover:border-dark-500/40 hover:text-dark-200'
-          }`}
-          style={{ padding: '5px 12px' }}
-        >
-          <Clock size={14} />
-          <span>Non complétés</span>
-        </button>
-
-        <button
-          onClick={() => {
-            const newVal = !filterToday;
-            setFilterToday(newVal);
-            if (newVal) {
-              setCurrentWeek(getCurrentWeekId());
-            }
-          }}
-          className={`flex items-center gap-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-            filterToday
-              ? 'bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/50 shadow-sm font-bold'
-              : 'bg-dark-800/40 text-dark-400 border border-dark-600/25 hover:border-dark-500/40 hover:text-dark-200'
-          }`}
-          style={{ padding: '5px 12px' }}
-        >
-          <Calendar size={14} />
-          <span>Aujourd'hui</span>
-        </button>
       </div>
 
-      {/* Main Content Area */}
-      {showPlanning ? (
-        <div 
-          className={`animate-in fade-in duration-300 mt-12 sm:mt-0 ${
-            filterToday 
-              ? 'flex justify-center max-w-md mx-auto w-full' 
-              : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'
-          }`}
-          style={{ paddingLeft: '0px', paddingRight: '0px', marginTop: '24px' }}
-        >
-          {(filterToday ? dayColumns.filter((col) => col.id === todayDayId) : dayColumns).map((col) => {
-            const items = filteredObjectives.filter((obj) => {
-              const { days } = getObjectiveSchedule(obj);
-              if (col.id === 'unscheduled') {
-                return days.length === 0;
+      {/* Content wrapper with custom layouts */}
+      <div className={viewMode === 'list' ? 'max-w-3xl mx-auto w-full' : 'w-full'}>
+        {/* Progress Ring + Stats (Only in list view) */}
+        {viewMode === 'list' && (
+          <div className="flex flex-col items-center relative" style={{ marginTop: '8px', marginBottom: '16px' }}>
+            <ProgressRing progress={progress} size={160} strokeWidth={12} />
+            
+            {/* Desktop Add Button (Next to ring) */}
+            <motion.button
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => {
+                setEditObjective(null);
+                setShowForm(true);
+              }}
+              className="hidden md:flex absolute right-[72px] top-[80px] -translate-y-1/2 w-14 h-14 rounded-full bg-dark-100 text-dark-900 shadow-xl items-center justify-center transition-all duration-300 cursor-pointer border-none"
+            >
+              <Plus size={28} strokeWidth={2.5} />
+            </motion.button>
+
+            <p className="text-sm text-dark-400" style={{ marginTop: '8px' }}>
+              {objectives.length === 0
+                ? 'Aucun objectif cette semaine'
+                : `${objectives.filter((o) => {
+                    const wp = weekProgress[o.id] || 0;
+                    const t = o.target || 1;
+                    return wp >= t;
+                  }).length} / ${objectives.length} objectifs complétés`
               }
-              return days.includes(col.id);
-            }).sort(compareTimes);
+            </p>
+          </div>
+        )}
 
-            return (
-              <div 
-                key={col.id} 
-                className="glass rounded-3xl border border-dark-600/25 flex flex-col min-h-[220px] w-full"
-                style={{ padding: '16px 0' }}
-              >
-                <div 
-                  className="flex items-center justify-between pb-2 border-b border-dark-600/15 mb-3"
-                  style={{ marginLeft: '16px', marginRight: '16px' }}
-                >
-                  <h4 className="text-sm font-bold text-dark-200 tracking-wide">{col.label}</h4>
-                </div>
-                <div 
-                  className="flex flex-col gap-3 flex-1 pb-2"
-                  style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '4px' }}
-                >
-                  {items.map((obj) => (
-                    <CompactObjectiveCard
-                      key={`${col.id}-${obj.id}`}
-                      objective={obj}
-                      weekId={currentWeek}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                    />
-                  ))}
-                  {items.length === 0 && (
-                    <div className="flex-1 flex items-center justify-center py-8 text-xs text-dark-500 border border-dashed border-dark-600/15 rounded-2xl mx-1">
-                      Aucun objectif
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        /* Objectives List grouped by category */
-        <div>
-          {groupedObjectives.map((group, index) => (
-            <div key={group.category.id} style={index > 0 ? { marginTop: '40px' } : {}}>
-              <div className="flex items-center gap-4" style={{ marginBottom: '20px' }}>
-                <span className="text-3xl">{group.category.icon}</span>
-                <h3 className="text-lg font-bold uppercase tracking-widest" style={{ color: group.category.color }}>
-                  {group.category.label}
-                </h3>
-                <div className="flex-1 h-px bg-dark-700" />
-              </div>
+        {/* Reward Banner (Only in list view) */}
+        {viewMode === 'list' && (
+          <div className="group" style={{ marginBottom: '12px' }}>
+            <RewardBanner weekId={currentWeek} isUnlocked={unlocked} />
+          </div>
+        )}
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <AnimatePresence>
-                  {group.items.map((obj, i) => (
-                    <div key={obj.id} className="h-full p-2">
-                      <ObjectiveCard
+        {/* Filters Bar (Only in list and columns views) */}
+        {(viewMode === 'list' || viewMode === 'columns') && (
+          <div 
+            className="flex flex-wrap items-center justify-center gap-3 animate-in fade-in duration-300"
+            style={{ marginTop: isWideLayout ? '12px' : '0px', marginBottom: '24px' }}
+          >
+            <button
+              onClick={() => setFilterIncomplete(!filterIncomplete)}
+              className={`flex items-center gap-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                filterIncomplete
+                  ? 'bg-accent-violet/15 text-accent-violet border border-accent-violet/50 shadow-sm font-bold'
+                  : 'bg-dark-800/40 text-dark-400 border border-dark-600/25 hover:border-dark-500/40 hover:text-dark-200'
+              }`}
+              style={{ padding: '5px 12px' }}
+            >
+              <Clock size={14} />
+              <span>Non complétés</span>
+            </button>
+
+            <button
+              onClick={() => {
+                const newVal = !filterToday;
+                setFilterToday(newVal);
+                if (newVal) {
+                  setCurrentWeek(getCurrentWeekId());
+                }
+              }}
+              className={`flex items-center gap-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                filterToday
+                  ? 'bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/50 shadow-sm font-bold'
+                  : 'bg-dark-800/40 text-dark-400 border border-dark-600/25 hover:border-dark-500/40 hover:text-dark-200'
+              }`}
+              style={{ padding: '5px 12px' }}
+            >
+              <Calendar size={14} />
+              <span>Aujourd'hui</span>
+            </button>
+          </div>
+        )}
+
+        {/* Main Content Area */}
+        {viewMode === 'columns' && (
+          <div 
+            className={`animate-in fade-in duration-300 mt-12 sm:mt-0 ${
+              filterToday 
+                ? 'flex justify-center max-w-md mx-auto w-full' 
+                : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'
+            }`}
+            style={{ paddingLeft: '0px', paddingRight: '0px', marginTop: '24px' }}
+          >
+            {(filterToday ? dayColumns.filter((col) => col.id === todayDayId) : dayColumns).map((col) => {
+              const items = filteredObjectives.filter((obj) => {
+                const { days } = getObjectiveSchedule(obj);
+                if (col.id === 'unscheduled') {
+                  return days.length === 0;
+                }
+                return days.includes(col.id);
+              }).sort(compareTimes);
+
+              return (
+                <div 
+                  key={col.id} 
+                  className="glass rounded-3xl border border-dark-600/25 flex flex-col min-h-[220px] w-full"
+                  style={{ padding: '16px 0' }}
+                >
+                  <div 
+                    className="flex items-center justify-between pb-2 border-b border-dark-600/15 mb-3"
+                    style={{ marginLeft: '16px', marginRight: '16px' }}
+                  >
+                    <h4 className="text-sm font-bold text-dark-200 tracking-wide">{col.label}</h4>
+                  </div>
+                  <div 
+                    className="flex flex-col gap-3 flex-1 pb-2"
+                    style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '4px' }}
+                  >
+                    {items.map((obj) => (
+                      <CompactObjectiveCard
+                        key={`${col.id}-${obj.id}`}
                         objective={obj}
                         weekId={currentWeek}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                      />
+                    ))}
+                    {items.length === 0 && (
+                      <div className="flex-1 flex items-center justify-center py-8 text-xs text-dark-500 border border-dashed border-dark-600/15 rounded-2xl mx-1">
+                        Aucun objectif
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {viewMode === 'agenda' && (
+          <div className="animate-in fade-in duration-300" style={{ marginTop: '24px' }}>
+            <AgendaView 
+              currentWeekId={currentWeek} 
+              onEdit={handleEdit} 
+              onDelete={handleDelete} 
+            />
+          </div>
+        )}
+
+        {viewMode === 'month' && (
+          <div className="animate-in fade-in duration-300" style={{ marginTop: '24px' }}>
+            <MonthView 
+              currentWeekId={currentWeek} 
+              onEdit={handleEdit} 
+            />
+          </div>
+        )}
+
+        {viewMode === 'list' && (
+          /* Objectives List grouped by category */
+          <div className="animate-in fade-in duration-300">
+            {groupedObjectives.map((group, index) => (
+              <div key={group.category.id} style={index > 0 ? { marginTop: '40px' } : {}}>
+                <div className="flex items-center gap-4" style={{ marginBottom: '20px' }}>
+                  <span className="text-3xl">{group.category.icon}</span>
+                  <h3 className="text-lg font-bold uppercase tracking-widest" style={{ color: group.category.color }}>
+                    {group.category.label}
+                  </h3>
+                  <div className="flex-1 h-px bg-dark-700" />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <AnimatePresence>
+                    {group.items.map((obj, i) => (
+                      <div key={obj.id} className="h-full p-2">
+                        <ObjectiveCard
+                          objective={obj}
+                          weekId={currentWeek}
                         index={i}
                         onEdit={handleEdit}
                         onDelete={handleDelete}
@@ -681,6 +768,8 @@ export default function WeekView() {
         </div>
       )}
 
+      </div>
+
       {/* Floating Add button (Always visible in planning view, mobile-only in list view) */}
       <motion.button
         whileHover={{ scale: 1.1, rotate: 90 }}
@@ -689,7 +778,7 @@ export default function WeekView() {
           setEditObjective(null);
           setShowForm(true);
         }}
-        className={`${showPlanning ? 'flex' : 'md:hidden flex'} fixed bottom-8 right-8 w-14 h-14 rounded-full bg-dark-100 text-dark-900 shadow-2xl items-center justify-center z-50 transition-all duration-300 cursor-pointer border-none`}
+        className={`${isWideLayout ? 'flex' : 'md:hidden flex'} fixed bottom-8 right-8 w-14 h-14 rounded-full bg-dark-100 text-dark-900 shadow-2xl items-center justify-center z-50 transition-all duration-300 cursor-pointer border-none`}
       >
         <Plus size={28} strokeWidth={2.5} />
       </motion.button>
