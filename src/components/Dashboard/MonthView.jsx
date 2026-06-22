@@ -113,7 +113,7 @@ export default function MonthView({ currentWeekId, onEdit }) {
           return (
             <div 
               key={idx} 
-              className={`min-h-[100px] sm:min-h-[120px] p-2 flex flex-col gap-1 transition-all ${
+              className={`min-h-[120px] sm:min-h-[142px] p-2 flex flex-col gap-1 transition-all ${
                 day.isCurrentMonth ? 'bg-transparent' : 'bg-dark-800/10 opacity-40'
               } ${today ? 'bg-accent-cyan/5 shadow-inner' : ''}`}
             >
@@ -128,7 +128,7 @@ export default function MonthView({ currentWeekId, onEdit }) {
               </div>
 
               {/* Day's Objectives List */}
-              <div className="flex-1 flex flex-col gap-1 overflow-y-auto max-h-[80px] sm:max-h-[100px] custom-scrollbar">
+              <div className="flex-1 flex flex-col gap-1 overflow-y-auto max-h-[100px] sm:max-h-[122px] custom-scrollbar">
                 {dayObjs.map((obj) => {
                   const category = state.categories.find(c => c.id === obj.categoryId) || { color: '#94a3b8' };
                   const isCompleted = obj.progress >= 1;
