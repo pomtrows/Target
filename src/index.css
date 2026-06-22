@@ -145,6 +145,33 @@ body {
   background-clip: text;
 }
 
+/* ===== Mobile Landscape support for Week/Agenda views ===== */
+@media (max-width: 950px) and (orientation: landscape) {
+  /* Let the main container take full width */
+  .mx-auto.pb-28 {
+    max-width: 100% !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    padding-bottom: 2rem !important;
+  }
+
+  /* Make AgendaView container taller and adjust layout */
+  .glass.rounded-3xl.border.border-dark-600\/25.flex.flex-col.h-\[650px\] {
+    height: 85vh !important;
+  }
+  
+  /* Make header elements smaller to fit vertical screen space */
+  h2.text-2xl {
+    font-size: 1.25rem !important;
+  }
+  p.text-base {
+    font-size: 0.875rem !important;
+  }
+  .mb-12.sm\:mb-16 {
+    margin-bottom: 12px !important;
+  }
+}
+
 .gradient-border {
   border: 1px solid transparent;
   background-clip: padding-box;
