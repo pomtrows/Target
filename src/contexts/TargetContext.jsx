@@ -7,12 +7,14 @@ const TargetContext = createContext(null);
 
 // ===== Default Categories =====
 const defaultCategories = [
-  { id: 'sport', label: 'Sport', icon: '🏃', color: '#22d3ee' },
-  { id: 'alimentation', label: 'Alimentation', icon: '🥗', color: '#4ade80' },
-  { id: 'social', label: 'Social', icon: '👥', color: '#a78bfa' },
-  { id: 'geek', label: 'Geek', icon: '🎮', color: '#f472b6' },
-  { id: 'administratif', label: 'Administratif', icon: '📋', color: '#fb923c' },
-  { id: 'achat', label: 'Achat', icon: '🛒', color: '#fbbf24' },
+  { id: 'alimentation', label: 'Alimentation', icon: '🥗', color: '#22c55e' },
+  { id: 'sport', label: 'Sport', icon: '🏃', color: '#0891b2' },
+  { id: 'kids', label: 'Kids', icon: '🧘', color: '#0ea5e9' },
+  { id: 'administratif', label: 'Administratifs', icon: '📋', color: '#4f46e5' },
+  { id: 'vacances', label: 'Vacances', icon: '✈️', color: '#ef4444' },
+  { id: 'maison', label: 'Maison', icon: '🏠', color: '#991b1b' },
+  { id: 'shopping', label: 'Shopping', icon: '🛒', color: '#ea580c' },
+  { id: 'culture', label: 'Culture', icon: '🏛️', color: '#0284c7' },
   { id: 'autre', label: 'Autre', icon: '📌', color: '#94a3b8' },
 ];
 
