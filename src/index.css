@@ -190,6 +190,15 @@ body {
   }
 }
 
+/* ===== 3 Days Columns Display on mobile (horizontal scroll) ===== */
+@media (max-width: 640px) {
+  /* Set the grid wrapper width so that exactly 3 columns fit the screen width */
+  .agenda-container .min-w-\[650px\] {
+    min-width: 0 !important;
+    width: calc((100vw - 72px) * 7 / 3) !important; /* (viewport width minus hours scale) times 7/3 */
+  }
+}
+
 .gradient-border {
   border: 1px solid transparent;
   background-clip: padding-box;
