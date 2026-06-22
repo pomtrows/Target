@@ -104,7 +104,7 @@ export default function AgendaView({ currentWeekId, onEdit, onDelete }) {
   const weekProgress = state.progress[currentWeekId] || {};
 
   return (
-    <div className="agenda-container glass rounded-3xl border border-dark-600/25 flex flex-col h-[650px] overflow-hidden bg-dark-900/30">
+    <div className="agenda-container glass rounded-3xl border border-dark-600/25 flex flex-col h-[760px] overflow-hidden bg-dark-900/30">
       {/* Horizontally scrollable wrapper on mobile */}
       <div className="flex-1 flex overflow-hidden relative">
         
