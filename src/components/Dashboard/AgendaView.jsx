@@ -130,7 +130,6 @@ export default function AgendaView({ currentWeekId, onEdit, onDelete }) {
           </div>
         </div>
 
-        {/* Scrollable Days + Grid wrapper (Horizontally scrollable on mobile, vertically scrollable everywhere) */}
         <div 
           ref={containerRef}
           onScroll={(e) => {
@@ -142,8 +141,8 @@ export default function AgendaView({ currentWeekId, onEdit, onDelete }) {
           }}
           className="flex-1 flex flex-col overflow-x-auto overflow-y-auto custom-scrollbar relative select-none"
         >
-          {/* Scrollable Days Container (Width forced to accommodate 7 columns, but showing 3 columns at a time on mobile) */}
-          <div className="min-w-[650px] md:min-w-0 flex-1 flex flex-col relative">
+          {/* Scrollable Days Container - removed flex-1 to allow vertical overflow */}
+          <div className="min-w-[650px] md:min-w-0 flex flex-col relative w-full">
             
             {/* Day Headers Row */}
             <div className="flex border-b border-dark-600/30 bg-dark-800/60 sticky top-0 z-20 w-full h-[70px] flex-shrink-0">
