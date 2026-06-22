@@ -104,7 +104,7 @@ export default function AgendaView({ currentWeekId, onEdit, onDelete }) {
   const weekProgress = state.progress[currentWeekId] || {};
 
   return (
-    <div className="glass rounded-3xl border border-dark-600/25 flex flex-col h-[650px] overflow-hidden bg-dark-900/30">
+    <div className="agenda-container glass rounded-3xl border border-dark-600/25 flex flex-col h-[650px] overflow-hidden bg-dark-900/30">
       {/* Header Row */}
       <div className="flex border-b border-dark-600/30 bg-dark-800/60 sticky top-0 z-20">
         {/* Empty space for hour labels */}

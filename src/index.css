@@ -156,8 +156,9 @@ body {
   }
 
   /* Make AgendaView container taller and adjust layout */
-  .glass.rounded-3xl.border.border-dark-600\/25.flex.flex-col.h-\[650px\] {
+  .agenda-container {
     height: 85vh !important;
+    min-height: 400px !important;
   }
   
   /* Make header elements smaller to fit vertical screen space */
