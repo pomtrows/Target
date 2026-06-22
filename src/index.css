@@ -3,11 +3,9 @@
 
 html, body, #root {
   height: 100%;
-  overflow: hidden;
-  position: fixed;
   width: 100%;
-  left: 0;
-  top: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
@@ -147,6 +145,25 @@ body {
 
 /* ===== Mobile Landscape support for Week/Agenda views ===== */
 @media (max-width: 950px) and (orientation: landscape) {
+  /* Let the main body container expand and allow scrolling */
+  div.flex.h-screen.overflow-hidden {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow: visible !important;
+  }
+
+  main[data-main] {
+    height: auto !important;
+    overflow: visible !important;
+    padding-top: 10px !important;
+    padding-bottom: 20px !important;
+  }
+
+  main[data-main] > div.max-w-7xl {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
   /* Let the main container take full width */
   .mx-auto.pb-28 {
     max-width: 100% !important;
