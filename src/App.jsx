@@ -13,8 +13,9 @@ import InstallPrompt from './components/Shared/InstallPrompt';
 import { NotesProvider } from './contexts/NotesContext';
 import { SportProvider } from './contexts/SportContext';
 import SportPage from './pages/SportPage';
-
-
+import CategoriesPage from './pages/CategoriesPage';
+ 
+ 
 import { useEffect } from 'react';
 import { checkAndTriggerNotifications } from './utils/notificationService';
 import { useTarget } from './contexts/TargetContext';
@@ -66,9 +67,9 @@ function AppContent() {
                 <Route path="/backlog" element={<BacklogPage />} />
                 <Route path="/history" element={<HistoryPage />} />
                 <Route path="/notes" element={<NotesPage />} />
-                <Route path="/admin/categories" element={<AdminPage defaultTab="categories" />} />
+                <Route path="/categories" element={<CategoriesPage />} />
                 <Route path="/admin/users" element={<AdminPage defaultTab="users" />} />
-                <Route path="/admin" element={<Navigate to="/admin/categories" replace />} />
+                <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
                 <Route path="/sport" element={<SportPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

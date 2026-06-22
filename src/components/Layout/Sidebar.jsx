@@ -16,7 +16,7 @@ const navItems = [
   { path: '/', label: 'Objectifs', icon: Target },
   { path: '/backlog', label: 'Backlog', icon: Inbox },
   { path: '/history', label: 'Historique', icon: BarChart3 },
-  { path: '/admin/categories', label: 'Catégories', icon: Settings },
+  { path: '/categories', label: 'Catégories', icon: Settings },
   { path: '/notes', label: 'Notes', icon: FileText },
   { path: '/sport', label: 'Sport', icon: Dumbbell },
   { path: '/admin/users', label: 'Administration', icon: Users },
