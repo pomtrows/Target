@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Target</string>
+    <string name="title_activity_main">Target</string>
+    <string name="package_name">com.pomtrows.target</string>
+    <string name="custom_url_scheme">com.pomtrows.target</string>
+</resources>

@@ -443,10 +443,10 @@ export default function WeekView() {
   const isWideLayout = viewMode !== 'list';
 
   return (
-    <div className="mx-auto pb-28 transition-all duration-300 w-full">
+    <div className="mx-auto pb-28 transition-all duration-300 w-full flex flex-col items-center">
       {/* Week Navigation & Header Actions Wrapper */}
-      <div className="max-w-7xl mx-auto px-[3px]">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-12 sm:mb-16 w-full relative">
+      <div className="max-w-7xl mx-auto px-[3px] w-full">
+        <div className="flex items-center justify-center mb-12 sm:mb-16 w-full relative">
         {/* Week navigation controls */}
         <div className="flex items-center justify-center gap-4">
           <button
@@ -566,10 +566,9 @@ export default function WeekView() {
       </div>
       </div>
 
-      {/* Content wrapper with custom layouts */}
-      <div className={viewMode === 'list' ? 'max-w-3xl mx-auto w-full' : 'w-full'}>
-        {/* Progress Ring + Stats (Only in list view) */}
-        {viewMode === 'list' && (
+      {/* Progress Ring + Stats (Only in list view) - centered relative to max-w-7xl like the header */}
+      {viewMode === 'list' && (
+        <div className="max-w-7xl mx-auto px-[3px] w-full">
           <div className="flex flex-col items-center relative" style={{ marginTop: '8px', marginBottom: '16px' }}>
             <ProgressRing progress={progress} size={160} strokeWidth={12} />
             
@@ -597,7 +596,11 @@ export default function WeekView() {
               }
             </p>
           </div>
-        )}
+        </div>
+      )}
+
+      {/* Content wrapper with custom layouts */}
+      <div className={viewMode === 'list' ? 'max-w-3xl mx-auto w-full px-4' : 'max-w-7xl mx-auto px-[3px] w-full'}>
 
         {/* Reward Banner (Only in list view) */}
         {viewMode === 'list' && (
