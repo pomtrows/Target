@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Target, Inbox, BarChart3, Settings, Menu, X, Sun, Moon, LogOut, Users, FileText, Dumbbell, Bell, BellOff, Info, CheckCircle2 } from 'lucide-react';
+import { Target, Inbox, BarChart3, Settings, Menu, X, Sun, Moon, LogOut, Users, FileText, Dumbbell, Bell, BellOff, Info, CheckCircle2, Gift } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,6 +19,7 @@ const navItems = [
   { path: '/categories', label: 'Catégories', icon: Settings },
   { path: '/notes', label: 'Notes', icon: FileText },
   { path: '/sport', label: 'Sport', icon: Dumbbell },
+  { path: '/rewards', label: 'Récompenses', icon: Gift },
   { path: '/admin/users', label: 'Administration', icon: Users },
 ];
 

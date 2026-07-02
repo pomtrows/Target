@@ -16,10 +16,48 @@ export default function RewardBanner({ weekId, isUnlocked }) {
   };
 
   const handleSave = () => {
+    const trimmedValue = editValue.trim();
+    
+    // Keep old SET_REWARD just in case components depend on it (legacy compatibility)
     dispatch({
       type: 'SET_REWARD',
-      payload: { weekId, reward: editValue.trim() },
+      payload: { weekId, reward: trimmedValue },
     });
+
+    if (reward && reward !== trimmedValue) {
+      // Unassign the old reward
+      const oldExisting = state.rewardItems?.find(
+        r => r.title.toLowerCase() === reward.toLowerCase()
+      );
+      if (oldExisting) {
+        dispatch({
+          type: 'UPDATE_REWARD_ITEM',
+          payload: { id: oldExisting.id, assigned_week: null }
+        });
+      }
+    }
+
+    if (trimmedValue) {
+      // Find if reward item already exists
+      const existing = state.rewardItems?.find(
+        r => r.title.toLowerCase() === trimmedValue.toLowerCase()
+      );
+
+      if (existing) {
+        // Update its assigned week
+        dispatch({
+          type: 'UPDATE_REWARD_ITEM',
+          payload: { id: existing.id, assigned_week: weekId }
+        });
+      } else {
+        // Create new reward item mapped to this week
+        dispatch({
+          type: 'ADD_REWARD_ITEM',
+          payload: { title: trimmedValue, status: 'locked', assigned_week: weekId }
+        });
+      }
+    }
+
     setIsEditing(false);
   };
 
@@ -95,22 +133,47 @@ export default function RewardBanner({ weekId, isUnlocked }) {
           </div>
 
           {isEditing ? (
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ex: Un restaurant japonais 🍣"
-                autoFocus
-                className="flex-1 bg-dark-600/50 border border-dark-500/50 rounded-lg px-3 py-1.5 text-sm text-dark-100 placeholder-dark-500 focus:outline-none focus:border-accent-cyan/50"
-              />
-              <button
-                onClick={handleSave}
-                className="p-2 rounded-lg bg-accent-cyan/20 text-accent-cyan hover:bg-accent-cyan/30 transition-colors"
-              >
-                <Check size={16} />
-              </button>
+            <div className="flex flex-col gap-2 w-full">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ex: Un restaurant japonais 🍣"
+                  autoFocus
+                  className="flex-1 bg-dark-600/50 border border-dark-500/50 rounded-lg px-3 py-1.5 text-sm text-dark-100 placeholder-dark-500 focus:outline-none focus:border-accent-cyan/50"
+                />
+                <button
+                  onClick={handleSave}
+                  className="p-2 rounded-lg bg-accent-cyan/20 text-accent-cyan hover:bg-accent-cyan/30 transition-colors"
+                >
+                  <Check size={16} />
+                </button>
+              </div>
+              {(() => {
+                const availableRewards = state.rewardItems?.filter(
+                  r => r.status === 'locked' && (!r.assigned_week || r.assigned_week === weekId)
+                ) || [];
+                
+                if (availableRewards.length === 0) return null;
+
+                return (
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {availableRewards.map(item => (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setEditValue(item.title);
+                        }}
+                        className="text-xs px-2 py-1 rounded-md bg-dark-700/80 hover:bg-accent-cyan/20 text-dark-300 hover:text-accent-cyan transition-colors border border-dark-600 cursor-pointer text-left"
+                      >
+                        {item.title}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           ) : (
             <div className="flex items-center gap-2">

@@ -24,6 +24,7 @@ const initialState = {
   progress: {}, 
   categories: defaultCategories,
   rewards: {}, 
+  rewardItems: [],
   progressTimestamps: {}, // New: Stores "weekId-objId" -> ISO timestamp
   loading: true,
 };
@@ -101,6 +102,23 @@ function targetReducer(state, action) {
       };
     }
 
+    case 'ADD_REWARD_ITEM':
+      return { ...state, rewardItems: [...state.rewardItems, action.payload] };
+
+    case 'UPDATE_REWARD_ITEM':
+      return {
+        ...state,
+        rewardItems: state.rewardItems.map((item) =>
+          item.id === action.payload.id ? { ...item, ...action.payload } : item
+        ),
+      };
+
+    case 'DELETE_REWARD_ITEM':
+      return {
+        ...state,
+        rewardItems: state.rewardItems.filter((item) => item.id !== action.payload),
+      };
+
     case 'ADD_CATEGORY':
       return { ...state, categories: [...state.categories, action.payload.category] };
 
@@ -165,12 +183,14 @@ export function TargetProvider({ children }) {
           { data: categories },
           { data: objectives },
           { data: progress },
-          { data: rewards }
+          { data: rewards },
+          { data: rewardItems }
         ] = await Promise.all([
           supabase.from('categories').select('*').eq('user_id', user.id),
           supabase.from('objectives').select('*').eq('user_id', user.id),
           supabase.from('progress').select('*').eq('user_id', user.id),
-          supabase.from('rewards').select('*').eq('user_id', user.id)
+          supabase.from('rewards').select('*').eq('user_id', user.id),
+          supabase.from('reward_items').select('*').eq('user_id', user.id)
         ]);
 
         const transformedProgress = (progress || []).reduce((acc, p) => {
@@ -213,6 +233,7 @@ export function TargetProvider({ children }) {
             progress: transformedProgress,
             progressTimestamps: transformedTimestamps,
             rewards: transformedRewards,
+            rewardItems: rewardItems || [],
           }
         });
       } catch (error) {
@@ -399,6 +420,41 @@ export function TargetProvider({ children }) {
 
         // 3. Update local state
         dispatch({ type: 'DELETE_CATEGORY', payload: catId });
+        break;
+      }
+
+      case 'ADD_REWARD_ITEM': {
+        const newItem = {
+          id: action.payload.id || crypto.randomUUID(),
+          title: action.payload.title,
+          status: action.payload.status || 'locked',
+          assigned_week: action.payload.assigned_week || null,
+          user_id: user.id
+        };
+        dispatch({ type: 'ADD_REWARD_ITEM', payload: newItem });
+        await supabase.from('reward_items').insert(newItem);
+        break;
+      }
+
+      case 'UPDATE_REWARD_ITEM': {
+        const updated = action.payload;
+        dispatch({ type: 'UPDATE_REWARD_ITEM', payload: updated });
+        
+        const updateData = {};
+        if (updated.title !== undefined) updateData.title = updated.title;
+        if (updated.status !== undefined) updateData.status = updated.status;
+        if (updated.assigned_week !== undefined) {
+          updateData.assigned_week = updated.assigned_week;
+        }
+
+        await supabase.from('reward_items').update(updateData).eq('id', updated.id);
+        break;
+      }
+
+      case 'DELETE_REWARD_ITEM': {
+        const itemId = action.payload;
+        dispatch({ type: 'DELETE_REWARD_ITEM', payload: itemId });
+        await supabase.from('reward_items').delete().eq('id', itemId);
         break;
       }
 

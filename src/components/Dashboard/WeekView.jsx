@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Pencil, AlertTriangle, List, Clock, Check, FileText, Columns3 } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
@@ -331,6 +331,17 @@ export default function WeekView() {
   const progress = getWeekProgress(objectives, weekProgress);
   const progressPercent = getWeekProgressPercent(objectives, weekProgress);
   const unlocked = isWeekComplete(objectives, weekProgress) && objectives.length > 0;
+
+  useEffect(() => {
+    const rewardItemLocked = state.rewardItems?.find(r => r.assigned_week === currentWeek && r.status === 'locked');
+    const rewardItemUnlocked = state.rewardItems?.find(r => r.assigned_week === currentWeek && r.status === 'unlocked');
+
+    if (unlocked && rewardItemLocked) {
+      dispatch({ type: 'UPDATE_REWARD_ITEM', payload: { id: rewardItemLocked.id, status: 'unlocked' } });
+    } else if (!unlocked && rewardItemUnlocked) {
+      dispatch({ type: 'UPDATE_REWARD_ITEM', payload: { id: rewardItemUnlocked.id, status: 'locked' } });
+    }
+  }, [unlocked, currentWeek, state.rewardItems, dispatch]);
 
   const todayDayId = new Date().getDay() === 0 ? 7 : new Date().getDay();
 

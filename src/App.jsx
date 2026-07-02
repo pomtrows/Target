@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Sidebar from './components/Layout/Sidebar';
 import DashboardPage from './pages/DashboardPage';
 import BacklogPage from './pages/BacklogPage';
+import RewardsPage from './pages/RewardsPage';
 import HistoryPage from './pages/HistoryPage';
 import NotesPage from './pages/NotesPage';
 import AdminPage from './pages/AdminPage';
@@ -64,6 +65,7 @@ function AppContent() {
             <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col overflow-y-auto custom-scrollbar h-full px-2">
               <Routes>
                 <Route path="/" element={<DashboardPage />} />
+                <Route path="/rewards" element={<RewardsPage />} />
                 <Route path="/backlog" element={<BacklogPage />} />
                 <Route path="/history" element={<HistoryPage />} />
                 <Route path="/notes" element={<NotesPage />} />
