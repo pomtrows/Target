@@ -121,32 +121,29 @@ export default function AttachmentManager({ isOpen, onClose, objective }) {
       title="Pièces jointes"
       maxWidth="max-w-2xl"
     >
-      <div className="p-6 space-y-6">
+      <div className="p-6">
         
         {/* Upload Area */}
         <div 
           {...getRootProps()} 
-          className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all ${
+          className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all -mt-4 mb-12 ${
             isDragActive 
               ? 'border-accent-cyan bg-accent-cyan/10' 
               : 'border-dark-600/50 bg-dark-800/50 hover:bg-dark-800 hover:border-dark-500'
           }`}
         >
           <input {...getInputProps()} />
-          <div className="w-16 h-16 bg-dark-700 rounded-full flex items-center justify-center mb-4 text-dark-300">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-dark-700 rounded-full flex items-center justify-center text-dark-300">
             {uploading ? (
-              <Loader2 size={32} className="animate-spin text-accent-cyan" />
+              <Loader2 size={24} className="animate-spin text-accent-cyan sm:w-8 sm:h-8" />
             ) : (
-              <UploadCloud size={32} className={isDragActive ? 'text-accent-cyan' : ''} />
+              <UploadCloud size={24} className={`sm:w-8 sm:h-8 ${isDragActive ? 'text-accent-cyan' : ''}`} />
             )}
           </div>
-          <h3 className="text-lg font-semibold text-dark-200 text-center mb-2">
+          <h3 className="text-base sm:text-lg font-semibold text-dark-200 text-center mt-2 sm:mt-3 leading-tight">
             {uploading ? 'Envoi en cours...' : isDragActive ? 'Déposez les fichiers ici' : 'Cliquez ou glissez-déposez des fichiers'}
           </h3>
-          <p className="text-dark-400 text-sm text-center">
-            Images, PDFs, documents, ou tout autre fichier lié à cet objectif.
-          </p>
-          {error && <p className="text-accent-red mt-4 text-sm bg-accent-red/10 p-2 rounded-lg">{error}</p>}
+          {error && <p className="text-accent-red mt-3 text-sm bg-accent-red/10 p-2 rounded-lg">{error}</p>}
         </div>
 
         {/* Attachments List */}
@@ -159,27 +156,27 @@ export default function AttachmentManager({ isOpen, onClose, objective }) {
               {attachments.map((file) => (
                 <div 
                   key={file.id}
-                  className="flex items-center gap-4 bg-dark-800 border border-dark-600/30 p-3 rounded-xl hover:border-dark-500 transition-colors group"
+                  className="flex items-center gap-3 bg-dark-800 border border-dark-600/30 p-3 rounded-xl hover:border-dark-500 transition-colors group w-full overflow-hidden"
                 >
-                  <div className="w-12 h-12 bg-dark-700/50 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-dark-700/50 rounded-lg flex items-center justify-center flex-shrink-0">
                     {getFileIcon(file.type)}
                   </div>
                   
-                  <div className="flex-1 min-w-0">
-                    <p className="text-dark-100 font-medium truncate" title={file.name}>
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <p className="text-xs text-dark-100 font-medium truncate" title={file.name}>
                       {file.name}
                     </p>
-                    <p className="text-dark-400 text-xs mt-0.5">
+                    <p className="text-dark-400 text-[10px] sm:text-xs mt-0.5 truncate">
                       {formatSize(file.size)} • {new Date(file.created_at).toLocaleDateString()}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                     <a 
                       href={file.url} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="p-2 text-dark-400 hover:text-accent-cyan hover:bg-dark-700 rounded-lg transition-colors"
+                      className="p-1.5 sm:p-2 text-dark-400 hover:text-accent-cyan hover:bg-dark-700 rounded-lg transition-colors"
                       title="Télécharger"
                       onClick={(e) => e.stopPropagation()}
                     >

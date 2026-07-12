@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Trash2, TrendingUp, CheckCircle2, Clock, User, AlertTriangle, Loader2 } from 'lucide-react';
+import { Trash2, TrendingUp, CheckCircle2, Clock, User, AlertTriangle, Loader2, HardDrive } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const formatSize = (bytes) => {
+  if (!bytes || bytes === 0) return '0 o';
+  const k = 1024;
+  const sizes = ['o', 'Ko', 'Mo', 'Go', 'To'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
 
 export default function UsersManagement() {
   const [users, setUsers] = useState([]);
@@ -50,7 +58,8 @@ export default function UsersManagement() {
           ...user,
           stats: {
             created: { '1d': 0, '1w': 0, '1m': 0, '1y': 0, total: 0 },
-            achieved: { '1d': 0, '1w': 0, '1m': 0, '1y': 0, total: 0 }
+            achieved: { '1d': 0, '1w': 0, '1m': 0, '1y': 0, total: 0 },
+            storage: 0
           }
         };
         return acc;
@@ -62,6 +71,11 @@ export default function UsersManagement() {
         if (!userStats[uid]) return;
         
         userStats[uid].stats.created.total++;
+        
+        if (obj.attachments && Array.isArray(obj.attachments)) {
+          userStats[uid].stats.storage += obj.attachments.reduce((sum, att) => sum + (att.size || 0), 0);
+        }
+
         const createdAt = new Date(obj.created_at);
         
         Object.entries(periods).forEach(([key, date]) => {
@@ -163,6 +177,10 @@ export default function UsersManagement() {
                             Dernière connexion : {new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(user.last_sign_in_at))}
                           </p>
                         )}
+                        <p className="text-[10px] text-accent-violet flex items-center gap-1" title="Volume de pièces jointes">
+                          <HardDrive size={10} />
+                          Stockage : {formatSize(user.stats.storage)}
+                        </p>
                         <p className="text-[10px] bg-dark-600 px-2 py-0.5 rounded text-dark-400 font-mono">
                           ID: {user.id.substring(0, 8)}...
                         </p>
