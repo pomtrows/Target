@@ -126,8 +126,8 @@ export default function AttachmentManager({ isOpen, onClose, objective }) {
         {/* Upload Area */}
         <div 
           {...getRootProps()} 
-          style={{ marginTop: '-10px', marginBottom: '40px' }}
-          className={`border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all ${
+          style={{ marginTop: '-10px', marginBottom: '20px' }}
+          className={`border-2 border-dashed rounded-2xl px-4 pt-4 pb-8 flex flex-col items-center justify-center cursor-pointer transition-all ${
             isDragActive 
               ? 'border-accent-cyan bg-accent-cyan/10' 
               : 'border-dark-600/50 bg-dark-800/50 hover:bg-dark-800 hover:border-dark-500'
@@ -144,6 +144,7 @@ export default function AttachmentManager({ isOpen, onClose, objective }) {
           <h3 className="text-base sm:text-lg font-semibold text-dark-200 text-center mt-2 sm:mt-3 leading-tight">
             {uploading ? 'Envoi en cours...' : isDragActive ? 'Déposez les fichiers ici' : 'Cliquez ou glissez-déposez des fichiers'}
           </h3>
+          <div className="h-8 sm:h-12"></div>
           {error && <p className="text-accent-red mt-3 text-sm bg-accent-red/10 p-2 rounded-lg">{error}</p>}
         </div>
 
@@ -172,7 +173,7 @@ export default function AttachmentManager({ isOpen, onClose, objective }) {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-4 sm:gap-5 flex-shrink-0">
                     <a 
                       href={file.url} 
                       target="_blank" 

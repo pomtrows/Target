@@ -43,19 +43,19 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
             {/* Header */}
             <div 
               className="flex items-center justify-between border-b border-dark-600/50"
-              style={{ padding: '20px' }}
+              style={{ padding: '14px 16px' }}
             >
-              <h2 className="text-2xl font-bold text-dark-100">{title}</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-dark-100">{title}</h2>
               <button
                 onClick={onClose}
-                className="p-2 rounded-xl text-dark-400 hover:text-dark-100 hover:bg-dark-600/50 transition-colors"
+                className="p-1.5 sm:p-2 rounded-xl text-dark-400 hover:text-dark-100 hover:bg-dark-600/50 transition-colors"
               >
-                <X size={28} />
+                <X size={24} className="sm:w-7 sm:h-7" />
               </button>
             </div>
 
             {/* Body */}
-            <div style={{ padding: '20px' }}>
+            <div style={{ padding: '14px 16px' }}>
               {children}
             </div>
           </motion.div>
