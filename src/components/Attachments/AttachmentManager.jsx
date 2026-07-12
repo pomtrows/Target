@@ -121,12 +121,13 @@ export default function AttachmentManager({ isOpen, onClose, objective }) {
       title="Pièces jointes"
       maxWidth="max-w-2xl"
     >
-      <div className="p-6">
+      <div className="w-full flex flex-col">
         
         {/* Upload Area */}
         <div 
           {...getRootProps()} 
-          className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all -mt-4 mb-12 ${
+          style={{ marginTop: '-10px', marginBottom: '40px' }}
+          className={`border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all ${
             isDragActive 
               ? 'border-accent-cyan bg-accent-cyan/10' 
               : 'border-dark-600/50 bg-dark-800/50 hover:bg-dark-800 hover:border-dark-500'
