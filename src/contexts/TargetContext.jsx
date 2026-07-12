@@ -214,6 +214,7 @@ export function TargetProvider({ children }) {
           categoryId: o.category_id,
           sportSessionId: o.sport_session_id || null,
           subObjectives: o.sub_objectives || [],
+          attachments: o.attachments || [],
           createdAt: o.created_at
         }));
 
@@ -259,6 +260,7 @@ export function TargetProvider({ children }) {
           sportSessionId: action.payload.sportSessionId || null,
           assignments: action.payload.assignments || [],
           subObjectives: action.payload.subObjectives || [],
+          attachments: action.payload.attachments || [],
           createdAt: new Date().toISOString().slice(0, 10),
           user_id: user.id
         };
@@ -276,6 +278,7 @@ export function TargetProvider({ children }) {
           sport_session_id: newObj.sportSessionId,
           assignments: newObj.assignments,
           sub_objectives: newObj.subObjectives,
+          attachments: newObj.attachments,
           created_at: newObj.createdAt
         });
         break;
@@ -290,7 +293,8 @@ export function TargetProvider({ children }) {
           category_id: updated.categoryId,
           sport_session_id: updated.sportSessionId || null,
           assignments: updated.assignments,
-          sub_objectives: updated.subObjectives || []
+          sub_objectives: updated.subObjectives || [],
+          attachments: updated.attachments || []
         }).eq('id', updated.id);
         break;
       }

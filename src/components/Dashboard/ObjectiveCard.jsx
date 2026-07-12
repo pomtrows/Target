@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Minus, Check, Pencil, Trash2, Play, FileText } from 'lucide-react';
+import { Plus, Minus, Check, Pencil, Trash2, Play, FileText, Paperclip } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useSport } from '../../contexts/SportContext';
 import { useNotes } from '../../contexts/NotesContext';
@@ -8,6 +8,7 @@ import { getObjectiveProgress, getProgressColor, isBitSet } from '../../utils/pr
 import WorkoutPlayer from '../Sport/WorkoutPlayer';
 import Modal from '../Shared/Modal';
 import NoteEditor from '../Notes/NoteEditor';
+import AttachmentManager from '../Attachments/AttachmentManager';
 
 export default function ObjectiveCard({ objective, weekId, index, onEdit, onDelete }) {
   const { state, dispatch } = useTarget();
@@ -15,7 +16,10 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
   const { state: notesState, createFolder, createNote } = useNotes();
   const [sessionToPlay, setSessionToPlay] = useState(null);
   const [showNotesModal, setShowNotesModal] = useState(false);
+  const [showAttachmentsModal, setShowAttachmentsModal] = useState(false);
   const [objectiveNoteId, setObjectiveNoteId] = useState(null);
+
+  const hasAttachments = objective.attachments && objective.attachments.length > 0;
 
   const handleOpenNotes = async (e) => {
     e.stopPropagation();
@@ -234,6 +238,27 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
             )}
 
             <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAttachmentsModal(true);
+              }}
+              className={`flex items-center justify-center w-[30px] h-10 rounded-lg transition-all cursor-pointer bg-transparent relative ${
+                hasAttachments 
+                  ? 'text-accent-violet hover:bg-accent-violet/10'
+                  : 'text-dark-300 hover:bg-dark-600/50 hover:text-dark-100'
+              }`}
+              style={{ border: 'none', marginRight: '-5px' }}
+              title={hasAttachments ? "Voir les pièces jointes" : "Ajouter une pièce jointe"}
+            >
+              <Paperclip size={18} />
+              {hasAttachments && (
+                <span className="absolute -top-1 -right-1 bg-accent-violet text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-dark-800">
+                  {objective.attachments.length}
+                </span>
+              )}
+            </button>
+
+            <button
               onClick={handleOpenNotes}
               className={`flex items-center justify-center w-[30px] h-10 rounded-lg transition-all cursor-pointer bg-transparent ${
                 hasNotes 
@@ -299,6 +324,12 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
           </div>
         </Modal>
       )}
+
+      <AttachmentManager
+        isOpen={showAttachmentsModal}
+        onClose={() => setShowAttachmentsModal(false)}
+        objective={objective}
+      />
     </motion.div>
   );
 }
