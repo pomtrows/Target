@@ -146,7 +146,7 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
 
         {/* Counter Section OR Sub-objectives */}
         <div className="flex items-center mb-6 pl-1 pr-0 w-full" style={{ gap: '35px' }}>
-          <div className={hasSubObjectives ? "flex-1" : "grow"}>
+          <div className={hasSubObjectives ? "flex-1 min-w-0" : "grow min-w-0"}>
             {hasSubObjectives ? (
               <div className="space-y-2.5">
                 {objective.subObjectives.map((sub, i) => {
@@ -172,22 +172,22 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
                 })}
               </div>
             ) : !isCheckbox ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-3 w-full">
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={handleDecrement}
                   disabled={current <= 0}
-                  className="w-10 h-10 rounded-xl bg-dark-600/60 flex items-center justify-center text-dark-300 hover:bg-dark-600/80 hover:text-dark-100 disabled:opacity-10 disabled:cursor-not-allowed transition-all"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-dark-600/60 flex items-center justify-center text-dark-300 hover:bg-dark-600/80 hover:text-dark-100 disabled:opacity-10 disabled:cursor-not-allowed transition-all"
                 >
-                  <Minus size={18} />
+                  <Minus size={16} className="sm:w-[18px] sm:h-[18px]" />
                 </motion.button>
 
-                <div className="flex flex-col items-center min-w-[50px]">
+                <div className="flex flex-col items-center min-w-[40px] sm:min-w-[50px]">
                   <motion.span
                     key={current}
                     initial={{ scale: 1.2 }}
                     animate={{ scale: 1 }}
-                    className={`text-2xl font-black tabular-nums ${isCompleted ? 'text-accent-green' : 'text-dark-100'}`}
+                    className={`text-xl sm:text-2xl font-black tabular-nums ${isCompleted ? 'text-accent-green' : 'text-dark-100'}`}
                   >
                     {current}/{objective.target}
                   </motion.span>
@@ -197,14 +197,30 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
                   whileTap={{ scale: 0.9 }}
                   onClick={handleIncrement}
                   disabled={isCompleted}
-                  className={`w-10 h-10 rounded-xl bg-dark-600/60 flex items-center justify-center transition-all ${
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-dark-600/60 flex items-center justify-center transition-all ${
                     isCompleted 
                       ? 'opacity-0 cursor-default' 
                       : 'text-dark-300 hover:text-dark-100 hover:bg-dark-600/80'
                   }`}
                 >
-                  <Plus size={18} />
+                  <Plus size={16} className="sm:w-[18px] sm:h-[18px]" />
                 </motion.button>
+
+                {sportSession && (
+                  <div className="flex-1 flex justify-center min-w-0">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSessionToPlay(sportSession);
+                      }}
+                      className="flex items-center bg-accent-cyan/15 text-accent-cyan font-bold rounded-xl hover:bg-accent-cyan/25 transition-all text-xs shadow-lg shadow-accent-cyan/5 border border-accent-cyan/30 flex-shrink-0 translate-x-3 sm:translate-x-4"
+                      style={{ padding: '6px 14px', gap: '5px' }}
+                    >
+                      <Play size={14} fill="currentColor" />
+                      <span>Lancer</span>
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <button
@@ -226,17 +242,6 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
           </div>
 
           <div className="flex items-center gap-2.5 flex-shrink-0 ml-auto">
-            {sportSession && (
-              <button
-                onClick={() => setSessionToPlay(sportSession)}
-                className="flex items-center bg-accent-cyan/15 text-accent-cyan font-bold rounded-xl hover:bg-accent-cyan/25 transition-all text-xs shadow-lg shadow-accent-cyan/5 border border-accent-cyan/30"
-                style={{ padding: '8px 18px', gap: '6px' }}
-              >
-                <Play size={14} fill="currentColor" />
-                <span>Lancer</span>
-              </button>
-            )}
-
             <button
               onClick={(e) => {
                 e.stopPropagation();
