@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useReducer } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
+import { useProfile } from './ProfileContext';
 
 const NotesContext = createContext(null);
 
@@ -60,6 +61,7 @@ function notesReducer(state, action) {
 export function NotesProvider({ children }) {
   const [state, dispatch] = useReducer(notesReducer, initialState);
   const { user } = useAuth();
+  const { currentProfile } = useProfile();
 
   useEffect(() => {
     if (!user) return;
@@ -67,8 +69,8 @@ export function NotesProvider({ children }) {
     const fetchData = async () => {
       dispatch({ type: 'SET_LOADING', payload: true });
       const [{ data: folders }, { data: notes }] = await Promise.all([
-        supabase.from('folders').select('*').eq('user_id', user.id).order('name'),
-        supabase.from('notes').select('*').eq('user_id', user.id).order('updated_at', { ascending: false })
+        supabase.from('folders').select('*').eq('user_id', user.id).eq('profile', currentProfile).order('name'),
+        supabase.from('notes').select('*').eq('user_id', user.id).eq('profile', currentProfile).order('updated_at', { ascending: false })
       ]);
 
       dispatch({
@@ -96,7 +98,7 @@ export function NotesProvider({ children }) {
       supabase.removeChannel(folderChannel);
       supabase.removeChannel(noteChannel);
     };
-  }, [user]);
+  }, [user, currentProfile]);
 
   const createFolder = async (name, parentId = null) => {
     // Optimistic update
@@ -107,7 +109,7 @@ export function NotesProvider({ children }) {
     try {
       const { data, error } = await supabase
         .from('folders')
-        .insert({ name, parent_id: parentId, user_id: user.id })
+        .insert({ name, parent_id: parentId, user_id: user.id, profile: currentProfile })
         .select()
         .single();
       if (error) throw error;
@@ -138,7 +140,7 @@ export function NotesProvider({ children }) {
     try {
       const { data, error } = await supabase
         .from('notes')
-        .insert({ title, folder_id: folderId, user_id: user.id })
+        .insert({ title, folder_id: folderId, user_id: user.id, profile: currentProfile })
         .select()
         .single();
       if (error) throw error;

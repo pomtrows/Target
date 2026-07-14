@@ -1,6 +1,7 @@
 import { createContext, useContext, useReducer, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
+import { useProfile } from './ProfileContext';
 import { toggleBit } from '../utils/progressUtils';
 
 const TargetContext = createContext(null);
@@ -169,8 +170,9 @@ function targetReducer(state, action) {
 export function TargetProvider({ children }) {
   const [state, dispatch] = useReducer(targetReducer, initialState);
   const { user } = useAuth();
+  const { currentProfile } = useProfile();
 
-  // Fetch from Supabase on mount or when user changes
+  // Fetch from Supabase on mount, when user changes, or when profile changes
   useEffect(() => {
     if (!user) {
       dispatch({ type: 'RESET' });
@@ -186,9 +188,9 @@ export function TargetProvider({ children }) {
           { data: rewards },
           { data: rewardItems }
         ] = await Promise.all([
-          supabase.from('categories').select('*').eq('user_id', user.id),
-          supabase.from('objectives').select('*').eq('user_id', user.id),
-          supabase.from('progress').select('*').eq('user_id', user.id),
+          supabase.from('categories').select('*').eq('user_id', user.id).eq('profile', currentProfile),
+          supabase.from('objectives').select('*').eq('user_id', user.id).eq('profile', currentProfile),
+          supabase.from('progress').select('*').eq('user_id', user.id), // Fetch all progress, objectives are filtered
           supabase.from('rewards').select('*').eq('user_id', user.id),
           supabase.from('reward_items').select('*').eq('user_id', user.id)
         ]);
@@ -218,8 +220,8 @@ export function TargetProvider({ children }) {
           createdAt: o.created_at
         }));
 
-        let fetchedCategories = categories && categories.length > 0 ? categories : defaultCategories;
-        const savedOrder = JSON.parse(localStorage.getItem(`target_categories_order_${user.id}`)) || {};
+        let fetchedCategories = categories && categories.length > 0 ? categories : (currentProfile === 'pro' ? [] : defaultCategories);
+        const savedOrder = JSON.parse(localStorage.getItem(`target_categories_order_${user.id}_${currentProfile}`)) || {};
         fetchedCategories.sort((a, b) => {
           const orderA = a.order_index !== undefined && a.order_index !== null ? a.order_index : (savedOrder[a.id] !== undefined ? savedOrder[a.id] : 999);
           const orderB = b.order_index !== undefined && b.order_index !== null ? b.order_index : (savedOrder[b.id] !== undefined ? savedOrder[b.id] : 999);
@@ -244,7 +246,7 @@ export function TargetProvider({ children }) {
     };
 
     fetchData();
-  }, [user]);
+  }, [user, currentProfile]);
 
   // Wrapper for dispatch to handle async side effects and local updates
   const userDispatch = async (action) => {
@@ -272,6 +274,7 @@ export function TargetProvider({ children }) {
         await supabase.from('objectives').insert({
           id: newObj.id,
           user_id: user.id,
+          profile: currentProfile,
           title: newObj.title,
           target: newObj.target,
           category_id: newObj.categoryId,
@@ -371,6 +374,7 @@ export function TargetProvider({ children }) {
         await supabase.from('categories').insert({
           id: newCat.id,
           user_id: user.id,
+          profile: currentProfile,
           label: newCat.label,
           icon: newCat.icon,
           color: newCat.color

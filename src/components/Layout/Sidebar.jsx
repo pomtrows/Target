@@ -12,15 +12,17 @@ import {
   sendTestNotification
 } from '../../utils/notificationService';
 
+import { useProfile } from '../../contexts/ProfileContext';
+
 const navItems = [
   { path: '/', label: 'Objectifs', icon: Target },
   { path: '/backlog', label: 'Backlog', icon: Inbox },
   { path: '/history', label: 'Historique', icon: BarChart3 },
   { path: '/categories', label: 'Catégories', icon: Settings },
   { path: '/notes', label: 'Notes', icon: FileText },
-  { path: '/sport', label: 'Sport', icon: Dumbbell },
-  { path: '/rewards', label: 'Récompenses', icon: Gift },
-  { path: '/admin/users', label: 'Administration', icon: Users },
+  { path: '/sport', label: 'Sport', icon: Dumbbell, persoOnly: true },
+  { path: '/rewards', label: 'Récompenses', icon: Gift, persoOnly: true },
+  { path: '/admin/users', label: 'Administration', icon: Users, persoOnly: true },
 ];
 
 export default function Sidebar() {
@@ -28,6 +30,7 @@ export default function Sidebar() {
   const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
   const { logout, isAdmin } = useAuth();
+  const { currentProfile, setCurrentProfile } = useProfile();
 
   // Notification settings states
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
@@ -71,7 +74,8 @@ export default function Sidebar() {
   };
 
   const filteredNavItems = navItems.filter(item => {
-    if (item.path.startsWith('/admin')) return isAdmin;
+    if (item.path.startsWith('/admin')) return isAdmin && currentProfile === 'perso';
+    if (item.persoOnly && currentProfile === 'pro') return false;
     return true;
   });
 
@@ -154,6 +158,28 @@ export default function Sidebar() {
             );
           })}
         </nav>
+
+        {/* Profile Selector */}
+        <div className="px-4" style={{ marginBottom: '40px' }}>
+          <div className="flex p-1 bg-dark-700/50 rounded-xl border border-dark-400/40 w-full">
+            <button
+              onClick={() => setCurrentProfile('perso')}
+              className={`flex-1 rounded-lg text-sm font-medium py-2 transition-all ${
+                currentProfile === 'perso' ? 'bg-dark-500 text-white shadow-sm' : 'text-dark-400 hover:text-dark-200'
+              }`}
+            >
+              Perso
+            </button>
+            <button
+              onClick={() => setCurrentProfile('pro')}
+              className={`flex-1 rounded-lg text-sm font-medium py-2 transition-all ${
+                currentProfile === 'pro' ? 'bg-dark-500 text-white shadow-sm' : 'text-dark-400 hover:text-dark-200'
+              }`}
+            >
+              Pro
+            </button>
+          </div>
+        </div>
 
         {/* Footer with theme toggle */}
         <div className="px-4 py-4 border-t border-dark-600/30 mb-32" style={{ paddingLeft: '15px' }}>

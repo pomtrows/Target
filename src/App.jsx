@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { TargetProvider } from './contexts/TargetContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ProfileProvider } from './contexts/ProfileContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Sidebar from './components/Layout/Sidebar';
 import DashboardPage from './pages/DashboardPage';
@@ -87,11 +88,13 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <AppContent />
-        </BrowserRouter>
-      </AuthProvider>
+      <ProfileProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </AuthProvider>
+      </ProfileProvider>
     </ThemeProvider>
   );
 }
