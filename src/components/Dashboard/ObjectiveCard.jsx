@@ -211,6 +211,9 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        import('../../utils/audioUnlock').then(({ unlockAudioAndTTS }) => {
+                          unlockAudioAndTTS();
+                        });
                         setSessionToPlay(sportSession);
                       }}
                       className="flex items-center bg-accent-cyan/15 text-accent-cyan font-bold rounded-xl hover:bg-accent-cyan/25 transition-all text-xs shadow-lg shadow-accent-cyan/5 border border-accent-cyan/30 flex-shrink-0 translate-x-3 sm:translate-x-4"

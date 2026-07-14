@@ -7,6 +7,7 @@ import { getRecentWeeks, formatWeekShort, isCurrentWeek, getWeeksInMonth, format
 import { getObjectivesForWeek, getWeekProgress, getWeekProgressPercent, isWeekComplete, getObjectiveProgress } from '../../utils/progressUtils';
 import ProgressRing from '../Dashboard/ProgressRing';
 import Badge from '../Shared/Badge';
+import CategoryHistogram from './CategoryHistogram';
 
 export default function HistoryView() {
   const { state } = useTarget();
@@ -150,7 +151,7 @@ export default function HistoryView() {
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex-shrink-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-dark-200">{formatWeekShort(week.weekId)}</span>
                       {week.isCurrent && (
@@ -159,7 +160,18 @@ export default function HistoryView() {
                     </div>
                     <p className="text-xs text-dark-500 mt-0.5">{week.count} objectif{week.count > 1 ? 's' : ''}</p>
                   </div>
-                  <ProgressRing progress={week.progress} size={48} strokeWidth={4} />
+                  
+                  <div className="flex-1 flex justify-center px-2">
+                    <CategoryHistogram 
+                      objectives={week.objectives}
+                      weekProgress={state.progress[week.weekId] || {}}
+                      categories={state.categories}
+                    />
+                  </div>
+
+                  <div className="flex-shrink-0">
+                    <ProgressRing progress={week.progress} size={48} strokeWidth={4} />
+                  </div>
                 </div>
 
                 {week.reward && (

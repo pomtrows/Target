@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, SkipForward, SkipBack, X, Volume2, VolumeX, PartyPopper } from 'lucide-react';
 import { GOAL_TYPES } from '../../data/exercisesCatalog';
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
+import { sharedAudioContext } from '../../utils/audioUnlock';
 
 const STATES = {
   PREPARATION: 'preparation', // 5s before start
@@ -19,7 +21,6 @@ export default function WorkoutPlayer({ session, onClose, onFinish }) {
   const [resetTrigger, setResetTrigger] = useState(0);
   
   const timerRef = useRef(null);
-  const audioContextRef = useRef(null);
   const timeLeftRef = useRef(timeLeft);
   const lastProcessedTimeRef = useRef(null);
 
@@ -38,16 +39,6 @@ export default function WorkoutPlayer({ session, onClose, onFinish }) {
   
   const totalExercises = session.exercises.length;
   const progress = ((currentIndex) / totalExercises) * 100;
-
-  // Initialize Audio Context for beeps
-  useEffect(() => {
-    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
-    return () => {
-      if (audioContextRef.current?.state !== 'closed') {
-        audioContextRef.current?.close();
-      }
-    };
-  }, []);
 
   // Gestion du Screen Wake Lock (garder l'écran allumé pendant la séance)
   useEffect(() => {
@@ -85,27 +76,27 @@ export default function WorkoutPlayer({ session, onClose, onFinish }) {
   }, []);
 
   const playBeep = useCallback((frequency = 800, duration = 0.1, type = 'sine') => {
-    if (isMuted || !audioContextRef.current) return;
+    if (isMuted || !sharedAudioContext) return;
     
     try {
-      if (audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume();
+      if (sharedAudioContext.state === 'suspended') {
+        sharedAudioContext.resume();
       }
       
-      const oscillator = audioContextRef.current.createOscillator();
-      const gainNode = audioContextRef.current.createGain();
+      const oscillator = sharedAudioContext.createOscillator();
+      const gainNode = sharedAudioContext.createGain();
       
       oscillator.type = type;
-      oscillator.frequency.setValueAtTime(frequency, audioContextRef.current.currentTime);
+      oscillator.frequency.setValueAtTime(frequency, sharedAudioContext.currentTime);
       
-      gainNode.gain.setValueAtTime(0.5, audioContextRef.current.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + duration);
+      gainNode.gain.setValueAtTime(0.5, sharedAudioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, sharedAudioContext.currentTime + duration);
       
       oscillator.connect(gainNode);
-      gainNode.connect(audioContextRef.current.destination);
+      gainNode.connect(sharedAudioContext.destination);
       
       oscillator.start();
-      oscillator.stop(audioContextRef.current.currentTime + duration);
+      oscillator.stop(sharedAudioContext.currentTime + duration);
     } catch (e) {
       console.error("Error playing beep", e);
     }
@@ -122,13 +113,25 @@ export default function WorkoutPlayer({ session, onClose, onFinish }) {
     }
   }, [isMuted]);
 
-  const speak = useCallback((text) => {
-    if (isMuted || !('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel(); // Cancel any ongoing speech
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'fr-FR';
-    utterance.rate = 1.0;
-    window.speechSynthesis.speak(utterance);
+  const speak = useCallback(async (text) => {
+    if (isMuted) return;
+    try {
+      await TextToSpeech.stop();
+      await TextToSpeech.speak({
+        text: text,
+        lang: 'fr-FR',
+        rate: 1.0,
+        pitch: 1.0,
+        category: 'ambient',
+      });
+    } catch (e) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'fr-FR';
+        window.speechSynthesis.speak(utterance);
+      }
+    }
   }, [isMuted]);
 
   // Annonce vocale initiale au lancement

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
@@ -14,7 +15,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
     };
   }, [isOpen]);
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -22,6 +23,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          onClick={(e) => e.stopPropagation()}
         >
           {/* Backdrop */}
           <motion.div
@@ -63,4 +65,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
       )}
     </AnimatePresence>
   );
+
+  if (typeof document === 'undefined') return null;
+  return createPortal(modalContent, document.body);
 }
