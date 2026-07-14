@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Pencil, AlertTriangle, List, Clock, Check, FileText, Columns3 } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
@@ -313,7 +314,16 @@ function CompactObjectiveCard({ objective, weekId, onEdit, onDelete }) {
 
 export default function WeekView() {
   const { state, dispatch } = useTarget();
-  const [currentWeek, setCurrentWeek] = useState(getCurrentWeekId());
+  const [searchParams] = useSearchParams();
+  const weekParam = searchParams.get('week');
+  const [currentWeek, setCurrentWeek] = useState(weekParam || getCurrentWeekId());
+
+  useEffect(() => {
+    if (weekParam && weekParam !== currentWeek) {
+      setCurrentWeek(weekParam);
+    }
+  }, [weekParam]);
+
   const [showForm, setShowForm] = useState(false);
   const [editObjective, setEditObjective] = useState(null);
   const [direction, setDirection] = useState(0);
