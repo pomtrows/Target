@@ -324,6 +324,11 @@ export default function WeekView() {
     }
   }, [weekParam]);
 
+  // Déclencher le report automatique à chaque changement de semaine affichée
+  useEffect(() => {
+    dispatch({ type: 'TRIGGER_ROLLOVER' });
+  }, [currentWeek, dispatch]);
+
   const [showForm, setShowForm] = useState(false);
   const [editObjective, setEditObjective] = useState(null);
   const [direction, setDirection] = useState(0);

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, Plus, Pencil, Trash2, Check, X, AlertTriangle, GripVertical } from 'lucide-react';
+import { Settings, Plus, Pencil, Trash2, Check, X, AlertTriangle, GripVertical, Repeat } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useTarget } from '../../contexts/TargetContext';
 import Modal from '../Shared/Modal';
@@ -32,20 +32,20 @@ export default function CategoriesView() {
   const { state, dispatch } = useTarget();
   const [editingId, setEditingId] = useState(null);
   const [showNew, setShowNew] = useState(false);
-  const [form, setForm] = useState({ label: '', icon: '📌', color: '#94a3b8' });
+  const [form, setForm] = useState({ label: '', icon: '📌', color: '#94a3b8', auto_rollover: false });
   const [deleteError, setDeleteError] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const startEdit = (cat) => {
     setEditingId(cat.id);
-    setForm({ label: cat.label, icon: cat.icon, color: cat.color });
+    setForm({ label: cat.label, icon: cat.icon, color: cat.color, auto_rollover: cat.auto_rollover || false });
     setShowNew(false);
   };
 
   const startNew = () => {
     setShowNew(true);
     setEditingId(null);
-    setForm({ label: '', icon: '📌', color: '#94a3b8' });
+    setForm({ label: '', icon: '📌', color: '#94a3b8', auto_rollover: false });
   };
 
   const handleSave = () => {
@@ -57,7 +57,14 @@ export default function CategoriesView() {
       dispatch({ type: 'ADD_CATEGORY', payload: form });
       setShowNew(false);
     }
-    setForm({ label: '', icon: '📌', color: '#94a3b8' });
+    setForm({ label: '', icon: '📌', color: '#94a3b8', auto_rollover: false });
+  };
+
+  const handleToggleRollover = (cat) => {
+    dispatch({ 
+      type: 'UPDATE_CATEGORY', 
+      payload: { ...cat, auto_rollover: !cat.auto_rollover } 
+    });
   };
 
   const handleDelete = (catId) => {
@@ -148,6 +155,27 @@ export default function CategoriesView() {
               />
             ))}
           </div>
+        </div>
+
+        <div className="flex items-center justify-between bg-dark-900/40 p-3 rounded-xl border border-dark-600/30" style={{ marginTop: '16px' }}>
+          <div>
+            <span className="text-sm font-semibold text-dark-200">Report automatique</span>
+            <p className="text-xs text-dark-400 mt-0.5">Reporter les objectifs non terminés à la semaine suivante</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setForm({ ...form, auto_rollover: !form.auto_rollover })}
+            className={`w-12 h-6 rounded-full transition-all relative border-none cursor-pointer flex-shrink-0 ${
+              form.auto_rollover ? 'bg-accent-cyan' : 'bg-dark-600'
+            }`}
+          >
+            <motion.div
+              layout
+              className="w-5 h-5 bg-dark-900 rounded-full absolute top-0.5 left-0.5"
+              style={{ x: form.auto_rollover ? '24px' : '0px' }}
+              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+            />
+          </button>
         </div>
 
         <div className="flex gap-2" style={{ marginTop: '10px' }}>
@@ -242,7 +270,12 @@ export default function CategoriesView() {
                               </div>
 
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-sm" style={{ color: cat.color }}>{cat.label}</h3>
+                                <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: cat.color }}>
+                                  {cat.label}
+                                  {cat.auto_rollover && (
+                                    <Repeat size={14} className="opacity-60" title="Report automatique activé" />
+                                  )}
+                                </h3>
                                 <p className="text-xs text-dark-500">{objCount} objectif{objCount !== 1 ? 's' : ''}</p>
                               </div>
 
@@ -252,6 +285,17 @@ export default function CategoriesView() {
                               />
 
                               <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => handleToggleRollover(cat)}
+                                  className={`p-2 rounded-lg transition-all ${
+                                    cat.auto_rollover 
+                                      ? 'text-accent-cyan bg-accent-cyan/10 hover:bg-accent-cyan/20' 
+                                      : 'text-dark-400 hover:text-accent-cyan hover:bg-dark-600/50'
+                                  }`}
+                                  title={cat.auto_rollover ? "Désactiver le report automatique" : "Activer le report automatique"}
+                                >
+                                  <Repeat size={16} />
+                                </button>
                                 <button
                                   onClick={() => startEdit(cat)}
                                   className="p-2 rounded-lg text-dark-400 hover:text-white hover:bg-dark-600/50 transition-all"

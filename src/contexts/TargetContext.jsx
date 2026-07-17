@@ -2,7 +2,8 @@ import { createContext, useContext, useReducer, useEffect, useState } from 'reac
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 import { useProfile } from './ProfileContext';
-import { toggleBit } from '../utils/progressUtils';
+import { toggleBit, getObjectiveProgress } from '../utils/progressUtils';
+import { getCurrentWeekId } from '../utils/weekUtils';
 
 const TargetContext = createContext(null);
 
@@ -239,6 +240,50 @@ export function TargetProvider({ children }) {
             rewardItems: rewardItems || [],
           }
         });
+
+        // Auto-Rollover logic
+        const currentWeekId = getCurrentWeekId();
+        let objectivesUpdated = false;
+        
+        const autoRolloverCategories = new Set(
+          fetchedCategories.filter(cat => cat.auto_rollover).map(cat => cat.id)
+        );
+
+        for (const obj of transformedObjectives) {
+          if (!autoRolloverCategories.has(obj.categoryId) || !obj.assignments || obj.assignments.length === 0) continue;
+          
+          const weekAssignments = obj.assignments.filter(a => typeof a === 'string' && a.match(/^\d{4}-S\d{2}$/)).sort();
+          if (weekAssignments.length === 0) continue;
+          
+          const latestAssignedWeek = weekAssignments[weekAssignments.length - 1];
+          
+          if (latestAssignedWeek < currentWeekId) {
+            const prog = getObjectiveProgress(obj, transformedProgress[latestAssignedWeek] || {});
+            
+            if (prog < 1 && !obj.assignments.includes(currentWeekId)) {
+              obj.assignments.push(currentWeekId);
+              objectivesUpdated = true;
+              
+              supabase.from('objectives').update({ assignments: obj.assignments }).eq('id', obj.id).then(({ error }) => {
+                if (error) console.error('Error rolling over objective:', error);
+              });
+            }
+          }
+        }
+
+        if (objectivesUpdated) {
+          dispatch({
+            type: 'INITIALIZE',
+            payload: {
+              categories: fetchedCategories,
+              objectives: transformedObjectives,
+              progress: transformedProgress,
+              progressTimestamps: transformedTimestamps,
+              rewards: transformedRewards,
+              rewardItems: rewardItems || [],
+            }
+          });
+        }
       } catch (error) {
         console.error('Error fetching user data:', error);
         dispatch({ type: 'INITIALIZE', payload: {} });
@@ -253,6 +298,45 @@ export function TargetProvider({ children }) {
     if (!user) return;
 
     switch (action.type) {
+      case 'TRIGGER_ROLLOVER': {
+        const currentWeekId = getCurrentWeekId();
+        let objectivesUpdated = false;
+        const newObjectives = [...state.objectives];
+        
+        const autoRolloverCategories = new Set(
+          state.categories.filter(cat => cat.auto_rollover).map(cat => cat.id)
+        );
+
+        for (let i = 0; i < newObjectives.length; i++) {
+          const obj = newObjectives[i];
+          if (!autoRolloverCategories.has(obj.categoryId) || !obj.assignments || obj.assignments.length === 0) continue;
+          
+          const weekAssignments = obj.assignments.filter(a => typeof a === 'string' && a.match(/^\d{4}-S\d{2}$/)).sort();
+          if (weekAssignments.length === 0) continue;
+          
+          const latestAssignedWeek = weekAssignments[weekAssignments.length - 1];
+          
+          if (latestAssignedWeek < currentWeekId) {
+            const prog = getObjectiveProgress(obj, state.progress[latestAssignedWeek] || {});
+            
+            if (prog < 1 && !obj.assignments.includes(currentWeekId)) {
+              const newAssignments = [...obj.assignments, currentWeekId];
+              newObjectives[i] = { ...obj, assignments: newAssignments };
+              objectivesUpdated = true;
+              
+              supabase.from('objectives').update({ assignments: newAssignments }).eq('id', obj.id).then(({ error }) => {
+                if (error) console.error('Error rolling over objective:', error);
+              });
+            }
+          }
+        }
+
+        if (objectivesUpdated) {
+          dispatch({ type: 'INITIALIZE', payload: { ...state, objectives: newObjectives } });
+        }
+        break;
+      }
+
       case 'ADD_OBJECTIVE': {
         const newObj = {
           id: `obj-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
@@ -377,7 +461,8 @@ export function TargetProvider({ children }) {
           profile: currentProfile,
           label: newCat.label,
           icon: newCat.icon,
-          color: newCat.color
+          color: newCat.color,
+          auto_rollover: newCat.auto_rollover || false
         });
         break;
       }
@@ -388,7 +473,8 @@ export function TargetProvider({ children }) {
         await supabase.from('categories').update({
           label: updated.label,
           icon: updated.icon,
-          color: updated.color
+          color: updated.color,
+          auto_rollover: updated.auto_rollover || false
         }).eq('id', updated.id);
         break;
       }
