@@ -28,6 +28,7 @@ const initialState = {
   rewards: {}, 
   rewardItems: [],
   progressTimestamps: {}, // New: Stores "weekId-objId" -> ISO timestamp
+  rewardThreshold: 100, // New: Reward unlock threshold (percentage)
   loading: true,
 };
 
@@ -162,6 +163,13 @@ function targetReducer(state, action) {
       };
     }
 
+    case 'SET_REWARD_THRESHOLD': {
+      return {
+        ...state,
+        rewardThreshold: action.payload
+      };
+    }
+
     default:
       return state;
   }
@@ -229,6 +237,8 @@ export function TargetProvider({ children }) {
           return orderA - orderB;
         });
 
+        const savedThreshold = parseInt(localStorage.getItem(`target_reward_threshold_${user.id}_${currentProfile}`)) || 100;
+
         dispatch({
           type: 'INITIALIZE',
           payload: {
@@ -238,6 +248,7 @@ export function TargetProvider({ children }) {
             progressTimestamps: transformedTimestamps,
             rewards: transformedRewards,
             rewardItems: rewardItems || [],
+            rewardThreshold: savedThreshold,
           }
         });
 

@@ -345,7 +345,7 @@ export default function WeekView() {
   const weekProgress = state.progress[currentWeek] || {};
   const progress = getWeekProgress(objectives, weekProgress);
   const progressPercent = getWeekProgressPercent(objectives, weekProgress);
-  const unlocked = isWeekComplete(objectives, weekProgress) && objectives.length > 0;
+  const unlocked = isWeekComplete(objectives, weekProgress, state.rewardThreshold || 100) && objectives.length > 0;
 
   useEffect(() => {
     const rewardItemLocked = state.rewardItems?.find(r => r.assigned_week === currentWeek && r.status === 'locked');

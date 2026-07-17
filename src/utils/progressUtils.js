@@ -69,10 +69,10 @@ export function getWeekProgressPercent(objectives, weekProgress) {
 }
 
 /**
- * Check if a week is fully completed (100%)
+ * Check if a week is fully completed (based on a threshold, default 100%)
  */
-export function isWeekComplete(objectives, weekProgress) {
-  return getWeekProgress(objectives, weekProgress) === 1;
+export function isWeekComplete(objectives, weekProgress, threshold = 100) {
+  return getWeekProgressPercent(objectives, weekProgress) >= threshold;
 }
 
 /**

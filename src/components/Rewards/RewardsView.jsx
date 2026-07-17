@@ -2,11 +2,15 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gift, Lock, Unlock, Plus, Pencil, Trash2, Check, X, AlertTriangle, Calendar } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useProfile } from '../../contexts/ProfileContext';
 import Modal from '../Shared/Modal';
 import { formatWeekLabelParts } from '../../utils/weekUtils';
 
 export default function RewardsView() {
   const { state, dispatch } = useTarget();
+  const { user } = useAuth();
+  const { currentProfile } = useProfile();
   const [editingId, setEditingId] = useState(null);
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState({ title: '', status: 'locked' });
@@ -75,6 +79,14 @@ export default function RewardsView() {
   const lockedRewards = state.rewardItems.filter(r => r.status === 'locked');
   const unlockedRewards = state.rewardItems.filter(r => r.status === 'unlocked');
 
+  const handleThresholdChange = (e) => {
+    const val = parseInt(e.target.value, 10);
+    dispatch({ type: 'SET_REWARD_THRESHOLD', payload: val });
+    if (user && currentProfile) {
+      localStorage.setItem(`target_reward_threshold_${user.id}_${currentProfile}`, val);
+    }
+  };
+
   return (
     <div className="mx-auto pb-28 transition-all duration-300 w-full px-2 sm:px-4 md:px-0 max-w-4xl">
       {/* Header */}
@@ -97,6 +109,29 @@ export default function RewardsView() {
             <Plus size={20} />
             <span className="hidden sm:inline whitespace-nowrap">Nouvelle récompense</span>
           </button>
+        </div>
+      </div>
+
+      {/* Threshold Configuration */}
+      <div className="bg-dark-800 p-6 sm:p-8 rounded-2xl border border-dark-600 shadow-md flex flex-col items-center justify-center text-center gap-4 max-w-2xl mx-auto" style={{ marginBottom: '30px' }}>
+        <div>
+          <h3 className="font-bold text-dark-200 text-lg">Seuil de déblocage hebdomadaire</h3>
+          <p className="text-sm text-dark-400 mt-1">Pourcentage d'objectifs à atteindre pour débloquer la récompense de la semaine.</p>
+        </div>
+        <div className="flex items-center justify-center gap-3 mt-2">
+          <span className="text-xl font-bold text-accent-violet">{state.rewardThreshold || 100}%</span>
+          <select 
+            value={state.rewardThreshold || 100} 
+            onChange={handleThresholdChange}
+            className="bg-dark-900 border border-dark-600 rounded-xl px-4 py-2.5 text-dark-200 focus:outline-none focus:border-accent-violet cursor-pointer font-medium"
+          >
+            <option value="50">50%</option>
+            <option value="60">60%</option>
+            <option value="70">70%</option>
+            <option value="80">80%</option>
+            <option value="90">90%</option>
+            <option value="100">100%</option>
+          </select>
         </div>
       </div>
 
