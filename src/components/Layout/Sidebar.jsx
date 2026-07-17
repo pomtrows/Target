@@ -182,7 +182,7 @@ export default function Sidebar() {
         </div>
 
         {/* Footer with theme toggle */}
-        <div className="px-4 py-4 border-t border-dark-600/30 mb-32" style={{ paddingLeft: '15px' }}>
+        <div className="px-4 py-4 border-t border-dark-600/30 mb-32 flex flex-col gap-4" style={{ paddingLeft: '15px' }}>
           <button
             onClick={toggleTheme}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-400 hover:text-dark-200 hover:bg-dark-700/50 transition-all duration-200 animate-fade-in"
@@ -200,7 +200,7 @@ export default function Sidebar() {
 
           <button
             onClick={() => setShowNotificationSettings(true)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-400 hover:text-dark-200 hover:bg-dark-700/50 transition-all duration-200 mt-2"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-400 hover:text-dark-200 hover:bg-dark-700/50 transition-all duration-200"
           >
             {notifEnabled && notifPermission === 'granted' ? <Bell size={20} className="text-accent-cyan animate-pulse" /> : <BellOff size={20} />}
             Notifications
@@ -208,7 +208,7 @@ export default function Sidebar() {
 
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-500 hover:text-accent-red hover:bg-accent-red/10 transition-all duration-200 mt-2"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-500 hover:text-accent-red hover:bg-accent-red/10 transition-all duration-200"
           >
             <LogOut size={20} />
             Déconnexion

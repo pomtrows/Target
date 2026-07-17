@@ -198,29 +198,28 @@ export default function CategoriesView() {
   );
 
   return (
-    <div className="max-w-2xl mx-auto" style={{ paddingTop: '60px' }}>
-      <div className="flex items-center justify-between" style={{ marginBottom: '25px' }}>
-        <div>
-          <h1 className="text-2xl font-bold text-dark-100 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-accent-orange/20 flex items-center justify-center">
-              <Settings size={22} className="text-accent-orange" />
-            </div>
-            Catégories
-          </h1>
-
-        </div>
+    <div className="max-w-2xl mx-auto" style={{ paddingTop: '0px' }}>
+      <div className="flex flex-col items-center gap-4" style={{ marginBottom: '25px', width: '100%' }}>
+        <h1 className="text-2xl font-bold text-dark-100 flex items-center gap-3 w-full justify-center">
+          <div className="w-10 h-10 rounded-xl bg-accent-orange/20 flex items-center justify-center">
+            <Settings size={22} className="text-accent-orange" />
+          </div>
+          Catégories
+        </h1>
 
         {!showNew && !editingId && (
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={startNew}
-            className="py-2.5 rounded-full text-sm font-medium text-white bg-gradient-to-r from-accent-cyan to-accent-violet hover:opacity-90 transition-opacity flex items-center gap-2 whitespace-nowrap"
-            style={{ paddingLeft: '24px', paddingRight: '24px' }}
-          >
-            <Plus size={18} />
-            Nouvelle
-          </motion.button>
+          <div className="w-full flex justify-end">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={startNew}
+              className="py-2.5 rounded-full text-sm font-medium text-white bg-gradient-to-r from-accent-cyan to-accent-violet hover:opacity-90 transition-opacity flex items-center gap-2 whitespace-nowrap"
+              style={{ paddingLeft: '24px', paddingRight: '24px' }}
+            >
+              <Plus size={18} />
+              Nouvelle
+            </motion.button>
+          </div>
         )}
       </div>
 
@@ -284,7 +283,7 @@ export default function CategoriesView() {
                                 style={{ backgroundColor: cat.color }}
                               />
 
-                              <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center gap-4 opacity-40 group-hover:opacity-100 transition-opacity">
                                 <button
                                   onClick={() => handleToggleRollover(cat)}
                                   className={`p-2 rounded-lg transition-all ${
