@@ -69,10 +69,26 @@ export function getWeekProgressPercent(objectives, weekProgress) {
 }
 
 /**
- * Check if a week is fully completed (based on a threshold, default 100%)
+ * Check if a week is fully completed based on priority thresholds
  */
-export function isWeekComplete(objectives, weekProgress, threshold = 100) {
-  return getWeekProgressPercent(objectives, weekProgress) >= threshold;
+export function isWeekComplete(objectives, weekProgress, thresholds = { P1: 100, P2: 100, P3: 100 }) {
+  if (!objectives || objectives.length === 0) return false;
+
+  const byPriority = { P1: [], P2: [], P3: [] };
+  objectives.forEach(obj => {
+    const p = obj.priority || 'P3';
+    if (!byPriority[p]) byPriority[p] = [];
+    byPriority[p].push(obj);
+  });
+
+  for (const p of ['P1', 'P2', 'P3']) {
+    if (byPriority[p].length > 0) {
+      const prog = getWeekProgressPercent(byPriority[p], weekProgress);
+      const threshold = thresholds[p] !== undefined ? thresholds[p] : 100;
+      if (prog < threshold) return false;
+    }
+  }
+  return true;
 }
 
 /**

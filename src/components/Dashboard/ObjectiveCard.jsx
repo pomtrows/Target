@@ -102,6 +102,23 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
     });
   };
 
+  const handlePriorityClick = (e) => {
+    e.stopPropagation();
+    const currentPriority = objective.priority || 'P3';
+    let newPriority = 'P3';
+    if (currentPriority === 'P3') newPriority = 'P2';
+    else if (currentPriority === 'P2') newPriority = 'P1';
+    else if (currentPriority === 'P1') newPriority = 'P3';
+
+    dispatch({
+      type: 'UPDATE_OBJECTIVE',
+      payload: {
+        ...objective,
+        priority: newPriority,
+      },
+    });
+  };
+
   return (
     <motion.div
       layout
@@ -283,29 +300,46 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
       </div>
 
       {/* Footer Progress Bar with integrated Checkmark */}
-      <div className="relative mt-auto px-1 flex items-center h-10">
-        <div className="h-[6px] w-full bg-dark-600/20 rounded-full overflow-hidden">
-          <motion.div
-            className="h-full rounded-full"
-            style={{ backgroundColor: color }}
-            initial={{ width: 0 }}
-            animate={{ width: isCompleted ? 'calc(100% - 15px)' : `${progress * 100}%` }}
-            transition={{ type: 'spring', damping: 25, stiffness: 120 }}
-          />
+      <div className="mt-auto px-1 flex items-center h-10 gap-3">
+        <div className="relative flex-1 flex items-center h-full">
+          <div className="h-[6px] w-full bg-dark-600/20 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full rounded-full"
+              style={{ backgroundColor: color }}
+              initial={{ width: 0 }}
+              animate={{ width: isCompleted ? 'calc(100% - 15px)' : `${progress * 100}%` }}
+              transition={{ type: 'spring', damping: 25, stiffness: 120 }}
+            />
+          </div>
+          
+          {/* Checkmark Badge */}
+          {isCompleted && (
+            <motion.div
+              initial={{ scale: 0, x: 20 }}
+              animate={{ scale: 1, x: 0 }}
+              className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-dark-700 border-[6px] border-dark-800/50 flex items-center justify-center shadow-xl z-10"
+            >
+              <div className="w-full h-full rounded-full bg-accent-green/20 flex items-center justify-center">
+                <Check size={20} className="text-accent-green" strokeWidth={4} />
+              </div>
+            </motion.div>
+          )}
         </div>
         
-        {/* Checkmark Badge */}
-        {isCompleted && (
-          <motion.div
-            initial={{ scale: 0, x: 20 }}
-            animate={{ scale: 1, x: 0 }}
-            className="absolute -right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-dark-700 border-[6px] border-dark-800/50 flex items-center justify-center shadow-xl z-10"
-          >
-            <div className="w-full h-full rounded-full bg-accent-green/20 flex items-center justify-center">
-              <Check size={20} className="text-accent-green" strokeWidth={4} />
-            </div>
-          </motion.div>
-        )}
+        {/* Priority Badge */}
+        <button 
+          onClick={handlePriorityClick}
+          className="flex-shrink-0 w-[40px] flex justify-center items-center font-black text-lg cursor-pointer hover:scale-110 transition-transform bg-transparent border-none"
+          title="Changer la priorité"
+        >
+          <span className={
+            objective.priority === 'P1' ? 'text-accent-red' :
+            (objective.priority || 'P3') === 'P3' ? 'text-accent-cyan' :
+            'text-accent-violet'
+          }>
+            {objective.priority || 'P3'}
+          </span>
+        </button>
       </div>
 
       {sessionToPlay && (

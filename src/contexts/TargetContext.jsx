@@ -28,7 +28,7 @@ const initialState = {
   rewards: {}, 
   rewardItems: [],
   progressTimestamps: {}, // New: Stores "weekId-objId" -> ISO timestamp
-  rewardThreshold: 100, // New: Reward unlock threshold (percentage)
+  rewardThresholds: { P1: 100, P2: 100, P3: 100 }, // New: Reward unlock thresholds per priority
   loading: true,
 };
 
@@ -163,10 +163,10 @@ function targetReducer(state, action) {
       };
     }
 
-    case 'SET_REWARD_THRESHOLD': {
+    case 'SET_REWARD_THRESHOLDS': {
       return {
         ...state,
-        rewardThreshold: action.payload
+        rewardThresholds: action.payload
       };
     }
 
@@ -195,13 +195,15 @@ export function TargetProvider({ children }) {
           { data: objectives },
           { data: progress },
           { data: rewards },
-          { data: rewardItems }
+          { data: rewardItems },
+          { data: settingsData }
         ] = await Promise.all([
           supabase.from('categories').select('*').eq('user_id', user.id).eq('profile', currentProfile),
           supabase.from('objectives').select('*').eq('user_id', user.id).eq('profile', currentProfile),
           supabase.from('progress').select('*').eq('user_id', user.id), // Fetch all progress, objectives are filtered
           supabase.from('rewards').select('*').eq('user_id', user.id),
-          supabase.from('reward_items').select('*').eq('user_id', user.id)
+          supabase.from('reward_items').select('*').eq('user_id', user.id),
+          supabase.from('settings').select('*').eq('user_id', user.id).eq('profile', currentProfile).maybeSingle()
         ]);
 
         const transformedProgress = (progress || []).reduce((acc, p) => {
@@ -226,6 +228,7 @@ export function TargetProvider({ children }) {
           sportSessionId: o.sport_session_id || null,
           subObjectives: o.sub_objectives || [],
           attachments: o.attachments || [],
+          priority: o.priority || 'P3',
           createdAt: o.created_at
         }));
 
@@ -237,7 +240,13 @@ export function TargetProvider({ children }) {
           return orderA - orderB;
         });
 
-        const savedThreshold = parseInt(localStorage.getItem(`target_reward_threshold_${user.id}_${currentProfile}`)) || 100;
+        // Use settings from Supabase, fallback to localStorage, then default
+        let savedThresholds = { P1: 100, P2: 100, P3: 100 };
+        if (settingsData && settingsData.reward_thresholds) {
+          savedThresholds = settingsData.reward_thresholds;
+        } else {
+          savedThresholds = JSON.parse(localStorage.getItem(`target_reward_thresholds_${user.id}_${currentProfile}`)) || { P1: 100, P2: 100, P3: 100 };
+        }
 
         dispatch({
           type: 'INITIALIZE',
@@ -248,7 +257,7 @@ export function TargetProvider({ children }) {
             progressTimestamps: transformedTimestamps,
             rewards: transformedRewards,
             rewardItems: rewardItems || [],
-            rewardThreshold: savedThreshold,
+            rewardThresholds: savedThresholds,
           }
         });
 
@@ -358,6 +367,7 @@ export function TargetProvider({ children }) {
           assignments: action.payload.assignments || [],
           subObjectives: action.payload.subObjectives || [],
           attachments: action.payload.attachments || [],
+          priority: action.payload.priority || 'P3',
           createdAt: new Date().toISOString().slice(0, 10),
           user_id: user.id
         };
@@ -377,6 +387,7 @@ export function TargetProvider({ children }) {
           assignments: newObj.assignments,
           sub_objectives: newObj.subObjectives,
           attachments: newObj.attachments,
+          priority: newObj.priority,
           created_at: newObj.createdAt
         });
         break;
@@ -392,7 +403,8 @@ export function TargetProvider({ children }) {
           sport_session_id: updated.sportSessionId || null,
           assignments: updated.assignments,
           sub_objectives: updated.subObjectives || [],
-          attachments: updated.attachments || []
+          attachments: updated.attachments || [],
+          priority: updated.priority || 'P3'
         }).eq('id', updated.id);
         break;
       }
@@ -560,6 +572,22 @@ export function TargetProvider({ children }) {
         const itemId = action.payload;
         dispatch({ type: 'DELETE_REWARD_ITEM', payload: itemId });
         await supabase.from('reward_items').delete().eq('id', itemId);
+        break;
+      }
+
+      case 'SET_REWARD_THRESHOLDS': {
+        dispatch({ type: 'SET_REWARD_THRESHOLDS', payload: action.payload });
+        
+        // Upsert to Supabase
+        const { error } = await supabase.from('settings').upsert({
+          user_id: user.id,
+          profile: currentProfile,
+          reward_thresholds: action.payload
+        }, { onConflict: 'user_id,profile' });
+
+        if (error) {
+          console.error("Error saving thresholds to Supabase:", error);
+        }
         break;
       }
 

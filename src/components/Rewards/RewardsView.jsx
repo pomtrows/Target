@@ -79,11 +79,15 @@ export default function RewardsView() {
   const lockedRewards = state.rewardItems.filter(r => r.status === 'locked');
   const unlockedRewards = state.rewardItems.filter(r => r.status === 'unlocked');
 
-  const handleThresholdChange = (e) => {
+  const handleThresholdChange = (priority, e) => {
     const val = parseInt(e.target.value, 10);
-    dispatch({ type: 'SET_REWARD_THRESHOLD', payload: val });
+    const newThresholds = {
+      ...(state.rewardThresholds || { P1: 100, P2: 100, P3: 100 }),
+      [priority]: val
+    };
+    dispatch({ type: 'SET_REWARD_THRESHOLDS', payload: newThresholds });
     if (user && currentProfile) {
-      localStorage.setItem(`target_reward_threshold_${user.id}_${currentProfile}`, val);
+      localStorage.setItem(`target_reward_thresholds_${user.id}_${currentProfile}`, JSON.stringify(newThresholds));
     }
   };
 
@@ -118,20 +122,37 @@ export default function RewardsView() {
           <h3 className="font-bold text-dark-200 text-lg">Seuil de déblocage hebdomadaire</h3>
           <p className="text-sm text-dark-400 mt-1">Pourcentage d'objectifs à atteindre pour débloquer la récompense de la semaine.</p>
         </div>
-        <div className="flex items-center justify-center gap-3 mt-2">
-          <span className="text-xl font-bold text-accent-violet">{state.rewardThreshold || 100}%</span>
-          <select 
-            value={state.rewardThreshold || 100} 
-            onChange={handleThresholdChange}
-            className="bg-dark-900 border border-dark-600 rounded-xl px-4 py-2.5 text-dark-200 focus:outline-none focus:border-accent-violet cursor-pointer font-medium"
-          >
-            <option value="50">50%</option>
-            <option value="60">60%</option>
-            <option value="70">70%</option>
-            <option value="80">80%</option>
-            <option value="90">90%</option>
-            <option value="100">100%</option>
-          </select>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mt-2">
+          {['P1', 'P2', 'P3'].map(priority => {
+            const val = (state.rewardThresholds && state.rewardThresholds[priority]) !== undefined ? state.rewardThresholds[priority] : 100;
+            return (
+              <div key={priority} className="flex items-center gap-2">
+                <span className={`font-black text-lg ${
+                  priority === 'P1' ? 'text-accent-red' : 
+                  priority === 'P2' ? 'text-accent-violet' : 
+                  'text-accent-cyan'
+                }`}>
+                  {priority}
+                </span>
+                <select 
+                  value={val} 
+                  onChange={(e) => handleThresholdChange(priority, e)}
+                  className="bg-dark-900 border border-dark-600 rounded-xl px-3 py-1.5 text-dark-200 focus:outline-none focus:border-accent-violet cursor-pointer font-medium"
+                >
+                  <option value="10">10%</option>
+                  <option value="20">20%</option>
+                  <option value="30">30%</option>
+                  <option value="40">40%</option>
+                  <option value="50">50%</option>
+                  <option value="60">60%</option>
+                  <option value="70">70%</option>
+                  <option value="80">80%</option>
+                  <option value="90">90%</option>
+                  <option value="100">100%</option>
+                </select>
+              </div>
+            );
+          })}
         </div>
       </div>
 

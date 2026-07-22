@@ -53,6 +53,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
   const [title, setTitle] = useState(editObjective?.title || '');
   const [target, setTarget] = useState(editObjective?.target || 1);
   const [categoryId, setCategoryId] = useState(editObjective?.categoryId || 'autre');
+  const [priority, setPriority] = useState(editObjective?.priority || 'P3');
   const [sportSessionId, setSportSessionId] = useState(editObjective?.sportSessionId || '');
   const [subObjectives, setSubObjectives] = useState(editObjective?.subObjectives || []);
   const [assignType, setAssignType] = useState(
@@ -170,6 +171,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
       setTitle(editObjective?.title || '');
       setTarget(editObjective?.target || 1);
       setCategoryId(editObjective?.categoryId || 'autre');
+      setPriority(editObjective?.priority || 'P3');
       setSportSessionId(editObjective?.sportSessionId || '');
       setSubObjectives(editObjective?.subObjectives || []);
       setAssignType(
@@ -243,6 +245,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           title: title.trim(),
           target: Number(target),
           categoryId,
+          priority,
           sportSessionId: sportSessionId || null,
           assignments,
           subObjectives: finalSubObjectives
@@ -255,6 +258,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           title: title.trim(),
           target: Number(target),
           categoryId,
+          priority,
           sportSessionId: sportSessionId || null,
           assignments,
           subObjectives: finalSubObjectives
@@ -267,6 +271,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
     setTitle('');
     setTarget(1);
     setCategoryId('autre');
+    setPriority('P3');
     setSportSessionId('');
     setSubObjectives([]);
     setScheduleDays([]);
@@ -313,9 +318,9 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
 
         <div className="flex gap-4 items-end">
           {/* Target quantity */}
-          <div className="w-32">
-            <label className="block text-sm font-medium text-dark-200 mb-2">
-              Cible quantitative
+          <div className="w-24">
+            <label className="block text-sm font-medium text-dark-200 mb-2 truncate">
+              Cible
             </label>
             <input
               type="number"
@@ -325,6 +330,27 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
               onChange={(e) => setTarget(e.target.value)}
               className="w-full text-center bg-dark-700/50 border border-dark-600/50 rounded-xl py-2.5 text-sm text-dark-100 focus:outline-none focus:border-accent-cyan/50 transition-colors"
             />
+          </div>
+
+          {/* Priority */}
+          <div className="w-24">
+            <label className="block text-sm font-medium text-dark-200 mb-2 truncate">
+              Priorité
+            </label>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              className="w-full text-center bg-dark-700/50 border border-dark-600/50 rounded-xl py-2.5 text-sm font-bold focus:outline-none focus:border-accent-cyan/50 transition-colors"
+              style={{
+                color: priority === 'P1' ? 'var(--color-accent-red, #ef4444)' :
+                       priority === 'P2' ? 'var(--color-accent-violet, #8b5cf6)' :
+                       'var(--color-accent-cyan, #06b6d4)'
+              }}
+            >
+              <option value="P1" className="text-accent-red font-bold">P1</option>
+              <option value="P2" className="text-accent-violet font-bold">P2</option>
+              <option value="P3" className="text-accent-cyan font-bold">P3</option>
+            </select>
           </div>
 
           {/* Sub-objectives Button */}

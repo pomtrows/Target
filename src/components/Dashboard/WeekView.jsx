@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Pencil, AlertTriangle, List, Clock, Check, FileText, Columns3 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Pencil, AlertTriangle, List, Clock, Check, FileText, Columns3, Filter } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useNotes } from '../../contexts/NotesContext';
 import NoteEditor from '../Notes/NoteEditor';
@@ -336,6 +336,7 @@ export default function WeekView() {
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('planning_view_mode') || 'list');
   const [filterIncomplete, setFilterIncomplete] = useState(false);
   const [filterToday, setFilterToday] = useState(false);
+  const [filterPriority, setFilterPriority] = useState(null);
 
   const objectives = useMemo(
     () => getObjectivesForWeek(state.objectives, currentWeek, getWeeksInMonth),
@@ -345,7 +346,7 @@ export default function WeekView() {
   const weekProgress = state.progress[currentWeek] || {};
   const progress = getWeekProgress(objectives, weekProgress);
   const progressPercent = getWeekProgressPercent(objectives, weekProgress);
-  const unlocked = isWeekComplete(objectives, weekProgress, state.rewardThreshold || 100) && objectives.length > 0;
+  const unlocked = isWeekComplete(objectives, weekProgress, state.rewardThresholds || { P1: 100, P2: 100, P3: 100 }) && objectives.length > 0;
 
   useEffect(() => {
     const rewardItemLocked = state.rewardItems?.find(r => r.assigned_week === currentWeek && r.status === 'locked');
@@ -371,9 +372,12 @@ export default function WeekView() {
         const { days } = getObjectiveSchedule(obj);
         if (!days.includes(todayDayId)) return false;
       }
+      if (filterPriority) {
+        if ((obj.priority || 'P3') !== filterPriority) return false;
+      }
       return true;
     });
-  }, [objectives, filterIncomplete, filterToday, weekProgress, todayDayId]);
+  }, [objectives, filterIncomplete, filterToday, filterPriority, weekProgress, todayDayId]);
 
   const { prev, next } = getAdjacentWeeks(currentWeek);
 
@@ -671,6 +675,26 @@ export default function WeekView() {
             >
               <Calendar size={14} />
               <span>Aujourd'hui</span>
+            </button>
+
+            <button
+              onClick={() => {
+                if (!filterPriority) setFilterPriority('P1');
+                else if (filterPriority === 'P1') setFilterPriority('P2');
+                else if (filterPriority === 'P2') setFilterPriority('P3');
+                else setFilterPriority(null);
+              }}
+              className={`flex items-center gap-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                filterPriority
+                  ? filterPriority === 'P1' ? 'bg-accent-red/15 text-accent-red border border-accent-red/50 shadow-sm font-bold'
+                    : filterPriority === 'P2' ? 'bg-accent-violet/15 text-accent-violet border border-accent-violet/50 shadow-sm font-bold'
+                    : 'bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/50 shadow-sm font-bold'
+                  : 'bg-dark-800/40 text-dark-400 border border-dark-600/25 hover:border-dark-500/40 hover:text-dark-200'
+              }`}
+              style={{ padding: '5px 12px' }}
+            >
+              <Filter size={14} />
+              <span>{filterPriority ? `Priorité ${filterPriority}` : 'Priorité'}</span>
             </button>
           </div>
         )}
