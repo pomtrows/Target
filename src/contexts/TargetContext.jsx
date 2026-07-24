@@ -359,7 +359,7 @@ export function TargetProvider({ children }) {
 
       case 'ADD_OBJECTIVE': {
         const newObj = {
-          id: `obj-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          id: action.payload.id || `obj-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
           title: action.payload.title,
           target: action.payload.target || 1,
           categoryId: action.payload.categoryId || 'autre',

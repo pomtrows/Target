@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { useTarget } from '../../contexts/TargetContext';
 import Modal from '../Shared/Modal';
 
-export default function AttachmentManager({ isOpen, onClose, objective }) {
+export default function AttachmentManager({ isOpen, onClose, objective, onUpdate }) {
   const { dispatch } = useTarget();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
@@ -59,10 +59,14 @@ export default function AttachmentManager({ isOpen, onClose, objective }) {
         attachments: [...attachments, ...newAttachments]
       };
 
-      dispatch({
-        type: 'UPDATE_OBJECTIVE',
-        payload: updatedObjective
-      });
+      if (onUpdate) {
+        onUpdate({ attachments: [...attachments, ...newAttachments] });
+      } else {
+        dispatch({
+          type: 'UPDATE_OBJECTIVE',
+          payload: updatedObjective
+        });
+      }
 
     } catch (err) {
       console.error('Upload error:', err);
@@ -70,7 +74,7 @@ export default function AttachmentManager({ isOpen, onClose, objective }) {
     } finally {
       setUploading(false);
     }
-  }, [objective, attachments, dispatch]);
+  }, [objective, attachments, dispatch, onUpdate]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
@@ -84,13 +88,17 @@ export default function AttachmentManager({ isOpen, onClose, objective }) {
       // Update objective
       const updatedAttachments = attachments.filter(a => a.id !== attachmentToDelete.id);
       
-      dispatch({
-        type: 'UPDATE_OBJECTIVE',
-        payload: {
-          ...objective,
-          attachments: updatedAttachments
-        }
-      });
+      if (onUpdate) {
+        onUpdate({ attachments: updatedAttachments });
+      } else {
+        dispatch({
+          type: 'UPDATE_OBJECTIVE',
+          payload: {
+            ...objective,
+            attachments: updatedAttachments
+          }
+        });
+      }
     } catch (err) {
       console.error('Delete error:', err);
       alert("Impossible de supprimer la pièce jointe.");

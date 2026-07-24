@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Trash2, Dumbbell } from 'lucide-react';
+import { Plus, Trash2, Dumbbell, FileText, Paperclip } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useSport } from '../../contexts/SportContext';
+import { useNotes } from '../../contexts/NotesContext';
 import Modal from '../Shared/Modal';
+import NoteEditor from '../Notes/NoteEditor';
+import AttachmentManager from '../Attachments/AttachmentManager';
 import { getCurrentWeekId, getSelectableWeeks, formatWeekLabel } from '../../utils/weekUtils';
 
 const getInitialSchedule = (objective) => {
@@ -46,9 +49,50 @@ const TIME_SLOTS = (() => {
 export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObjective = null }) {
   const { state, dispatch } = useTarget();
   const { sessions } = useSport();
+  const { state: notesState, createFolder, createNote } = useNotes();
 
   const initialSchedule = getInitialSchedule(editObjective);
   const initialWeeks = getInitialWeeks(editObjective, weekId);
+
+  const [tempId] = useState(() => editObjective?.id || `obj-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`);
+  const [formNoteId, setFormNoteId] = useState(null);
+  const [formAttachments, setFormAttachments] = useState(editObjective?.attachments || []);
+  
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [showAttachmentsModal, setShowAttachmentsModal] = useState(false);
+  
+  const handleOpenNotes = async (e) => {
+    e.preventDefault();
+    
+    let folder = notesState.folders.find(f => f.name === 'Objectifs');
+    let folderId = folder?.id;
+    
+    if (!folderId) {
+      try {
+        const newFolder = await createFolder('Objectifs');
+        folderId = newFolder.id;
+      } catch (err) {
+        console.error("Erreur création dossier Objectifs", err);
+        return;
+      }
+    }
+    
+    const existingNote = notesState.notes.find(n => n.folder_id === folderId && n.title === tempId);
+    let noteId = existingNote?.id;
+    
+    if (!noteId) {
+      try {
+        const newNote = await createNote(tempId, folderId);
+        noteId = newNote.id;
+      } catch (err) {
+        console.error("Erreur création note", err);
+        return;
+      }
+    }
+    
+    setFormNoteId(noteId);
+    setShowNotesModal(true);
+  };
 
   const [title, setTitle] = useState(editObjective?.title || '');
   const [target, setTarget] = useState(editObjective?.target || 1);
@@ -248,20 +292,23 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           priority,
           sportSessionId: sportSessionId || null,
           assignments,
-          subObjectives: finalSubObjectives
+          subObjectives: finalSubObjectives,
+          attachments: formAttachments
         },
       });
     } else {
       dispatch({
         type: 'ADD_OBJECTIVE',
         payload: {
+          id: tempId,
           title: title.trim(),
           target: Number(target),
           categoryId,
           priority,
           sportSessionId: sportSessionId || null,
           assignments,
-          subObjectives: finalSubObjectives
+          subObjectives: finalSubObjectives,
+          attachments: formAttachments
         },
       });
     }
@@ -584,6 +631,39 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           )}
         </div>
 
+        {/* Note and Attachments */}
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={handleOpenNotes}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+              (formNoteId || (() => {
+                const notesFolder = notesState.folders.find(f => f.name === 'Objectifs');
+                const objectiveNote = notesFolder ? notesState.notes.find(n => n.folder_id === notesFolder.id && n.title === tempId) : null;
+                return !!(objectiveNote && objectiveNote.content && objectiveNote.content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim() !== '');
+              })())
+                ? 'bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30' 
+                : 'bg-dark-800/40 text-dark-300 border border-dark-600/30 hover:bg-dark-700/50 hover:text-dark-200'
+            }`}
+          >
+            <FileText size={16} />
+            <span>Note</span>
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => setShowAttachmentsModal(true)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+              formAttachments.length > 0 
+                ? 'bg-accent-violet/15 text-accent-violet border border-accent-violet/30' 
+                : 'bg-dark-800/40 text-dark-300 border border-dark-600/30 hover:bg-dark-700/50 hover:text-dark-200'
+            }`}
+          >
+            <Paperclip size={16} />
+            <span>Pièces jointes {formAttachments.length > 0 && `(${formAttachments.length})`}</span>
+          </button>
+        </div>
+
         {/* Actions */}
         <div className="flex gap-4 pt-4">
           <button
@@ -787,6 +867,33 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           </div>
         </div>
       </Modal>
+
+      {/* Notes Modal */}
+      {showNotesModal && formNoteId && (
+        <Modal 
+          isOpen={true} 
+          onClose={() => setShowNotesModal(false)}
+          title={`Notes: ${title || 'Nouvel objectif'}`}
+          maxWidth="max-w-4xl"
+        >
+          <div className="h-[65vh] flex flex-col -m-5 overflow-hidden rounded-b-2xl">
+            <NoteEditor 
+              noteId={formNoteId} 
+              onClose={() => setShowNotesModal(false)} 
+            />
+          </div>
+        </Modal>
+      )}
+
+      {/* Attachments Modal */}
+      {showAttachmentsModal && (
+        <AttachmentManager
+          isOpen={true}
+          onClose={() => setShowAttachmentsModal(false)}
+          objective={{ id: tempId, attachments: formAttachments }}
+          onUpdate={(updates) => setFormAttachments(updates.attachments)}
+        />
+      )}
     </>
   );
 }
