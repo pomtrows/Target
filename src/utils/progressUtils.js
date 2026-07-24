@@ -69,6 +69,24 @@ export function getWeekProgressPercent(objectives, weekProgress) {
 }
 
 /**
+ * Get the progress breakdown by priority
+ */
+export function getWeekProgressByPriority(objectives, weekProgress) {
+  const byPriority = { P1: [], P2: [], P3: [] };
+  objectives.forEach(obj => {
+    const p = obj.priority || 'P3';
+    if (!byPriority[p]) byPriority[p] = [];
+    byPriority[p].push(obj);
+  });
+
+  return {
+    P1: byPriority.P1.length > 0 ? getWeekProgressPercent(byPriority.P1, weekProgress) : null,
+    P2: byPriority.P2.length > 0 ? getWeekProgressPercent(byPriority.P2, weekProgress) : null,
+    P3: byPriority.P3.length > 0 ? getWeekProgressPercent(byPriority.P3, weekProgress) : null,
+  };
+}
+
+/**
  * Check if a week is fully completed based on priority thresholds
  */
 export function isWeekComplete(objectives, weekProgress, thresholds = { P1: 100, P2: 100, P3: 100 }) {

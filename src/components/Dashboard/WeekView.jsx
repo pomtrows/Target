@@ -6,7 +6,7 @@ import { useTarget } from '../../contexts/TargetContext';
 import { useNotes } from '../../contexts/NotesContext';
 import NoteEditor from '../Notes/NoteEditor';
 import { getCurrentWeekId, getAdjacentWeeks, formatWeekLabelParts, isCurrentWeek, getWeeksInMonth, getWeekDates, getWeekIdFromDate } from '../../utils/weekUtils';
-import { getObjectivesForWeek, getWeekProgressPercent, isWeekComplete, getWeekProgress, getObjectiveProgress, getProgressColor, countSetBits, isBitSet } from '../../utils/progressUtils';
+import { getObjectivesForWeek, getWeekProgressPercent, isWeekComplete, getWeekProgress, getObjectiveProgress, getProgressColor, countSetBits, isBitSet, getWeekProgressByPriority } from '../../utils/progressUtils';
 import ProgressRing from './ProgressRing';
 import ObjectiveCard from './ObjectiveCard';
 import RewardBanner from './RewardBanner';
@@ -337,6 +337,8 @@ export default function WeekView() {
   const [filterIncomplete, setFilterIncomplete] = useState(false);
   const [filterToday, setFilterToday] = useState(false);
   const [filterPriority, setFilterPriority] = useState(null);
+  const [priorityFilterIds, setPriorityFilterIds] = useState(null);
+  const [showPriorityBreakdown, setShowPriorityBreakdown] = useState(false);
 
   const objectives = useMemo(
     () => getObjectivesForWeek(state.objectives, currentWeek, getWeeksInMonth),
@@ -346,6 +348,7 @@ export default function WeekView() {
   const weekProgress = state.progress[currentWeek] || {};
   const progress = getWeekProgress(objectives, weekProgress);
   const progressPercent = getWeekProgressPercent(objectives, weekProgress);
+  const priorityProgress = useMemo(() => getWeekProgressByPriority(objectives, weekProgress), [objectives, weekProgress]);
   const unlocked = isWeekComplete(objectives, weekProgress, state.rewardThresholds || { P1: 100, P2: 100, P3: 100 }) && objectives.length > 0;
 
   useEffect(() => {
@@ -373,11 +376,13 @@ export default function WeekView() {
         if (!days.includes(todayDayId)) return false;
       }
       if (filterPriority) {
-        if ((obj.priority || 'P3') !== filterPriority) return false;
+        const matchesCurrent = (obj.priority || 'P3') === filterPriority;
+        const matchedOriginally = priorityFilterIds ? priorityFilterIds.has(obj.id) : false;
+        if (!matchesCurrent && !matchedOriginally) return false;
       }
       return true;
     });
-  }, [objectives, filterIncomplete, filterToday, filterPriority, weekProgress, todayDayId]);
+  }, [objectives, filterIncomplete, filterToday, filterPriority, priorityFilterIds, weekProgress, todayDayId]);
 
   const { prev, next } = getAdjacentWeeks(currentWeek);
 
@@ -600,7 +605,48 @@ export default function WeekView() {
       {viewMode === 'list' && (
         <div className="max-w-7xl mx-auto px-[3px] w-full">
           <div className="flex flex-col items-center relative" style={{ marginTop: '8px', marginBottom: '16px' }}>
-            <ProgressRing progress={progress} size={160} strokeWidth={12} />
+            <div 
+              className="cursor-pointer hover:scale-105 transition-transform duration-300"
+              onClick={() => setShowPriorityBreakdown(!showPriorityBreakdown)}
+              title="Cliquez pour voir le détail par priorité"
+            >
+              <ProgressRing progress={progress} size={160} strokeWidth={12} />
+            </div>
+            
+            <AnimatePresence>
+              {showPriorityBreakdown && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0, marginTop: 16 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  className="w-full max-w-[220px] bg-dark-800 rounded-2xl border border-dark-600 shadow-2xl z-10"
+                  style={{ padding: '10px' }}
+                >
+                  <div className="flex flex-col gap-3.5">
+                    {['P1', 'P2', 'P3'].map(p => {
+                      const prog = priorityProgress[p];
+                      if (prog === null) return null;
+                      const colorClass = p === 'P1' ? 'text-accent-red' : p === 'P2' ? 'text-accent-violet' : 'text-accent-cyan';
+                      const bgClass = p === 'P1' ? 'bg-accent-red' : p === 'P2' ? 'bg-accent-violet' : 'bg-accent-cyan';
+                      return (
+                        <div key={p} className="flex flex-col gap-1.5">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className={`font-black ${colorClass}`}>{p}</span>
+                            <span className="font-bold text-dark-100">{prog}%</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-dark-700/50 rounded-full overflow-hidden">
+                            <div className={`h-full ${bgClass} rounded-full`} style={{ width: `${prog}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {priorityProgress.P1 === null && priorityProgress.P2 === null && priorityProgress.P3 === null && (
+                      <div className="text-center text-xs text-dark-400 italic">Aucun objectif assigné</div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             
             {/* Desktop Add Button (Next to ring) */}
             <motion.button
@@ -679,10 +725,17 @@ export default function WeekView() {
 
             <button
               onClick={() => {
-                if (!filterPriority) setFilterPriority('P1');
-                else if (filterPriority === 'P1') setFilterPriority('P2');
-                else if (filterPriority === 'P2') setFilterPriority('P3');
-                else setFilterPriority(null);
+                let nextPriority = null;
+                if (!filterPriority) nextPriority = 'P1';
+                else if (filterPriority === 'P1') nextPriority = 'P2';
+                else if (filterPriority === 'P2') nextPriority = 'P3';
+                
+                setFilterPriority(nextPriority);
+                if (nextPriority) {
+                  setPriorityFilterIds(new Set(objectives.filter(o => (o.priority || 'P3') === nextPriority).map(o => o.id)));
+                } else {
+                  setPriorityFilterIds(null);
+                }
               }}
               className={`flex items-center gap-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 filterPriority
@@ -694,7 +747,7 @@ export default function WeekView() {
               style={{ padding: '5px 12px' }}
             >
               <Filter size={14} />
-              <span>{filterPriority ? `Priorité ${filterPriority}` : 'Priorité'}</span>
+              <span>{filterPriority ? `Priorité ${filterPriority.replace('P', '')}` : 'Priorité'}</span>
             </button>
           </div>
         )}
