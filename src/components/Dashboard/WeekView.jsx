@@ -345,6 +345,13 @@ export default function WeekView() {
     [state.objectives, currentWeek]
   );
 
+  const sortPriorities = useMemo(() => {
+    const map = new Map();
+    objectives.forEach(obj => map.set(obj.id, obj.priority || 'P3'));
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterIncomplete, filterToday, filterPriority, currentWeek]);
+
   const weekProgress = state.progress[currentWeek] || {};
   const progress = getWeekProgress(objectives, weekProgress);
   const progressPercent = getWeekProgressPercent(objectives, weekProgress);
@@ -452,6 +459,17 @@ export default function WeekView() {
       groups[key].items.push(obj);
     });
 
+    const priorityOrder = { 'P1': 1, 'P2': 2, 'P3': 3 };
+    
+    // Sort items within each group by their initial priority snapshot
+    Object.values(groups).forEach(group => {
+      group.items.sort((a, b) => {
+        const pA = sortPriorities.get(a.id) || a.priority || 'P3';
+        const pB = sortPriorities.get(b.id) || b.priority || 'P3';
+        return priorityOrder[pA] - priorityOrder[pB];
+      });
+    });
+
     const categoryOrderMap = {};
     state.categories.forEach((cat, idx) => {
       categoryOrderMap[cat.id] = idx;
@@ -462,7 +480,7 @@ export default function WeekView() {
       const orderB = categoryOrderMap[b.category.id] !== undefined ? categoryOrderMap[b.category.id] : 999;
       return orderA - orderB;
     });
-  }, [filteredObjectives, state.categories]);
+  }, [filteredObjectives, state.categories, sortPriorities]);
 
   const dayColumns = useMemo(() => [
     { id: 1, label: 'Lundi' },
