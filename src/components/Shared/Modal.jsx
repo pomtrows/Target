@@ -36,7 +36,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
 
           {/* Content */}
           <motion.div
-            className={`relative w-full ${maxWidth} glass-strong rounded-2xl shadow-2xl`}
+            className={`relative w-full ${maxWidth} glass-strong rounded-2xl shadow-2xl flex flex-col max-h-[90vh]`}
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -44,7 +44,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
           >
             {/* Header */}
             <div 
-              className="flex items-center justify-between border-b border-dark-600/50"
+              className="flex items-center justify-between border-b border-dark-600/50 flex-shrink-0"
               style={{ padding: '14px 16px' }}
             >
               <h2 className="text-xl sm:text-2xl font-bold text-dark-100">{title}</h2>
@@ -57,7 +57,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
             </div>
 
             {/* Body */}
-            <div style={{ padding: '14px 16px' }}>
+            <div className="overflow-y-auto custom-scrollbar" style={{ padding: '14px 16px' }}>
               {children}
             </div>
           </motion.div>
