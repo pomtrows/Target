@@ -79,10 +79,20 @@ export function getWeekProgressByPriority(objectives, weekProgress) {
     byPriority[p].push(obj);
   });
 
+  const calculateStats = (objs) => {
+    if (objs.length === 0) return null;
+    const completed = objs.reduce((sum, obj) => sum + getObjectiveProgress(obj, weekProgress), 0);
+    return {
+      percent: Math.round((completed / objs.length) * 100),
+      completed: Number.isInteger(completed) ? completed : Number(completed.toFixed(1)),
+      total: objs.length
+    };
+  };
+
   return {
-    P1: byPriority.P1.length > 0 ? getWeekProgressPercent(byPriority.P1, weekProgress) : null,
-    P2: byPriority.P2.length > 0 ? getWeekProgressPercent(byPriority.P2, weekProgress) : null,
-    P3: byPriority.P3.length > 0 ? getWeekProgressPercent(byPriority.P3, weekProgress) : null,
+    P1: calculateStats(byPriority.P1),
+    P2: calculateStats(byPriority.P2),
+    P3: calculateStats(byPriority.P3),
   };
 }
 

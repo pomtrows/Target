@@ -637,23 +637,26 @@ export default function WeekView() {
                   initial={{ opacity: 0, scale: 0.95, y: -10 }}
                   animate={{ opacity: 1, scale: 1, y: 0, marginTop: 16 }}
                   exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                  className="w-full max-w-[220px] bg-dark-800 rounded-2xl border border-dark-600 shadow-2xl z-10"
-                  style={{ padding: '10px' }}
+                  className="w-full max-w-[280px] bg-dark-800 rounded-2xl border border-dark-600 shadow-2xl z-10"
+                  style={{ padding: '14px' }}
                 >
-                  <div className="flex flex-col gap-3.5">
+                  <div className="flex flex-col gap-4">
                     {['P1', 'P2', 'P3'].map(p => {
                       const prog = priorityProgress[p];
                       if (prog === null) return null;
                       const colorClass = p === 'P1' ? 'text-accent-red' : p === 'P2' ? 'text-accent-violet' : 'text-accent-cyan';
                       const bgClass = p === 'P1' ? 'bg-accent-red' : p === 'P2' ? 'bg-accent-violet' : 'bg-accent-cyan';
                       return (
-                        <div key={p} className="flex flex-col gap-1.5">
+                        <div key={p} className="flex flex-col gap-2">
                           <div className="flex justify-between items-center text-xs">
                             <span className={`font-black ${colorClass}`}>{p}</span>
-                            <span className="font-bold text-dark-100">{prog}%</span>
+                            <div className="flex items-center justify-end gap-2 text-right">
+                              <span className="font-bold text-dark-100 w-10">{prog.percent}%</span>
+                              <span className="text-[11px] text-dark-400 font-normal w-12">({prog.completed}/{prog.total})</span>
+                            </div>
                           </div>
                           <div className="h-1.5 w-full bg-dark-700/50 rounded-full overflow-hidden">
-                            <div className={`h-full ${bgClass} rounded-full`} style={{ width: `${prog}%` }} />
+                            <div className={`h-full ${bgClass} rounded-full transition-all duration-500`} style={{ width: `${prog.percent}%` }} />
                           </div>
                         </div>
                       );
