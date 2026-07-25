@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Pencil, AlertTriangle, List, Clock, Check, FileText, Columns3, Filter } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useNotes } from '../../contexts/NotesContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import NoteEditor from '../Notes/NoteEditor';
 import { getCurrentWeekId, getAdjacentWeeks, formatWeekLabelParts, isCurrentWeek, getWeeksInMonth, getWeekDates, getWeekIdFromDate } from '../../utils/weekUtils';
 import { getObjectivesForWeek, getWeekProgressPercent, isWeekComplete, getWeekProgress, getObjectiveProgress, getProgressColor, countSetBits, isBitSet, getWeekProgressByPriority } from '../../utils/progressUtils';
@@ -314,6 +315,7 @@ function CompactObjectiveCard({ objective, weekId, onEdit, onDelete }) {
 
 export default function WeekView() {
   const { state, dispatch } = useTarget();
+  const { maxColumns } = useSettings();
   const [searchParams] = useSearchParams();
   const weekParam = searchParams.get('week');
   const [currentWeek, setCurrentWeek] = useState(weekParam || getCurrentWeekId());
@@ -696,7 +698,7 @@ export default function WeekView() {
       )}
 
       {/* Content wrapper with custom layouts */}
-      <div className={viewMode === 'list' ? 'max-w-3xl mx-auto w-full px-4' : 'max-w-7xl mx-auto px-[3px] w-full'}>
+      <div className={viewMode === 'list' ? `${maxColumns === 4 ? 'max-w-7xl' : maxColumns === 3 ? 'max-w-5xl' : 'max-w-3xl'} mx-auto w-full px-4` : 'max-w-7xl mx-auto px-[3px] w-full'}>
 
         {/* Reward Banner (Only in list view) */}
         {viewMode === 'list' && (
@@ -860,7 +862,7 @@ export default function WeekView() {
                   <div className="flex-1 h-px bg-dark-700" />
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className={`grid gap-4 sm:grid-cols-2 ${maxColumns >= 3 ? 'lg:grid-cols-3' : ''} ${maxColumns >= 4 ? 'xl:grid-cols-4' : ''}`}>
                   <AnimatePresence>
                     {group.items.map((obj, i) => (
                       <div key={obj.id} className="h-full p-2">

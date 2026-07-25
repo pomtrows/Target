@@ -1,7 +1,8 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Target, Inbox, BarChart3, Settings, Menu, X, Sun, Moon, LogOut, Users, FileText, Dumbbell, Bell, BellOff, Info, CheckCircle2, Gift } from 'lucide-react';
+import { Target, Inbox, BarChart3, Settings, Menu, X, Sun, Moon, LogOut, Users, FileText, Dumbbell, Bell, BellOff, Info, CheckCircle2, Gift, Sliders } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useSettings } from '../../contexts/SettingsContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import Modal from '../Shared/Modal';
@@ -34,6 +35,8 @@ export default function Sidebar() {
 
   // Notification settings states
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const { zoomLevel, setZoomLevel, maxColumns, setMaxColumns } = useSettings();
   const [notifSupported, setNotifSupported] = useState(false);
   const [notifPermission, setNotifPermission] = useState('default');
   const [notifEnabled, setNotifEnabled] = useState(true);
@@ -101,8 +104,8 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <motion.aside
-        className="fixed top-0 left-0 h-full w-64 bg-dark-800 border-r border-dark-600/30 z-[100] flex flex-col transition-transform duration-300 ease-in-out"
-        style={{ transform: mobileOpen ? 'translateX(0)' : undefined }}
+        className="fixed top-0 left-0 w-64 bg-dark-800 border-r border-dark-600/30 z-[100] flex flex-col transition-transform duration-300 ease-in-out"
+        style={{ transform: mobileOpen ? 'translateX(0)' : undefined, height: 'var(--app-height, 100vh)' }}
         data-sidebar
       >
         {/* Close button mobile */}
@@ -183,6 +186,15 @@ export default function Sidebar() {
 
         {/* Footer with theme toggle */}
         <div className="px-4 py-4 border-t border-dark-600/30 mb-32 flex flex-col gap-4" style={{ paddingLeft: '15px' }}>
+          
+          <button
+            onClick={() => setShowSettingsModal(true)}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-400 hover:text-dark-200 hover:bg-dark-700/50 transition-all duration-200"
+          >
+            <Sliders size={20} />
+            Réglages
+          </button>
+
           <button
             onClick={toggleTheme}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-400 hover:text-dark-200 hover:bg-dark-700/50 transition-all duration-200 animate-fade-in"
@@ -310,6 +322,73 @@ export default function Sidebar() {
               )}
             </div>
           )}
+        </div>
+      </Modal>
+
+      {/* Settings Modal */}
+      <Modal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        title="Réglages de l'application ⚙️"
+        maxWidth="max-w-md"
+      >
+        <div className="flex flex-col gap-6 text-dark-200">
+          {/* Zoom Setting */}
+          <div className="flex flex-col gap-3 bg-dark-900/40 p-4 rounded-2xl border border-dark-600/30">
+            <label className="text-sm font-semibold text-dark-100 flex items-center gap-2">
+              Niveau de Zoom
+            </label>
+            <div className="flex items-center gap-4">
+              <input 
+                type="range" 
+                min="0.5" 
+                max="1.5" 
+                step="0.05"
+                value={zoomLevel}
+                onChange={(e) => setZoomLevel(parseFloat(e.target.value))}
+                className="w-full accent-accent-cyan"
+              />
+              <span className="text-xs font-bold text-accent-cyan w-12 text-right">
+                {Math.round(zoomLevel * 100)}%
+              </span>
+            </div>
+            <div className="flex justify-between text-[10px] text-dark-400 font-medium px-1">
+              <span>Petit</span>
+              <span>Défaut</span>
+              <span>Grand</span>
+            </div>
+            <button 
+              onClick={() => setZoomLevel(1)}
+              className="mt-2 py-1.5 rounded-lg bg-dark-700 hover:bg-dark-600 text-xs font-medium text-dark-200 transition-colors"
+            >
+              Réinitialiser le zoom
+            </button>
+          </div>
+
+          {/* Max Columns Setting */}
+          <div className="flex flex-col gap-3 bg-dark-900/40 p-4 rounded-2xl border border-dark-600/30">
+            <label className="text-sm font-semibold text-dark-100 flex items-center gap-2">
+              Objectifs par ligne (Vue PC)
+            </label>
+            <p className="text-xs text-dark-400">
+              Choisissez le nombre d'objectifs affichés sur une même ligne sur grand écran.
+            </p>
+            <div className="flex gap-3 mt-1">
+              {[2, 3, 4].map(num => (
+                <button
+                  key={num}
+                  onClick={() => setMaxColumns(num)}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                    maxColumns === num
+                      ? 'bg-accent-violet/20 text-accent-violet border border-accent-violet/50 shadow-sm'
+                      : 'bg-dark-800/40 text-dark-400 border border-dark-600/30 hover:border-dark-500/50 hover:text-dark-200'
+                  }`}
+                >
+                  {num} colonnes
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </Modal>
     </>

@@ -3,6 +3,7 @@ import { TargetProvider } from './contexts/TargetContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ProfileProvider } from './contexts/ProfileContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 import Sidebar from './components/Layout/Sidebar';
 import DashboardPage from './pages/DashboardPage';
 import BacklogPage from './pages/BacklogPage';
@@ -54,7 +55,7 @@ function AppContent() {
       <NotificationScheduler />
       <NotesProvider>
         <SportProvider>
-          <div className="flex h-screen overflow-hidden">
+          <div className="flex overflow-hidden" style={{ height: 'var(--app-height, 100vh)' }}>
           <Sidebar />
           <InstallPrompt />
 
@@ -89,11 +90,13 @@ export default function App() {
   return (
     <ThemeProvider>
       <ProfileProvider>
-        <AuthProvider>
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </AuthProvider>
+        <SettingsProvider>
+          <AuthProvider>
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </AuthProvider>
+        </SettingsProvider>
       </ProfileProvider>
     </ThemeProvider>
   );
