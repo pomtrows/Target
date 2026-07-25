@@ -374,9 +374,8 @@ export default function WeekView() {
   const filteredObjectives = useMemo(() => {
     return objectives.filter((obj) => {
       if (filterIncomplete) {
-        const wp = weekProgress[obj.id] || 0;
-        const t = obj.target || 1;
-        if (wp >= t) return false;
+        const progress = getObjectiveProgress(obj, weekProgress);
+        if (progress >= 1) return false;
       }
       if (filterToday) {
         const { days } = getObjectiveSchedule(obj);
