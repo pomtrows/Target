@@ -10,7 +10,7 @@ import Modal from '../Shared/Modal';
 import NoteEditor from '../Notes/NoteEditor';
 import AttachmentManager from '../Attachments/AttachmentManager';
 
-export default function ObjectiveCard({ objective, weekId, index, onEdit, onDelete }) {
+export default function ObjectiveCard({ objective, weekId, index, onEdit, onDelete, compactMode = false }) {
   const { state, dispatch } = useTarget();
   const { sessions } = useSport();
   const { state: notesState, createFolder, createNote } = useNotes();
@@ -126,7 +126,7 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ delay: index * 0.05 }}
-      style={{ padding: '16px 20px 12px 20px' }}
+      style={{ padding: compactMode ? '12px 14px 10px 14px' : '16px 20px 12px 20px' }}
       className="group relative h-full min-h-[110px] rounded-[24px] bg-dark-700/40 border border-dark-600 transition-all duration-300 hover:bg-dark-700/60 flex flex-col justify-between shadow-xl hover:shadow-2xl"
     >
       {/* Edit/Delete Icons (Top Right) */}
@@ -162,7 +162,7 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
         </h3>
 
         {/* Counter Section OR Sub-objectives */}
-        <div className="flex items-center mb-6 pl-1 pr-0 w-full" style={{ gap: '35px' }}>
+        <div className="flex items-center mb-6 pl-1 pr-0 w-full" style={{ gap: compactMode ? '12px' : '35px' }}>
           <div className={hasSubObjectives ? "flex-1 min-w-0" : "grow min-w-0"}>
             {hasSubObjectives ? (
               <div className="space-y-2.5">
@@ -189,22 +189,22 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
                 })}
               </div>
             ) : !isCheckbox ? (
-              <div className="flex items-center gap-1.5 sm:gap-3 w-full">
+              <div className={`flex items-center w-full ${compactMode ? 'gap-1.5' : 'gap-1.5 sm:gap-3'}`}>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={handleDecrement}
                   disabled={current <= 0}
-                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-dark-600/60 flex items-center justify-center text-dark-300 hover:bg-dark-600/80 hover:text-dark-100 disabled:opacity-10 disabled:cursor-not-allowed transition-all"
+                  className={`${compactMode ? 'w-8 h-8' : 'w-8 h-8 sm:w-10 sm:h-10'} rounded-xl bg-dark-600/60 flex items-center justify-center text-dark-300 hover:bg-dark-600/80 hover:text-dark-100 disabled:opacity-10 disabled:cursor-not-allowed transition-all`}
                 >
                   <Minus size={16} className="sm:w-[18px] sm:h-[18px]" />
                 </motion.button>
 
-                <div className="flex flex-col items-center min-w-[40px] sm:min-w-[50px]">
+                <div className={`flex flex-col items-center ${compactMode ? 'min-w-[30px]' : 'min-w-[40px] sm:min-w-[50px]'}`}>
                   <motion.span
                     key={current}
                     initial={{ scale: 1.2 }}
                     animate={{ scale: 1 }}
-                    className={`text-xl sm:text-2xl font-black tabular-nums ${isCompleted ? 'text-accent-green' : 'text-dark-100'}`}
+                    className={`font-black tabular-nums ${compactMode ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl'} ${isCompleted ? 'text-accent-green' : 'text-dark-100'}`}
                   >
                     {current}/{objective.target}
                   </motion.span>
@@ -214,7 +214,7 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
                   whileTap={{ scale: 0.9 }}
                   onClick={handleIncrement}
                   disabled={isCompleted}
-                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-dark-600/60 flex items-center justify-center transition-all ${
+                  className={`${compactMode ? 'w-8 h-8' : 'w-8 h-8 sm:w-10 sm:h-10'} rounded-xl bg-dark-600/60 flex items-center justify-center transition-all ${
                     isCompleted 
                       ? 'opacity-0 cursor-default' 
                       : 'text-dark-300 hover:text-dark-100 hover:bg-dark-600/80'
@@ -233,8 +233,8 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
                         });
                         setSessionToPlay(sportSession);
                       }}
-                      className="flex items-center bg-accent-cyan/15 text-accent-cyan font-bold rounded-xl hover:bg-accent-cyan/25 transition-all text-xs shadow-lg shadow-accent-cyan/5 border border-accent-cyan/30 flex-shrink-0 translate-x-3 sm:translate-x-4"
-                      style={{ padding: '6px 14px', gap: '5px' }}
+                      className={`flex items-center bg-accent-cyan/15 text-accent-cyan font-bold rounded-xl hover:bg-accent-cyan/25 transition-all text-xs shadow-lg shadow-accent-cyan/5 border border-accent-cyan/30 flex-shrink-0 ${compactMode ? 'translate-x-1' : 'translate-x-3 sm:translate-x-4'}`}
+                      style={{ padding: compactMode ? '5px 8px' : '6px 14px', gap: compactMode ? '4px' : '5px' }}
                     >
                       <Play size={14} fill="currentColor" />
                       <span>Lancer</span>
@@ -261,7 +261,7 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
             )}
           </div>
 
-          <div className="flex items-center gap-2.5 flex-shrink-0 ml-auto">
+          <div className={`flex items-center flex-shrink-0 ml-auto ${compactMode ? 'gap-1' : 'gap-2.5'}`}>
             <button
               onClick={(e) => {
                 e.stopPropagation();

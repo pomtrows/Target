@@ -869,16 +869,17 @@ export default function WeekView() {
                         <ObjectiveCard
                           objective={obj}
                           weekId={currentWeek}
-                        index={i}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                      />
-                    </div>
-                  ))}
-                </AnimatePresence>
+                          index={i}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                          compactMode={maxColumns >= 3}
+                        />
+                      </div>
+                    ))}
+                  </AnimatePresence>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
 
           {/* Empty state for list view */}
           {objectives.length === 0 && (
