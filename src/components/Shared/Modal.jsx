@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
-export default function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-xl' }) {
+export default function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-xl', closeOnOutsideClick = true }) {
   useEffect(() => {
     if (isOpen) {
       document.body.classList.add('modal-open');
@@ -28,7 +28,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
           {/* Backdrop */}
           <motion.div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={onClose}
+            onClick={closeOnOutsideClick ? onClose : undefined}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

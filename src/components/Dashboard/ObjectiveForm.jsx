@@ -339,6 +339,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
         isOpen={isOpen}
         onClose={onClose}
         title={editObjective ? 'Modifier l\'objectif' : 'Nouvel objectif'}
+        closeOnOutsideClick={false}
       >
       <form 
         onSubmit={handleSubmit} 
@@ -690,6 +691,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
         onClose={() => setIsPlanningModalOpen(false)}
         title="Planification de l'objectif"
         maxWidth="max-w-md"
+        closeOnOutsideClick={false}
       >
         <div className="flex flex-col gap-5" style={{ marginTop: '-10px' }}>
 
