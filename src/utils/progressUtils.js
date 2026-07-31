@@ -133,7 +133,7 @@ export function getProgressColor(progress) {
 /**
  * Get objectives assigned to a specific week (including month-level assignments)
  */
-export function getObjectivesForWeek(objectives, weekId, getWeeksInMonthFn) {
+export function getObjectivesForWeek(objectives, weekId, getWeeksInMonthFn, includeFuture = false) {
   return objectives.filter((obj) => {
     if (!obj.assignments || !Array.isArray(obj.assignments) || obj.assignments.length === 0) return false;
 
@@ -142,12 +142,16 @@ export function getObjectivesForWeek(objectives, weekId, getWeeksInMonthFn) {
 
       // Direct week assignment
       if (assignment === weekId) return true;
+      if (includeFuture && assignment.match(/^\d{4}-S\d{2}$/) && assignment > weekId) return true;
 
       // Month assignment (format: YYYY-MM)
       if (assignment.match(/^\d{4}-\d{2}$/)) {
         const [year, month] = assignment.split('-').map(Number);
         const weeksInMonth = getWeeksInMonthFn(year, month - 1);
-        return weeksInMonth.includes(weekId);
+        if (weeksInMonth.includes(weekId)) return true;
+        if (includeFuture) {
+           return weeksInMonth.some(w => w > weekId);
+        }
       }
 
       return false;

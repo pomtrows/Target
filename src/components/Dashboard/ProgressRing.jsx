@@ -7,6 +7,7 @@ export default function ProgressRing({
   size = 160,
   strokeWidth = 12,
   className = '',
+  subtitle = 'Atteinte'
 }) {
   const percent = Math.round(progress * 100);
   const color = getProgressColor(progress);
@@ -62,8 +63,8 @@ export default function ProgressRing({
         >
           {percent}%
         </motion.span>
-        {size >= 80 && (
-          <span className="text-xs text-dark-400 mt-0.5">Atteinte</span>
+        {size >= 80 && subtitle && (
+          <span className="text-xs text-dark-400 mt-0.5">{subtitle}</span>
         )}
       </div>
     </div>

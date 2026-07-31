@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Pencil, AlertTriangle, List, Clock, Check, FileText, Columns3, Filter } from 'lucide-react';
@@ -340,11 +340,33 @@ export default function WeekView() {
   const [filterToday, setFilterToday] = useState(false);
   const [filterPriority, setFilterPriority] = useState(null);
   const [priorityFilterIds, setPriorityFilterIds] = useState(null);
+  const [filterCategory, setFilterCategory] = useState(null);
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const [filterFutureWeeks, setFilterFutureWeeks] = useState(false);
   const [showPriorityBreakdown, setShowPriorityBreakdown] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+  const categoryDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
+        setIsCategoryDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const objectives = useMemo(
-    () => getObjectivesForWeek(state.objectives, currentWeek, getWeeksInMonth),
-    [state.objectives, currentWeek]
+    () => getObjectivesForWeek(state.objectives, currentWeek, getWeeksInMonth, filterFutureWeeks),
+    [state.objectives, currentWeek, filterFutureWeeks]
   );
 
   const sortPriorities = useMemo(() => {
@@ -354,9 +376,14 @@ export default function WeekView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterIncomplete, filterToday, filterPriority, currentWeek]);
 
+  const progressObjectives = useMemo(() => {
+    if (!filterCategory) return objectives;
+    return objectives.filter(obj => obj.categoryId === filterCategory);
+  }, [objectives, filterCategory]);
+
   const weekProgress = state.progress[currentWeek] || {};
-  const progress = getWeekProgress(objectives, weekProgress);
-  const progressPercent = getWeekProgressPercent(objectives, weekProgress);
+  const progress = getWeekProgress(progressObjectives, weekProgress);
+  const progressPercent = getWeekProgressPercent(progressObjectives, weekProgress);
   const priorityProgress = useMemo(() => getWeekProgressByPriority(objectives, weekProgress), [objectives, weekProgress]);
   const unlocked = isWeekComplete(objectives, weekProgress, state.rewardThresholds || { P1: 100, P2: 100, P3: 100 }) && objectives.length > 0;
 
@@ -388,9 +415,12 @@ export default function WeekView() {
         const matchedOriginally = priorityFilterIds ? priorityFilterIds.has(obj.id) : false;
         if (!matchesCurrent && !matchedOriginally) return false;
       }
+      if (filterCategory) {
+        if (obj.categoryId !== filterCategory) return false;
+      }
       return true;
     });
-  }, [objectives, filterIncomplete, filterToday, filterPriority, priorityFilterIds, weekProgress, todayDayId]);
+  }, [objectives, filterIncomplete, filterToday, filterPriority, priorityFilterIds, filterCategory, weekProgress, todayDayId]);
 
   const { prev, next } = getAdjacentWeeks(currentWeek);
 
@@ -629,7 +659,12 @@ export default function WeekView() {
               onClick={() => setShowPriorityBreakdown(!showPriorityBreakdown)}
               title="Cliquez pour voir le détail par priorité"
             >
-              <ProgressRing progress={progress} size={160} strokeWidth={12} />
+              <ProgressRing 
+                progress={progress} 
+                size={isMobile ? 140 : 160} 
+                strokeWidth={isMobile ? 11 : 12}
+                subtitle={progressObjectives.length === 0 ? '' : `${progressObjectives.filter((o) => (weekProgress[o.id] || 0) >= (o.target || 1)).length} / ${progressObjectives.length}`}
+              />
             </div>
             
             <AnimatePresence>
@@ -683,16 +718,7 @@ export default function WeekView() {
               <Plus size={28} strokeWidth={2.5} />
             </motion.button>
 
-            <p className="text-sm text-dark-400" style={{ marginTop: '8px' }}>
-              {objectives.length === 0
-                ? 'Aucun objectif cette semaine'
-                : `${objectives.filter((o) => {
-                    const wp = weekProgress[o.id] || 0;
-                    const t = o.target || 1;
-                    return wp >= t;
-                  }).length} / ${objectives.length} objectifs complétés`
-              }
-            </p>
+
           </div>
         </div>
       )}
@@ -770,6 +796,69 @@ export default function WeekView() {
             >
               <Filter size={14} />
               <span>{filterPriority ? `Priorité ${filterPriority.replace('P', '')}` : 'Priorité'}</span>
+            </button>
+
+            {/* Category Filter */}
+            <div className="relative" ref={categoryDropdownRef}>
+              <button
+                onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                className={`flex items-center gap-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  filterCategory
+                    ? 'bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/50 shadow-sm font-bold'
+                    : 'bg-dark-800/40 text-dark-400 border border-dark-600/25 hover:border-dark-500/40 hover:text-dark-200'
+                }`}
+                style={{ padding: '5px 12px' }}
+              >
+                <Filter size={14} />
+                <span>
+                  {filterCategory ? state.categories.find(c => c.id === filterCategory)?.label || 'Catégorie' : 'Catégorie'}
+                </span>
+              </button>
+
+              {isCategoryDropdownOpen && (
+                <div className="absolute z-[100] top-full mt-2 left-1/2 sm:left-0 -translate-x-1/2 sm:translate-x-0 min-w-[200px] bg-dark-800 border border-dark-600/50 rounded-xl shadow-xl p-2 space-y-1">
+                  <button
+                    onClick={() => {
+                      setFilterCategory(null);
+                      setIsCategoryDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer border-none ${
+                      !filterCategory ? 'bg-accent-cyan/20 text-accent-cyan font-bold' : 'text-dark-200 hover:bg-dark-700/50'
+                    }`}
+                  >
+                    Toutes les catégories
+                  </button>
+                  {state.categories.map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => {
+                        setFilterCategory(cat.id);
+                        setIsCategoryDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer border-none ${
+                        filterCategory === cat.id ? 'bg-accent-cyan/20 text-accent-cyan font-bold' : 'text-dark-200 hover:bg-dark-700/50'
+                      }`}
+                    >
+                      <span className="text-base">{cat.icon}</span>
+                      <span>{cat.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Future Weeks Filter */}
+            <button
+              onClick={() => setFilterFutureWeeks(!filterFutureWeeks)}
+              className={`flex items-center gap-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                filterFutureWeeks
+                  ? 'bg-accent-violet/15 text-accent-violet border border-accent-violet/50 shadow-sm font-bold'
+                  : 'bg-dark-800/40 text-dark-400 border border-dark-600/25 hover:border-dark-500/40 hover:text-dark-200'
+              }`}
+              style={{ padding: '5px 12px' }}
+            >
+              <Calendar size={14} />
+              <span>Futur</span>
             </button>
           </div>
         )}
