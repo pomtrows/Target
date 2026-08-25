@@ -1,10 +1,18 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
+import { createContext, useContext, useReducer, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 import { useProfile } from './ProfileContext';
 import { useToast } from './ToastContext';
 import { toggleBit, getObjectiveProgress } from '../utils/progressUtils';
 import { getCurrentWeekId } from '../utils/weekUtils';
+import {
+  saveLocalState,
+  loadLocalState,
+  enqueueSyncAction,
+  processSyncQueue,
+  getPendingQueueCount,
+  isOfflineError
+} from '../utils/offlineSync';
 
 const TargetContext = createContext(null);
 
@@ -183,6 +191,72 @@ export function TargetProvider({ children }) {
   const { currentProfile } = useProfile();
   const { showToast } = useToast();
 
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+
+  // Update pending queue count
+  const refreshPendingCount = useCallback(() => {
+    if (user) {
+      setPendingSyncCount(getPendingQueueCount(user.id, currentProfile));
+    }
+  }, [user, currentProfile]);
+
+  // Sync offline queue to Supabase
+  const syncNow = useCallback(async () => {
+    if (!user || !navigator.onLine || isSyncing) return;
+
+    const count = getPendingQueueCount(user.id, currentProfile);
+    if (count === 0) {
+      setPendingSyncCount(0);
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      const result = await processSyncQueue(user.id, currentProfile, supabase);
+      setPendingSyncCount(result.pendingCount);
+
+      if (result.processedCount > 0) {
+        showToast(`✅ ${result.processedCount} modification(s) synchronisée(s) avec succès !`, 'success');
+      }
+    } catch (err) {
+      console.warn('Sync queue error:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [user, currentProfile, isSyncing, showToast]);
+
+  // Online / Offline listeners
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      showToast('Connexion rétablie. Synchronisation...', 'info', 2500);
+      syncNow();
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      showToast('Mode hors-ligne activé. Vos modifications seront enregistrées localement.', 'info', 4000);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [syncNow, showToast]);
+
+  // Save state to local cache whenever it updates
+  useEffect(() => {
+    if (user && !state.loading) {
+      saveLocalState(user.id, currentProfile, state);
+      refreshPendingCount();
+    }
+  }, [state, user, currentProfile, refreshPendingCount]);
+
   // Fetch from Supabase on mount, when user changes, or when profile changes
   useEffect(() => {
     if (!user) {
@@ -192,8 +266,39 @@ export function TargetProvider({ children }) {
 
     let isMounted = true;
 
+    // 1. Instant loading from local cache
+    const cached = loadLocalState(user.id, currentProfile);
+    if (cached) {
+      dispatch({
+        type: 'INITIALIZE',
+        payload: {
+          categories: cached.categories || defaultCategories,
+          objectives: cached.objectives || [],
+          progress: cached.progress || {},
+          progressTimestamps: cached.progressTimestamps || {},
+          rewards: cached.rewards || {},
+          rewardItems: cached.rewardItems || [],
+          rewardThresholds: cached.rewardThresholds || { P1: 100, P2: 100, P3: 100 }
+        }
+      });
+      refreshPendingCount();
+    }
+
     const fetchData = async () => {
+      if (!navigator.onLine) {
+        if (!cached && isMounted) {
+          dispatch({ type: 'INITIALIZE', payload: {} });
+        }
+        return;
+      }
+
       try {
+        // First sync any pending offline actions before fetching
+        if (getPendingQueueCount(user.id, currentProfile) > 0) {
+          await processSyncQueue(user.id, currentProfile, supabase);
+          if (isMounted) refreshPendingCount();
+        }
+
         const [
           { data: categories, error: catErr },
           { data: objectives, error: objErr },
@@ -211,7 +316,7 @@ export function TargetProvider({ children }) {
         ]);
 
         if (catErr) console.warn('Categories query notice:', catErr.message);
-        if (objErr) console.warn('Objectives query error:', objErr.message);
+        if (objErr) console.warn('Objectives query notice:', objErr.message);
 
         // Auto-seed default categories for perso profile if missing to prevent FK constraint failures
         if (currentProfile === 'perso') {
@@ -274,18 +379,22 @@ export function TargetProvider({ children }) {
 
         if (!isMounted) return;
 
+        const finalPayload = {
+          categories: fetchedCategories,
+          objectives: transformedObjectives,
+          progress: transformedProgress,
+          progressTimestamps: transformedTimestamps,
+          rewards: transformedRewards,
+          rewardItems: rewardItems || [],
+          rewardThresholds: savedThresholds,
+        };
+
         dispatch({
           type: 'INITIALIZE',
-          payload: {
-            categories: fetchedCategories,
-            objectives: transformedObjectives,
-            progress: transformedProgress,
-            progressTimestamps: transformedTimestamps,
-            rewards: transformedRewards,
-            rewardItems: rewardItems || [],
-            rewardThresholds: savedThresholds,
-          }
+          payload: finalPayload
         });
+
+        saveLocalState(user.id, currentProfile, finalPayload);
 
         // Auto-Rollover logic
         const currentWeekId = getCurrentWeekId();
@@ -331,10 +440,9 @@ export function TargetProvider({ children }) {
           });
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
-        if (isMounted) {
+        console.warn('Error fetching user data from server (using local cache):', error);
+        if (isMounted && !cached) {
           dispatch({ type: 'INITIALIZE', payload: {} });
-          showToast('Erreur de connexion au serveur pour charger les données', 'error');
         }
       }
     };
@@ -356,9 +464,9 @@ export function TargetProvider({ children }) {
       isMounted = false;
       supabase.removeChannel(objChannel);
     };
-  }, [user, currentProfile]);
+  }, [user, currentProfile, refreshPendingCount]);
 
-  // Wrapper for dispatch to handle async side effects, rollback and user feedback
+  // Wrapper for dispatch to handle async side effects, offline queuing, rollback and user feedback
   const userDispatch = async (action) => {
     if (!user) return;
 
@@ -389,9 +497,11 @@ export function TargetProvider({ children }) {
               newObjectives[i] = { ...obj, assignments: newAssignments };
               objectivesUpdated = true;
               
-              supabase.from('objectives').update({ assignments: newAssignments }).eq('id', obj.id).then(({ error }) => {
-                if (error) console.error('Error rolling over objective:', error);
-              });
+              if (navigator.onLine) {
+                supabase.from('objectives').update({ assignments: newAssignments }).eq('id', obj.id).catch(() => {});
+              } else {
+                enqueueSyncAction(user.id, currentProfile, 'UPDATE_OBJECTIVE', { id: obj.id, assignments: newAssignments });
+              }
             }
           }
         }
@@ -421,10 +531,17 @@ export function TargetProvider({ children }) {
           user_id: user.id
         };
         
-        // Optimistic update
+        // Optimistic local update
         dispatch({ type: 'ADD_OBJECTIVE', payload: { objective: newObj } });
         
-        // DB sync with try/catch and rollback
+        if (!navigator.onLine) {
+          enqueueSyncAction(user.id, currentProfile, 'ADD_OBJECTIVE', newObj);
+          refreshPendingCount();
+          showToast('Objectif enregistré hors-ligne. Synchronisation dès reconnexion.', 'info', 3000);
+          return;
+        }
+
+        // Online DB sync
         try {
           const { error } = await supabase.from('objectives').insert({
             id: newObj.id,
@@ -442,9 +559,15 @@ export function TargetProvider({ children }) {
           });
           if (error) throw error;
         } catch (error) {
-          console.error('Error adding objective:', error);
-          dispatch({ type: 'DELETE_OBJECTIVE', payload: newObj.id });
-          showToast(`Erreur d'enregistrement : ${error.message || 'Échec de la synchronisation'}`, 'error');
+          if (isOfflineError(error)) {
+            enqueueSyncAction(user.id, currentProfile, 'ADD_OBJECTIVE', newObj);
+            refreshPendingCount();
+            showToast('Connexion perdue : objectif enregistré hors-ligne.', 'info', 3000);
+          } else {
+            console.error('Error adding objective:', error);
+            dispatch({ type: 'DELETE_OBJECTIVE', payload: newObj.id });
+            showToast(`Erreur d'enregistrement : ${error.message || 'Échec de la synchronisation'}`, 'error');
+          }
         }
         break;
       }
@@ -453,6 +576,12 @@ export function TargetProvider({ children }) {
         const updated = { ...action.payload };
         const previousObj = state.objectives.find(o => o.id === updated.id);
         dispatch({ type: 'UPDATE_OBJECTIVE', payload: updated });
+
+        if (!navigator.onLine) {
+          enqueueSyncAction(user.id, currentProfile, 'UPDATE_OBJECTIVE', updated);
+          refreshPendingCount();
+          return;
+        }
 
         try {
           const { error } = await supabase.from('objectives').update({
@@ -467,11 +596,16 @@ export function TargetProvider({ children }) {
           }).eq('id', updated.id);
           if (error) throw error;
         } catch (error) {
-          console.error('Error updating objective:', error);
-          if (previousObj) {
-            dispatch({ type: 'UPDATE_OBJECTIVE', payload: previousObj });
+          if (isOfflineError(error)) {
+            enqueueSyncAction(user.id, currentProfile, 'UPDATE_OBJECTIVE', updated);
+            refreshPendingCount();
+          } else {
+            console.error('Error updating objective:', error);
+            if (previousObj) {
+              dispatch({ type: 'UPDATE_OBJECTIVE', payload: previousObj });
+            }
+            showToast(`Erreur de modification : ${error.message || 'Échec'}`, 'error');
           }
-          showToast(`Erreur de modification : ${error.message || 'Échec de la synchronisation'}`, 'error');
         }
         break;
       }
@@ -480,15 +614,26 @@ export function TargetProvider({ children }) {
         const previousObj = state.objectives.find(o => o.id === action.payload);
         dispatch({ type: 'DELETE_OBJECTIVE', payload: action.payload });
 
+        if (!navigator.onLine) {
+          enqueueSyncAction(user.id, currentProfile, 'DELETE_OBJECTIVE', { id: action.payload });
+          refreshPendingCount();
+          return;
+        }
+
         try {
           const { error } = await supabase.from('objectives').delete().eq('id', action.payload);
           if (error) throw error;
         } catch (error) {
-          console.error('Error deleting objective:', error);
-          if (previousObj) {
-            dispatch({ type: 'ADD_OBJECTIVE', payload: { objective: previousObj } });
+          if (isOfflineError(error)) {
+            enqueueSyncAction(user.id, currentProfile, 'DELETE_OBJECTIVE', { id: action.payload });
+            refreshPendingCount();
+          } else {
+            console.error('Error deleting objective:', error);
+            if (previousObj) {
+              dispatch({ type: 'ADD_OBJECTIVE', payload: { objective: previousObj } });
+            }
+            showToast(`Erreur de suppression : ${error.message || 'Échec'}`, 'error');
           }
-          showToast(`Erreur de suppression : ${error.message || 'Échec'}`, 'error');
         }
         break;
       }
@@ -513,19 +658,37 @@ export function TargetProvider({ children }) {
 
         dispatch({ type: action.type, payload: { ...action.payload, value: current } });
 
+        const progressPayload = {
+          weekId,
+          objectiveId,
+          value: current,
+          updatedAt: new Date().toISOString()
+        };
+
+        if (!navigator.onLine) {
+          enqueueSyncAction(user.id, currentProfile, 'PROGRESS_UPDATE', progressPayload);
+          refreshPendingCount();
+          return;
+        }
+
         try {
           const { error } = await supabase.from('progress').upsert({
             week_id: weekId,
             objective_id: objectiveId,
             user_id: user.id,
             value: current,
-            updated_at: new Date().toISOString()
+            updated_at: progressPayload.updatedAt
           }, { onConflict: 'week_id,objective_id' });
           if (error) throw error;
         } catch (error) {
-          console.error('Error updating progress:', error);
-          dispatch({ type: action.type, payload: { ...action.payload, value: previousValue } });
-          showToast('Erreur d\'enregistrement de la progression', 'error');
+          if (isOfflineError(error)) {
+            enqueueSyncAction(user.id, currentProfile, 'PROGRESS_UPDATE', progressPayload);
+            refreshPendingCount();
+          } else {
+            console.error('Error updating progress:', error);
+            dispatch({ type: action.type, payload: { ...action.payload, value: previousValue } });
+            showToast('Erreur d\'enregistrement de la progression', 'error');
+          }
         }
         break;
       }
@@ -538,19 +701,37 @@ export function TargetProvider({ children }) {
 
         dispatch({ type: 'TOGGLE_SUB_OBJECTIVE', payload: { weekId, objectiveId, value: nextValue } });
 
+        const progressPayload = {
+          weekId,
+          objectiveId,
+          value: nextValue,
+          updatedAt: new Date().toISOString()
+        };
+
+        if (!navigator.onLine) {
+          enqueueSyncAction(user.id, currentProfile, 'PROGRESS_UPDATE', progressPayload);
+          refreshPendingCount();
+          return;
+        }
+
         try {
           const { error } = await supabase.from('progress').upsert({
             week_id: weekId,
             objective_id: objectiveId,
             user_id: user.id,
             value: nextValue,
-            updated_at: new Date().toISOString()
+            updated_at: progressPayload.updatedAt
           }, { onConflict: 'week_id,objective_id' });
           if (error) throw error;
         } catch (error) {
-          console.error('Error toggling sub objective:', error);
-          dispatch({ type: 'TOGGLE_SUB_OBJECTIVE', payload: { weekId, objectiveId, value: current } });
-          showToast('Erreur de mise à jour des sous-tâches', 'error');
+          if (isOfflineError(error)) {
+            enqueueSyncAction(user.id, currentProfile, 'PROGRESS_UPDATE', progressPayload);
+            refreshPendingCount();
+          } else {
+            console.error('Error toggling sub objective:', error);
+            dispatch({ type: 'TOGGLE_SUB_OBJECTIVE', payload: { weekId, objectiveId, value: current } });
+            showToast('Erreur de mise à jour des sous-tâches', 'error');
+          }
         }
         break;
       }
@@ -558,6 +739,13 @@ export function TargetProvider({ children }) {
       case 'SET_REWARD': {
         const { weekId, reward } = action.payload;
         dispatch({ type: 'SET_REWARD', payload: action.payload });
+
+        if (!navigator.onLine) {
+          enqueueSyncAction(user.id, currentProfile, 'SET_REWARD', { weekId, reward });
+          refreshPendingCount();
+          return;
+        }
+
         try {
           const { error } = await supabase.from('rewards').upsert({
             week_id: weekId,
@@ -566,8 +754,13 @@ export function TargetProvider({ children }) {
           }, { onConflict: 'week_id' });
           if (error) throw error;
         } catch (error) {
-          console.error('Error setting reward:', error);
-          showToast('Erreur d\'enregistrement de la récompense', 'error');
+          if (isOfflineError(error)) {
+            enqueueSyncAction(user.id, currentProfile, 'SET_REWARD', { weekId, reward });
+            refreshPendingCount();
+          } else {
+            console.error('Error setting reward:', error);
+            showToast('Erreur d\'enregistrement de la récompense', 'error');
+          }
         }
         break;
       }
@@ -579,6 +772,12 @@ export function TargetProvider({ children }) {
           user_id: user.id
         };
         dispatch({ type: 'ADD_CATEGORY', payload: { category: newCat } });
+
+        if (!navigator.onLine) {
+          enqueueSyncAction(user.id, currentProfile, 'ADD_CATEGORY', newCat);
+          refreshPendingCount();
+          return;
+        }
 
         try {
           const { error } = await supabase.from('categories').insert({
@@ -592,9 +791,14 @@ export function TargetProvider({ children }) {
           });
           if (error) throw error;
         } catch (error) {
-          console.error('Error adding category:', error);
-          dispatch({ type: 'DELETE_CATEGORY', payload: newCat.id });
-          showToast(`Erreur d'ajout de la catégorie : ${error.message}`, 'error');
+          if (isOfflineError(error)) {
+            enqueueSyncAction(user.id, currentProfile, 'ADD_CATEGORY', newCat);
+            refreshPendingCount();
+          } else {
+            console.error('Error adding category:', error);
+            dispatch({ type: 'DELETE_CATEGORY', payload: newCat.id });
+            showToast(`Erreur d'ajout de la catégorie : ${error.message}`, 'error');
+          }
         }
         break;
       }
@@ -603,6 +807,12 @@ export function TargetProvider({ children }) {
         const updated = action.payload;
         const previousCat = state.categories.find(c => c.id === updated.id);
         dispatch({ type: 'UPDATE_CATEGORY', payload: updated });
+
+        if (!navigator.onLine) {
+          enqueueSyncAction(user.id, currentProfile, 'UPDATE_CATEGORY', updated);
+          refreshPendingCount();
+          return;
+        }
 
         try {
           const { error } = await supabase.from('categories').update({
@@ -613,9 +823,14 @@ export function TargetProvider({ children }) {
           }).eq('id', updated.id);
           if (error) throw error;
         } catch (error) {
-          console.error('Error updating category:', error);
-          if (previousCat) dispatch({ type: 'UPDATE_CATEGORY', payload: previousCat });
-          showToast(`Erreur de mise à jour de la catégorie : ${error.message}`, 'error');
+          if (isOfflineError(error)) {
+            enqueueSyncAction(user.id, currentProfile, 'UPDATE_CATEGORY', updated);
+            refreshPendingCount();
+          } else {
+            console.error('Error updating category:', error);
+            if (previousCat) dispatch({ type: 'UPDATE_CATEGORY', payload: previousCat });
+            showToast(`Erreur de mise à jour de la catégorie : ${error.message}`, 'error');
+          }
         }
         break;
       }
@@ -630,11 +845,11 @@ export function TargetProvider({ children }) {
         });
         localStorage.setItem(`target_categories_order_${user.id}_${currentProfile}`, JSON.stringify(orderMap));
 
-        for (let i = 0; i < newCategories.length; i++) {
-          const cat = newCategories[i];
-          supabase.from('categories').update({ order_index: i }).eq('id', cat.id).then(({ error }) => {
-            if (error) console.warn(`Supabase order_index update error for ${cat.id}:`, error.message);
-          });
+        if (navigator.onLine) {
+          for (let i = 0; i < newCategories.length; i++) {
+            const cat = newCategories[i];
+            supabase.from('categories').update({ order_index: i }).eq('id', cat.id).catch(() => {});
+          }
         }
         break;
       }
@@ -646,14 +861,25 @@ export function TargetProvider({ children }) {
         const previousCat = state.categories.find(c => c.id === catId);
         dispatch({ type: 'DELETE_CATEGORY', payload: catId });
 
+        if (!navigator.onLine) {
+          enqueueSyncAction(user.id, currentProfile, 'DELETE_CATEGORY', { id: catId });
+          refreshPendingCount();
+          return;
+        }
+
         try {
           await supabase.from('objectives').update({ category_id: 'autre' }).eq('category_id', catId);
           const { error } = await supabase.from('categories').delete().eq('id', catId);
           if (error) throw error;
         } catch (error) {
-          console.error('Error deleting category:', error);
-          if (previousCat) dispatch({ type: 'ADD_CATEGORY', payload: { category: previousCat } });
-          showToast(`Erreur de suppression de la catégorie : ${error.message}`, 'error');
+          if (isOfflineError(error)) {
+            enqueueSyncAction(user.id, currentProfile, 'DELETE_CATEGORY', { id: catId });
+            refreshPendingCount();
+          } else {
+            console.error('Error deleting category:', error);
+            if (previousCat) dispatch({ type: 'ADD_CATEGORY', payload: { category: previousCat } });
+            showToast(`Erreur de suppression de la catégorie : ${error.message}`, 'error');
+          }
         }
         break;
       }
@@ -667,13 +893,25 @@ export function TargetProvider({ children }) {
           user_id: user.id
         };
         dispatch({ type: 'ADD_REWARD_ITEM', payload: newItem });
+
+        if (!navigator.onLine) {
+          enqueueSyncAction(user.id, currentProfile, 'ADD_REWARD_ITEM', newItem);
+          refreshPendingCount();
+          return;
+        }
+
         try {
           const { error } = await supabase.from('reward_items').insert(newItem);
           if (error) throw error;
         } catch (error) {
-          console.error('Error adding reward item:', error);
-          dispatch({ type: 'DELETE_REWARD_ITEM', payload: newItem.id });
-          showToast('Erreur d\'ajout de la récompense', 'error');
+          if (isOfflineError(error)) {
+            enqueueSyncAction(user.id, currentProfile, 'ADD_REWARD_ITEM', newItem);
+            refreshPendingCount();
+          } else {
+            console.error('Error adding reward item:', error);
+            dispatch({ type: 'DELETE_REWARD_ITEM', payload: newItem.id });
+            showToast('Erreur d\'ajout de la récompense', 'error');
+          }
         }
         break;
       }
@@ -682,7 +920,13 @@ export function TargetProvider({ children }) {
         const updated = action.payload;
         const previousItem = state.rewardItems.find(r => r.id === updated.id);
         dispatch({ type: 'UPDATE_REWARD_ITEM', payload: updated });
-        
+
+        if (!navigator.onLine) {
+          enqueueSyncAction(user.id, currentProfile, 'UPDATE_REWARD_ITEM', updated);
+          refreshPendingCount();
+          return;
+        }
+
         const updateData = {};
         if (updated.title !== undefined) updateData.title = updated.title;
         if (updated.status !== undefined) updateData.status = updated.status;
@@ -692,9 +936,14 @@ export function TargetProvider({ children }) {
           const { error } = await supabase.from('reward_items').update(updateData).eq('id', updated.id);
           if (error) throw error;
         } catch (error) {
-          console.error('Error updating reward item:', error);
-          if (previousItem) dispatch({ type: 'UPDATE_REWARD_ITEM', payload: previousItem });
-          showToast('Erreur de mise à jour de la récompense', 'error');
+          if (isOfflineError(error)) {
+            enqueueSyncAction(user.id, currentProfile, 'UPDATE_REWARD_ITEM', updated);
+            refreshPendingCount();
+          } else {
+            console.error('Error updating reward item:', error);
+            if (previousItem) dispatch({ type: 'UPDATE_REWARD_ITEM', payload: previousItem });
+            showToast('Erreur de mise à jour de la récompense', 'error');
+          }
         }
         break;
       }
@@ -704,20 +953,37 @@ export function TargetProvider({ children }) {
         const previousItem = state.rewardItems.find(r => r.id === itemId);
         dispatch({ type: 'DELETE_REWARD_ITEM', payload: itemId });
 
+        if (!navigator.onLine) {
+          enqueueSyncAction(user.id, currentProfile, 'DELETE_REWARD_ITEM', { id: itemId });
+          refreshPendingCount();
+          return;
+        }
+
         try {
           const { error } = await supabase.from('reward_items').delete().eq('id', itemId);
           if (error) throw error;
         } catch (error) {
-          console.error('Error deleting reward item:', error);
-          if (previousItem) dispatch({ type: 'ADD_REWARD_ITEM', payload: previousItem });
-          showToast('Erreur de suppression de la récompense', 'error');
+          if (isOfflineError(error)) {
+            enqueueSyncAction(user.id, currentProfile, 'DELETE_REWARD_ITEM', { id: itemId });
+            refreshPendingCount();
+          } else {
+            console.error('Error deleting reward item:', error);
+            if (previousItem) dispatch({ type: 'ADD_REWARD_ITEM', payload: previousItem });
+            showToast('Erreur de suppression de la récompense', 'error');
+          }
         }
         break;
       }
 
       case 'SET_REWARD_THRESHOLDS': {
         dispatch({ type: 'SET_REWARD_THRESHOLDS', payload: action.payload });
-        
+
+        if (!navigator.onLine) {
+          enqueueSyncAction(user.id, currentProfile, 'SET_REWARD_THRESHOLDS', action.payload);
+          refreshPendingCount();
+          return;
+        }
+
         try {
           const { error } = await supabase.from('settings').upsert({
             user_id: user.id,
@@ -727,8 +993,13 @@ export function TargetProvider({ children }) {
 
           if (error) throw error;
         } catch (error) {
-          console.error("Error saving thresholds to Supabase:", error);
-          showToast('Erreur de sauvegarde des seuils', 'error');
+          if (isOfflineError(error)) {
+            enqueueSyncAction(user.id, currentProfile, 'SET_REWARD_THRESHOLDS', action.payload);
+            refreshPendingCount();
+          } else {
+            console.error("Error saving thresholds to Supabase:", error);
+            showToast('Erreur de sauvegarde des seuils', 'error');
+          }
         }
         break;
       }
@@ -739,7 +1010,14 @@ export function TargetProvider({ children }) {
   };
 
   return (
-    <TargetContext.Provider value={{ state, dispatch: userDispatch }}>
+    <TargetContext.Provider value={{ 
+      state, 
+      dispatch: userDispatch,
+      isOnline,
+      isSyncing,
+      pendingSyncCount,
+      syncNow
+    }}>
       {state.loading ? (
         <div className="fixed inset-0 bg-dark-900 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">

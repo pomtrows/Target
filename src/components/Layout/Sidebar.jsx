@@ -1,10 +1,11 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Target, Inbox, BarChart3, Settings, Menu, X, Sun, Moon, LogOut, Users, FileText, Dumbbell, Bell, BellOff, Info, CheckCircle2, Gift, Sliders } from 'lucide-react';
+import { Target, Inbox, BarChart3, Settings, Menu, X, Sun, Moon, LogOut, Users, FileText, Dumbbell, Bell, BellOff, Info, CheckCircle2, Gift, Sliders, Wifi, WifiOff, RotateCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTarget } from '../../contexts/TargetContext';
 import Modal from '../Shared/Modal';
 import {
   isNotificationSupported,
@@ -32,6 +33,7 @@ export default function Sidebar() {
   const { isDark, toggleTheme } = useTheme();
   const { logout, isAdmin } = useAuth();
   const { currentProfile, setCurrentProfile } = useProfile();
+  const { isOnline, isSyncing, pendingSyncCount, syncNow } = useTarget();
 
   // Notification settings states
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
@@ -163,7 +165,7 @@ export default function Sidebar() {
         </nav>
 
         {/* Profile Selector */}
-        <div className="px-4" style={{ marginBottom: '40px' }}>
+        <div className="px-4" style={{ marginBottom: '16px' }}>
           <div className="flex p-1 bg-dark-700/50 rounded-xl border border-dark-400/40 w-full">
             <button
               onClick={() => setCurrentProfile('perso')}
@@ -182,6 +184,44 @@ export default function Sidebar() {
               Pro
             </button>
           </div>
+        </div>
+
+        {/* Offline / Sync Status Indicator */}
+        <div className="px-4" style={{ marginBottom: '24px' }}>
+          {!isOnline ? (
+            <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-accent-orange/10 border border-accent-orange/30 text-accent-orange text-xs">
+              <div className="flex items-center gap-2 font-medium">
+                <WifiOff size={14} className="flex-shrink-0" />
+                <span>Hors-ligne</span>
+              </div>
+              {pendingSyncCount > 0 && (
+                <span className="font-bold bg-accent-orange/20 px-1.5 py-0.5 rounded text-[10px]">
+                  {pendingSyncCount} en attente
+                </span>
+              )}
+            </div>
+          ) : isSyncing ? (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-accent-cyan/10 border border-accent-cyan/30 text-accent-cyan text-xs font-medium">
+              <RotateCw size={14} className="animate-spin flex-shrink-0" />
+              <span>Synchronisation en cours...</span>
+            </div>
+          ) : pendingSyncCount > 0 ? (
+            <button
+              onClick={syncNow}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-accent-cyan/15 hover:bg-accent-cyan/25 border border-accent-cyan/40 text-accent-cyan text-xs font-bold transition-all cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <RotateCw size={14} />
+                <span>Synchroniser ({pendingSyncCount})</span>
+              </div>
+              <span className="text-[10px] uppercase underline">Envoi</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-1.5 text-dark-400 text-[11px]">
+              <div className="w-2 h-2 rounded-full bg-accent-green animate-pulse" />
+              <span>Connecté & synchronisé</span>
+            </div>
+          )}
         </div>
 
         {/* Footer with theme toggle */}
