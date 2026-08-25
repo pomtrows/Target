@@ -9,6 +9,7 @@ import {
   enqueueSportSyncAction,
   processSportSyncQueue,
   getPendingSportQueueCount,
+  generateUUID,
   isOfflineError
 } from '../utils/offlineSync';
 
@@ -169,10 +170,10 @@ export function SportProvider({ children }) {
     if (!user) return null;
 
     const totalTime = calculateTotalTime(exercises);
-    const tempId = `sport_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    const sessionId = generateUUID();
     
     const newSession = {
-      id: tempId,
+      id: sessionId,
       name,
       exercises,
       totalTime,
@@ -192,7 +193,7 @@ export function SportProvider({ children }) {
       const { data, error } = await supabase
         .from('sport_sessions')
         .insert({
-          id: tempId,
+          id: sessionId,
           user_id: user.id,
           name,
           exercises,
@@ -211,7 +212,7 @@ export function SportProvider({ children }) {
         return newSession;
       } else {
         console.error("Error creating session:", error);
-        setSessions(prev => prev.filter(s => s.id !== tempId));
+        setSessions(prev => prev.filter(s => s.id !== sessionId));
         showToast(`Erreur création séance : ${error.message}`, 'error');
         throw error;
       }

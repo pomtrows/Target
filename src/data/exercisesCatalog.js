@@ -24,7 +24,7 @@ export const exercisesCatalog = [
     name: 'Planche faciale',
     category: EXERCISE_CATEGORIES.CORE,
     goalType: GOAL_TYPES.TIME,
-    mediaUrl: '/images/sport/planche_faciale_1779033170718.png',
+    mediaUrl: '/images/sport/planche_faciale_1779033170718.webp',
     level: LEVEL.BEGINNER
   },
   {
@@ -32,7 +32,7 @@ export const exercisesCatalog = [
     name: 'Planche latérale (Gauche)',
     category: EXERCISE_CATEGORIES.CORE,
     goalType: GOAL_TYPES.TIME,
-    mediaUrl: '/images/sport/planche_laterale_gauche_1779033184819.png',
+    mediaUrl: '/images/sport/planche_laterale_gauche_1779033184819.webp',
     level: LEVEL.INTERMEDIATE
   },
   {
@@ -40,7 +40,7 @@ export const exercisesCatalog = [
     name: 'Planche latérale (Droite)',
     category: EXERCISE_CATEGORIES.CORE,
     goalType: GOAL_TYPES.TIME,
-    mediaUrl: '/images/sport/planche_laterale_droite_1779033200773.png',
+    mediaUrl: '/images/sport/planche_laterale_droite_1779033200773.webp',
     level: LEVEL.INTERMEDIATE
   },
   {
@@ -48,7 +48,7 @@ export const exercisesCatalog = [
     name: 'Hollow Body Hold',
     category: EXERCISE_CATEGORIES.CORE,
     goalType: GOAL_TYPES.TIME,
-    mediaUrl: '/images/sport/hollow_body_hold_1779033213722.png',
+    mediaUrl: '/images/sport/hollow_body_hold_1779033213722.webp',
     level: LEVEL.ADVANCED
   },
   {
@@ -56,7 +56,7 @@ export const exercisesCatalog = [
     name: 'Planche à l\'envers',
     category: EXERCISE_CATEGORIES.CORE,
     goalType: GOAL_TYPES.TIME,
-    mediaUrl: '/images/sport/planche_envers_1779089420229.png',
+    mediaUrl: '/images/sport/planche_envers_1779089420229.webp',
     level: LEVEL.INTERMEDIATE
   },
   {
@@ -64,7 +64,7 @@ export const exercisesCatalog = [
     name: 'Planche avec torsion (Gauche)',
     category: EXERCISE_CATEGORIES.CORE,
     goalType: GOAL_TYPES.REPS,
-    mediaUrl: '/images/sport/planche_torsion_gauche_1779090481943.png',
+    mediaUrl: '/images/sport/planche_torsion_gauche_1779090481943.webp',
     level: LEVEL.INTERMEDIATE
   },
   {
@@ -72,7 +72,7 @@ export const exercisesCatalog = [
     name: 'Planche avec torsion (Droite)',
     category: EXERCISE_CATEGORIES.CORE,
     goalType: GOAL_TYPES.REPS,
-    mediaUrl: '/images/sport/planche_torsion_droite_coherente_1779090626890.png',
+    mediaUrl: '/images/sport/planche_torsion_droite_coherente_1779090626890.webp',
     level: LEVEL.INTERMEDIATE
   },
   
@@ -82,7 +82,7 @@ export const exercisesCatalog = [
     name: 'Crunchs',
     category: EXERCISE_CATEGORIES.ABS,
     goalType: GOAL_TYPES.REPS,
-    mediaUrl: '/images/sport/crunchs_1779033227294.png',
+    mediaUrl: '/images/sport/crunchs_1779033227294.webp',
     level: LEVEL.BEGINNER
   },
   {
@@ -90,7 +90,7 @@ export const exercisesCatalog = [
     name: 'Russian Twists',
     category: EXERCISE_CATEGORIES.ABS,
     goalType: GOAL_TYPES.REPS,
-    mediaUrl: '/images/sport/russian_twists_1779033241143.png',
+    mediaUrl: '/images/sport/russian_twists_1779033241143.webp',
     level: LEVEL.INTERMEDIATE
   },
   {
@@ -98,7 +98,7 @@ export const exercisesCatalog = [
     name: 'Leg Raises',
     category: EXERCISE_CATEGORIES.ABS,
     goalType: GOAL_TYPES.REPS,
-    mediaUrl: '/images/sport/leg_raises_1779033256472.png',
+    mediaUrl: '/images/sport/leg_raises_1779033256472.webp',
     level: LEVEL.INTERMEDIATE
   },
   {
@@ -106,7 +106,7 @@ export const exercisesCatalog = [
     name: 'V-Ups',
     category: EXERCISE_CATEGORIES.ABS,
     goalType: GOAL_TYPES.REPS,
-    mediaUrl: '/images/sport/v_ups_1779033317790.png',
+    mediaUrl: '/images/sport/v_ups_1779033317790.webp',
     level: LEVEL.ADVANCED
   },
   
@@ -116,7 +116,7 @@ export const exercisesCatalog = [
     name: 'Pompes sur les genoux',
     category: EXERCISE_CATEGORIES.UPPER,
     goalType: GOAL_TYPES.REPS,
-    mediaUrl: '/images/sport/pompes_genoux_1779033281532.png',
+    mediaUrl: '/images/sport/pompes_genoux_1779033281532.webp',
     level: LEVEL.BEGINNER
   },
   {
@@ -124,7 +124,7 @@ export const exercisesCatalog = [
     name: 'Pompes classiques',
     category: EXERCISE_CATEGORIES.UPPER,
     goalType: GOAL_TYPES.REPS,
-    mediaUrl: '/images/sport/pompes_classiques_1779033293047.png',
+    mediaUrl: '/images/sport/pompes_classiques_1779033293047.webp',
     level: LEVEL.INTERMEDIATE
   },
   {
@@ -132,7 +132,7 @@ export const exercisesCatalog = [
     name: 'Pompes diamant',
     category: EXERCISE_CATEGORIES.UPPER,
     goalType: GOAL_TYPES.REPS,
-    mediaUrl: '/images/sport/pompes_diamant_1779033329382.png',
+    mediaUrl: '/images/sport/pompes_diamant_1779033329382.webp',
     level: LEVEL.ADVANCED
   },
   {
@@ -140,7 +140,7 @@ export const exercisesCatalog = [
     name: 'Dips sur chaise',
     category: EXERCISE_CATEGORIES.UPPER,
     goalType: GOAL_TYPES.REPS,
-    mediaUrl: '/images/sport/dips_chaise_1779033342862.png',
+    mediaUrl: '/images/sport/dips_chaise_1779033342862.webp',
     level: LEVEL.INTERMEDIATE
   },
 
@@ -150,7 +150,7 @@ export const exercisesCatalog = [
     name: 'Squats',
     category: EXERCISE_CATEGORIES.LOWER,
     goalType: GOAL_TYPES.REPS,
-    mediaUrl: '/images/sport/squats_1779033356750.png',
+    mediaUrl: '/images/sport/squats_1779033356750.webp',
     level: LEVEL.BEGINNER
   },
   {
@@ -158,7 +158,7 @@ export const exercisesCatalog = [
     name: 'Fentes avant',
     category: EXERCISE_CATEGORIES.LOWER,
     goalType: GOAL_TYPES.REPS,
-    mediaUrl: '/images/sport/fentes_avant_1779033369558.png',
+    mediaUrl: '/images/sport/fentes_avant_1779033369558.webp',
     level: LEVEL.INTERMEDIATE
   },
   {
@@ -166,7 +166,7 @@ export const exercisesCatalog = [
     name: 'Fentes sautées',
     category: EXERCISE_CATEGORIES.LOWER,
     goalType: GOAL_TYPES.REPS,
-    mediaUrl: '/images/sport/fentes_sautees_1779033382726.png',
+    mediaUrl: '/images/sport/fentes_sautees_1779033382726.webp',
     level: LEVEL.ADVANCED
   },
   {
@@ -174,7 +174,7 @@ export const exercisesCatalog = [
     name: 'Glute Bridges',
     category: EXERCISE_CATEGORIES.LOWER,
     goalType: GOAL_TYPES.REPS,
-    mediaUrl: '/images/sport/glute_bridges_1779033395200.png',
+    mediaUrl: '/images/sport/glute_bridges_1779033395200.webp',
     level: LEVEL.BEGINNER
   },
   {
@@ -182,7 +182,7 @@ export const exercisesCatalog = [
     name: 'Wall Sit (Chaise)',
     category: EXERCISE_CATEGORIES.LOWER,
     goalType: GOAL_TYPES.TIME,
-    mediaUrl: '/images/sport/wall_sit_1779051408501.png',
+    mediaUrl: '/images/sport/wall_sit_1779051408501.webp',
     level: LEVEL.INTERMEDIATE
   },
 
@@ -192,7 +192,7 @@ export const exercisesCatalog = [
     name: 'Jumping Jacks',
     category: EXERCISE_CATEGORIES.CARDIO,
     goalType: GOAL_TYPES.TIME,
-    mediaUrl: '/images/sport/jumping_jacks_1779051420569.png',
+    mediaUrl: '/images/sport/jumping_jacks_1779051420569.webp',
     level: LEVEL.BEGINNER
   },
   {
@@ -200,7 +200,7 @@ export const exercisesCatalog = [
     name: 'Burpees',
     category: EXERCISE_CATEGORIES.CARDIO,
     goalType: GOAL_TYPES.REPS,
-    mediaUrl: '/images/sport/burpees_1779051433296.png',
+    mediaUrl: '/images/sport/burpees_1779051433296.webp',
     level: LEVEL.ADVANCED
   },
   {
@@ -208,7 +208,7 @@ export const exercisesCatalog = [
     name: 'Montées de genoux',
     category: EXERCISE_CATEGORIES.CARDIO,
     goalType: GOAL_TYPES.TIME,
-    mediaUrl: '/images/sport/montees_genoux_1779051445465.png',
+    mediaUrl: '/images/sport/montees_genoux_1779051445465.webp',
     level: LEVEL.INTERMEDIATE
   },
 ];

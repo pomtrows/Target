@@ -25,3 +25,7 @@ dist-ssr
 
 # Local env files
 .env
+
+# Raw backup images
+raw_images_backup
+

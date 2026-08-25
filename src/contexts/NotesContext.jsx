@@ -9,6 +9,7 @@ import {
   enqueueNotesSyncAction,
   processNotesSyncQueue,
   getPendingNotesQueueCount,
+  generateUUID,
   isOfflineError
 } from '../utils/offlineSync';
 
@@ -200,8 +201,8 @@ export function NotesProvider({ children }) {
   }, [user, currentProfile, refreshPendingNotesCount]);
 
   const createFolder = async (name, parentId = null) => {
-    const tempId = `fld-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-    const newFolder = { id: tempId, name, parent_id: parentId, user_id: user.id, created_at: new Date().toISOString() };
+    const folderId = generateUUID();
+    const newFolder = { id: folderId, name, parent_id: parentId, user_id: user.id, created_at: new Date().toISOString() };
     dispatch({ type: 'ADD_FOLDER', payload: newFolder });
 
     if (!navigator.onLine) {
@@ -213,12 +214,11 @@ export function NotesProvider({ children }) {
     try {
       const { data, error } = await supabase
         .from('folders')
-        .insert({ id: tempId, name, parent_id: parentId, user_id: user.id, profile: currentProfile })
+        .insert({ id: folderId, name, parent_id: parentId, user_id: user.id, profile: currentProfile })
         .select()
         .single();
       if (error) throw error;
       
-      dispatch({ type: 'UPDATE_FOLDER', payload: { ...data, oldId: tempId } });
       return data;
     } catch (error) {
       if (isOfflineError(error)) {
@@ -226,7 +226,7 @@ export function NotesProvider({ children }) {
         refreshPendingNotesCount();
         return newFolder;
       } else {
-        dispatch({ type: 'DELETE_FOLDER', payload: tempId });
+        dispatch({ type: 'DELETE_FOLDER', payload: folderId });
         showToast(`Erreur création dossier : ${error.message}`, 'error');
         throw error;
       }
@@ -234,9 +234,9 @@ export function NotesProvider({ children }) {
   };
 
   const createNote = async (title, folderId = null) => {
-    const tempId = `note-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+    const noteId = generateUUID();
     const newNote = { 
-      id: tempId, 
+      id: noteId, 
       title, 
       folder_id: folderId, 
       user_id: user.id, 
@@ -255,12 +255,11 @@ export function NotesProvider({ children }) {
     try {
       const { data, error } = await supabase
         .from('notes')
-        .insert({ id: tempId, title, folder_id: folderId, user_id: user.id, profile: currentProfile })
+        .insert({ id: noteId, title, folder_id: folderId, user_id: user.id, profile: currentProfile })
         .select()
         .single();
       if (error) throw error;
       
-      dispatch({ type: 'UPDATE_NOTE', payload: { ...data, oldId: tempId } });
       return data;
     } catch (error) {
       if (isOfflineError(error)) {
@@ -268,7 +267,7 @@ export function NotesProvider({ children }) {
         refreshPendingNotesCount();
         return newNote;
       } else {
-        dispatch({ type: 'DELETE_NOTE', payload: tempId });
+        dispatch({ type: 'DELETE_NOTE', payload: noteId });
         showToast(`Erreur création note : ${error.message}`, 'error');
         throw error;
       }

@@ -10,7 +10,34 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['pwa-icon.png'],
+      includeAssets: ['pwa-icon.png', 'images/**/*', 'sound/**/*'],
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,mp3,wav,webmanifest}'],
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: {
+                maxEntries: 150,
+                maxAgeSeconds: 60 * 24 * 60 * 60 // 60 days
+              }
+            }
+          },
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/images/sport/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'sport-illustrations',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 90 * 24 * 60 * 60 // 90 days
+              }
+            }
+          }
+        ]
+      },
       manifest: {
         name: 'Target - Vos Objectifs',
         short_name: 'Target',

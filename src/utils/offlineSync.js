@@ -12,6 +12,29 @@ const NOTES_QUEUE_KEY_PREFIX = 'target_notes_sync_queue_';
 const SPORT_CACHE_KEY_PREFIX = 'target_offline_sport_';
 const SPORT_QUEUE_KEY_PREFIX = 'target_sport_sync_queue_';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * Check if a string is a valid UUID
+ */
+export function isValidUUID(str) {
+  return typeof str === 'string' && UUID_REGEX.test(str);
+}
+
+/**
+ * Generate a standard RFC4122 UUID v4
+ */
+export function generateUUID() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 /**
  * Get cache key for a specific user and profile
  */
@@ -555,10 +578,12 @@ export async function processNotesSyncQueue(userId, profile, supabase) {
 
       switch (item.type) {
         case 'ADD_FOLDER': {
+          const folderId = isValidUUID(item.payload.id) ? item.payload.id : generateUUID();
+          const parentId = isValidUUID(item.payload.parent_id) ? item.payload.parent_id : null;
           const { error } = await supabase.from('folders').upsert({
-            id: item.payload.id,
+            id: folderId,
             name: item.payload.name,
-            parent_id: item.payload.parent_id || null,
+            parent_id: parentId,
             user_id: userId,
             profile: profile || 'perso'
           }, { onConflict: 'id' });
@@ -567,25 +592,30 @@ export async function processNotesSyncQueue(userId, profile, supabase) {
         }
 
         case 'UPDATE_FOLDER': {
+          if (!isValidUUID(item.payload.id)) break;
+          const parentId = isValidUUID(item.payload.parent_id) ? item.payload.parent_id : null;
           const { error } = await supabase.from('folders').update({
             name: item.payload.name,
-            parent_id: item.payload.parent_id || null
+            parent_id: parentId
           }).eq('id', item.payload.id);
           reqError = error;
           break;
         }
 
         case 'DELETE_FOLDER': {
+          if (!isValidUUID(item.payload.id)) break;
           const { error } = await supabase.from('folders').delete().eq('id', item.payload.id);
           reqError = error;
           break;
         }
 
         case 'ADD_NOTE': {
+          const noteId = isValidUUID(item.payload.id) ? item.payload.id : generateUUID();
+          const folderId = isValidUUID(item.payload.folder_id) ? item.payload.folder_id : null;
           const { error } = await supabase.from('notes').upsert({
-            id: item.payload.id,
+            id: noteId,
             title: item.payload.title,
-            folder_id: item.payload.folder_id || null,
+            folder_id: folderId,
             content: item.payload.content || '',
             user_id: userId,
             profile: profile || 'perso',
@@ -597,10 +627,13 @@ export async function processNotesSyncQueue(userId, profile, supabase) {
         }
 
         case 'UPDATE_NOTE': {
+          if (!isValidUUID(item.payload.id)) break;
           const updateData = { updated_at: new Date().toISOString() };
           if (item.payload.title !== undefined) updateData.title = item.payload.title;
           if (item.payload.content !== undefined) updateData.content = item.payload.content;
-          if (item.payload.folder_id !== undefined) updateData.folder_id = item.payload.folder_id;
+          if (item.payload.folder_id !== undefined) {
+            updateData.folder_id = isValidUUID(item.payload.folder_id) ? item.payload.folder_id : null;
+          }
 
           const { error } = await supabase.from('notes').update(updateData).eq('id', item.payload.id);
           reqError = error;
@@ -608,6 +641,7 @@ export async function processNotesSyncQueue(userId, profile, supabase) {
         }
 
         case 'DELETE_NOTE': {
+          if (!isValidUUID(item.payload.id)) break;
           const { error } = await supabase.from('notes').delete().eq('id', item.payload.id);
           reqError = error;
           break;
@@ -673,8 +707,9 @@ export async function processSportSyncQueue(userId, supabase) {
 
       switch (item.type) {
         case 'ADD_SPORT_SESSION': {
+          const sportId = isValidUUID(item.payload.id) ? item.payload.id : generateUUID();
           const { error } = await supabase.from('sport_sessions').upsert({
-            id: item.payload.id,
+            id: sportId,
             user_id: userId,
             name: item.payload.name,
             exercises: item.payload.exercises || [],
@@ -687,6 +722,7 @@ export async function processSportSyncQueue(userId, supabase) {
         }
 
         case 'UPDATE_SPORT_SESSION': {
+          if (!isValidUUID(item.payload.id)) break;
           const { error } = await supabase.from('sport_sessions').update({
             name: item.payload.name,
             exercises: item.payload.exercises || [],
@@ -698,6 +734,7 @@ export async function processSportSyncQueue(userId, supabase) {
         }
 
         case 'DELETE_SPORT_SESSION': {
+          if (!isValidUUID(item.payload.id)) break;
           const { error } = await supabase.from('sport_sessions').delete().eq('id', item.payload.id);
           reqError = error;
           break;
