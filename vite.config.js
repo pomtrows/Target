@@ -40,4 +40,24 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('framer-motion') || id.includes('lucide-react')) {
+              return 'ui';
+            }
+            if (id.includes('@supabase')) {
+              return 'supabase';
+            }
+            if (id.includes('date-fns') || id.includes('canvas-confetti')) {
+              return 'utils';
+            }
+            return 'vendor';
+          }
+        }
+      }
+    }
+  }
 })

@@ -1,7 +1,8 @@
-import { createContext, useContext, useReducer, useEffect, useState } from 'react';
+import { createContext, useContext, useReducer, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 import { useProfile } from './ProfileContext';
+import { useToast } from './ToastContext';
 import { toggleBit, getObjectiveProgress } from '../utils/progressUtils';
 import { getCurrentWeekId } from '../utils/weekUtils';
 
@@ -27,8 +28,8 @@ const initialState = {
   categories: defaultCategories,
   rewards: {}, 
   rewardItems: [],
-  progressTimestamps: {}, // New: Stores "weekId-objId" -> ISO timestamp
-  rewardThresholds: { P1: 100, P2: 100, P3: 100 }, // New: Reward unlock thresholds per priority
+  progressTimestamps: {},
+  rewardThresholds: { P1: 100, P2: 100, P3: 100 },
   loading: true,
 };
 
@@ -180,6 +181,7 @@ export function TargetProvider({ children }) {
   const [state, dispatch] = useReducer(targetReducer, initialState);
   const { user } = useAuth();
   const { currentProfile } = useProfile();
+  const { showToast } = useToast();
 
   // Fetch from Supabase on mount, when user changes, or when profile changes
   useEffect(() => {
@@ -188,23 +190,46 @@ export function TargetProvider({ children }) {
       return;
     }
 
+    let isMounted = true;
+
     const fetchData = async () => {
       try {
         const [
-          { data: categories },
-          { data: objectives },
-          { data: progress },
-          { data: rewards },
-          { data: rewardItems },
-          { data: settingsData }
+          { data: categories, error: catErr },
+          { data: objectives, error: objErr },
+          { data: progress, error: progErr },
+          { data: rewards, error: rewErr },
+          { data: rewardItems, error: rewItemErr },
+          { data: settingsData, error: setErr }
         ] = await Promise.all([
           supabase.from('categories').select('*').eq('user_id', user.id).eq('profile', currentProfile),
           supabase.from('objectives').select('*').eq('user_id', user.id).eq('profile', currentProfile),
-          supabase.from('progress').select('*').eq('user_id', user.id), // Fetch all progress, objectives are filtered
+          supabase.from('progress').select('*').eq('user_id', user.id),
           supabase.from('rewards').select('*').eq('user_id', user.id),
           supabase.from('reward_items').select('*').eq('user_id', user.id),
           supabase.from('settings').select('*').eq('user_id', user.id).eq('profile', currentProfile).maybeSingle()
         ]);
+
+        if (catErr) console.warn('Categories query notice:', catErr.message);
+        if (objErr) console.warn('Objectives query error:', objErr.message);
+
+        // Auto-seed default categories for perso profile if missing to prevent FK constraint failures
+        if (currentProfile === 'perso') {
+          const existingCatIds = new Set((categories || []).map(c => c.id));
+          const missingDefaults = defaultCategories.filter(d => !existingCatIds.has(d.id));
+          if (missingDefaults.length > 0) {
+            for (const cat of missingDefaults) {
+              await supabase.from('categories').insert({
+                id: cat.id,
+                user_id: user.id,
+                profile: 'perso',
+                label: cat.label,
+                icon: cat.icon,
+                color: cat.color
+              }).then(() => {}).catch(() => {});
+            }
+          }
+        }
 
         const transformedProgress = (progress || []).reduce((acc, p) => {
           if (!acc[p.week_id]) acc[p.week_id] = {};
@@ -240,13 +265,14 @@ export function TargetProvider({ children }) {
           return orderA - orderB;
         });
 
-        // Use settings from Supabase, fallback to localStorage, then default
         let savedThresholds = { P1: 100, P2: 100, P3: 100 };
         if (settingsData && settingsData.reward_thresholds) {
           savedThresholds = settingsData.reward_thresholds;
         } else {
           savedThresholds = JSON.parse(localStorage.getItem(`target_reward_thresholds_${user.id}_${currentProfile}`)) || { P1: 100, P2: 100, P3: 100 };
         }
+
+        if (!isMounted) return;
 
         dispatch({
           type: 'INITIALIZE',
@@ -291,7 +317,7 @@ export function TargetProvider({ children }) {
           }
         }
 
-        if (objectivesUpdated) {
+        if (objectivesUpdated && isMounted) {
           dispatch({
             type: 'INITIALIZE',
             payload: {
@@ -306,14 +332,33 @@ export function TargetProvider({ children }) {
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
-        dispatch({ type: 'INITIALIZE', payload: {} });
+        if (isMounted) {
+          dispatch({ type: 'INITIALIZE', payload: {} });
+          showToast('Erreur de connexion au serveur pour charger les données', 'error');
+        }
       }
     };
 
     fetchData();
+
+    // Real-time subscriptions for multi-device sync
+    const objChannel = supabase
+      .channel('objectives-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'objectives', filter: `user_id=eq.${user.id}` }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'progress', filter: `user_id=eq.${user.id}` }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(objChannel);
+    };
   }, [user, currentProfile]);
 
-  // Wrapper for dispatch to handle async side effects and local updates
+  // Wrapper for dispatch to handle async side effects, rollback and user feedback
   const userDispatch = async (action) => {
     if (!user) return;
 
@@ -375,43 +420,72 @@ export function TargetProvider({ children }) {
         // Optimistic update
         dispatch({ type: 'ADD_OBJECTIVE', payload: { objective: newObj } });
         
-        // DB sync
-        await supabase.from('objectives').insert({
-          id: newObj.id,
-          user_id: user.id,
-          profile: currentProfile,
-          title: newObj.title,
-          target: newObj.target,
-          category_id: newObj.categoryId,
-          sport_session_id: newObj.sportSessionId,
-          assignments: newObj.assignments,
-          sub_objectives: newObj.subObjectives,
-          attachments: newObj.attachments,
-          priority: newObj.priority,
-          created_at: newObj.createdAt
-        });
+        // DB sync with try/catch and rollback
+        try {
+          const { error } = await supabase.from('objectives').insert({
+            id: newObj.id,
+            user_id: user.id,
+            profile: currentProfile,
+            title: newObj.title,
+            target: newObj.target,
+            category_id: newObj.categoryId,
+            sport_session_id: newObj.sportSessionId,
+            assignments: newObj.assignments,
+            sub_objectives: newObj.subObjectives,
+            attachments: newObj.attachments,
+            priority: newObj.priority,
+            created_at: newObj.createdAt
+          });
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error adding objective:', error);
+          dispatch({ type: 'DELETE_OBJECTIVE', payload: newObj.id });
+          showToast(`Erreur d'enregistrement : ${error.message || 'Échec de la synchronisation'}`, 'error');
+        }
         break;
       }
 
       case 'UPDATE_OBJECTIVE': {
         const updated = { ...action.payload };
+        const previousObj = state.objectives.find(o => o.id === updated.id);
         dispatch({ type: 'UPDATE_OBJECTIVE', payload: updated });
-        await supabase.from('objectives').update({
-          title: updated.title,
-          target: updated.target,
-          category_id: updated.categoryId,
-          sport_session_id: updated.sportSessionId || null,
-          assignments: updated.assignments,
-          sub_objectives: updated.subObjectives || [],
-          attachments: updated.attachments || [],
-          priority: updated.priority || 'P3'
-        }).eq('id', updated.id);
+
+        try {
+          const { error } = await supabase.from('objectives').update({
+            title: updated.title,
+            target: updated.target,
+            category_id: updated.categoryId,
+            sport_session_id: updated.sportSessionId || null,
+            assignments: updated.assignments,
+            sub_objectives: updated.subObjectives || [],
+            attachments: updated.attachments || [],
+            priority: updated.priority || 'P3'
+          }).eq('id', updated.id);
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error updating objective:', error);
+          if (previousObj) {
+            dispatch({ type: 'UPDATE_OBJECTIVE', payload: previousObj });
+          }
+          showToast(`Erreur de modification : ${error.message || 'Échec de la synchronisation'}`, 'error');
+        }
         break;
       }
 
       case 'DELETE_OBJECTIVE': {
+        const previousObj = state.objectives.find(o => o.id === action.payload);
         dispatch({ type: 'DELETE_OBJECTIVE', payload: action.payload });
-        await supabase.from('objectives').delete().eq('id', action.payload);
+
+        try {
+          const { error } = await supabase.from('objectives').delete().eq('id', action.payload);
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error deleting objective:', error);
+          if (previousObj) {
+            dispatch({ type: 'ADD_OBJECTIVE', payload: { objective: previousObj } });
+          }
+          showToast(`Erreur de suppression : ${error.message || 'Échec'}`, 'error');
+        }
         break;
       }
 
@@ -420,7 +494,8 @@ export function TargetProvider({ children }) {
       case 'TOGGLE_PROGRESS': {
         const { weekId, objectiveId } = action.payload;
         const weekProgress = state.progress[weekId] || {};
-        let current = weekProgress[objectiveId] || 0;
+        const previousValue = weekProgress[objectiveId] || 0;
+        let current = previousValue;
         
         if (action.type === 'INCREMENT_PROGRESS') {
           const objective = state.objectives.find((o) => o.id === objectiveId);
@@ -433,13 +508,21 @@ export function TargetProvider({ children }) {
         }
 
         dispatch({ type: action.type, payload: { ...action.payload, value: current } });
-        await supabase.from('progress').upsert({
-          week_id: weekId,
-          objective_id: objectiveId,
-          user_id: user.id,
-          value: current,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'week_id,objective_id' });
+
+        try {
+          const { error } = await supabase.from('progress').upsert({
+            week_id: weekId,
+            objective_id: objectiveId,
+            user_id: user.id,
+            value: current,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'week_id,objective_id' });
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error updating progress:', error);
+          dispatch({ type: action.type, payload: { ...action.payload, value: previousValue } });
+          showToast('Erreur d\'enregistrement de la progression', 'error');
+        }
         break;
       }
       
@@ -450,24 +533,38 @@ export function TargetProvider({ children }) {
         const nextValue = toggleBit(current, subIndex);
 
         dispatch({ type: 'TOGGLE_SUB_OBJECTIVE', payload: { weekId, objectiveId, value: nextValue } });
-        await supabase.from('progress').upsert({
-          week_id: weekId,
-          objective_id: objectiveId,
-          user_id: user.id,
-          value: nextValue,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'week_id,objective_id' });
+
+        try {
+          const { error } = await supabase.from('progress').upsert({
+            week_id: weekId,
+            objective_id: objectiveId,
+            user_id: user.id,
+            value: nextValue,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'week_id,objective_id' });
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error toggling sub objective:', error);
+          dispatch({ type: 'TOGGLE_SUB_OBJECTIVE', payload: { weekId, objectiveId, value: current } });
+          showToast('Erreur de mise à jour des sous-tâches', 'error');
+        }
         break;
       }
 
       case 'SET_REWARD': {
         const { weekId, reward } = action.payload;
         dispatch({ type: 'SET_REWARD', payload: action.payload });
-        await supabase.from('rewards').upsert({
-          week_id: weekId,
-          user_id: user.id,
-          reward: reward
-        }, { onConflict: 'week_id' });
+        try {
+          const { error } = await supabase.from('rewards').upsert({
+            week_id: weekId,
+            user_id: user.id,
+            reward: reward
+          }, { onConflict: 'week_id' });
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error setting reward:', error);
+          showToast('Erreur d\'enregistrement de la récompense', 'error');
+        }
         break;
       }
 
@@ -478,27 +575,44 @@ export function TargetProvider({ children }) {
           user_id: user.id
         };
         dispatch({ type: 'ADD_CATEGORY', payload: { category: newCat } });
-        await supabase.from('categories').insert({
-          id: newCat.id,
-          user_id: user.id,
-          profile: currentProfile,
-          label: newCat.label,
-          icon: newCat.icon,
-          color: newCat.color,
-          auto_rollover: newCat.auto_rollover || false
-        });
+
+        try {
+          const { error } = await supabase.from('categories').insert({
+            id: newCat.id,
+            user_id: user.id,
+            profile: currentProfile,
+            label: newCat.label,
+            icon: newCat.icon,
+            color: newCat.color,
+            auto_rollover: newCat.auto_rollover || false
+          });
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error adding category:', error);
+          dispatch({ type: 'DELETE_CATEGORY', payload: newCat.id });
+          showToast(`Erreur d'ajout de la catégorie : ${error.message}`, 'error');
+        }
         break;
       }
 
       case 'UPDATE_CATEGORY': {
         const updated = action.payload;
+        const previousCat = state.categories.find(c => c.id === updated.id);
         dispatch({ type: 'UPDATE_CATEGORY', payload: updated });
-        await supabase.from('categories').update({
-          label: updated.label,
-          icon: updated.icon,
-          color: updated.color,
-          auto_rollover: updated.auto_rollover || false
-        }).eq('id', updated.id);
+
+        try {
+          const { error } = await supabase.from('categories').update({
+            label: updated.label,
+            icon: updated.icon,
+            color: updated.color,
+            auto_rollover: updated.auto_rollover || false
+          }).eq('id', updated.id);
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error updating category:', error);
+          if (previousCat) dispatch({ type: 'UPDATE_CATEGORY', payload: previousCat });
+          showToast(`Erreur de mise à jour de la catégorie : ${error.message}`, 'error');
+        }
         break;
       }
 
@@ -510,14 +624,13 @@ export function TargetProvider({ children }) {
         newCategories.forEach((cat, index) => {
           orderMap[cat.id] = index;
         });
-        localStorage.setItem(`target_categories_order_${user.id}`, JSON.stringify(orderMap));
+        localStorage.setItem(`target_categories_order_${user.id}_${currentProfile}`, JSON.stringify(orderMap));
 
         for (let i = 0; i < newCategories.length; i++) {
           const cat = newCategories[i];
-          const { error } = await supabase.from('categories').update({ order_index: i }).eq('id', cat.id);
-          if (error) {
-            console.warn(`Supabase order_index update error for ${cat.id}:`, error.message);
-          }
+          supabase.from('categories').update({ order_index: i }).eq('id', cat.id).then(({ error }) => {
+            if (error) console.warn(`Supabase order_index update error for ${cat.id}:`, error.message);
+          });
         }
         break;
       }
@@ -526,17 +639,18 @@ export function TargetProvider({ children }) {
         const catId = action.payload;
         if (catId === 'autre') return; // Protect default category
 
-        // 1. Update objectives in Supabase
-        await supabase
-          .from('objectives')
-          .update({ category_id: 'autre' })
-          .eq('category_id', catId);
-
-        // 2. Delete category in Supabase
-        await supabase.from('categories').delete().eq('id', catId);
-
-        // 3. Update local state
+        const previousCat = state.categories.find(c => c.id === catId);
         dispatch({ type: 'DELETE_CATEGORY', payload: catId });
+
+        try {
+          await supabase.from('objectives').update({ category_id: 'autre' }).eq('category_id', catId);
+          const { error } = await supabase.from('categories').delete().eq('id', catId);
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error deleting category:', error);
+          if (previousCat) dispatch({ type: 'ADD_CATEGORY', payload: { category: previousCat } });
+          showToast(`Erreur de suppression de la catégorie : ${error.message}`, 'error');
+        }
         break;
       }
 
@@ -549,44 +663,68 @@ export function TargetProvider({ children }) {
           user_id: user.id
         };
         dispatch({ type: 'ADD_REWARD_ITEM', payload: newItem });
-        await supabase.from('reward_items').insert(newItem);
+        try {
+          const { error } = await supabase.from('reward_items').insert(newItem);
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error adding reward item:', error);
+          dispatch({ type: 'DELETE_REWARD_ITEM', payload: newItem.id });
+          showToast('Erreur d\'ajout de la récompense', 'error');
+        }
         break;
       }
 
       case 'UPDATE_REWARD_ITEM': {
         const updated = action.payload;
+        const previousItem = state.rewardItems.find(r => r.id === updated.id);
         dispatch({ type: 'UPDATE_REWARD_ITEM', payload: updated });
         
         const updateData = {};
         if (updated.title !== undefined) updateData.title = updated.title;
         if (updated.status !== undefined) updateData.status = updated.status;
-        if (updated.assigned_week !== undefined) {
-          updateData.assigned_week = updated.assigned_week;
-        }
+        if (updated.assigned_week !== undefined) updateData.assigned_week = updated.assigned_week;
 
-        await supabase.from('reward_items').update(updateData).eq('id', updated.id);
+        try {
+          const { error } = await supabase.from('reward_items').update(updateData).eq('id', updated.id);
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error updating reward item:', error);
+          if (previousItem) dispatch({ type: 'UPDATE_REWARD_ITEM', payload: previousItem });
+          showToast('Erreur de mise à jour de la récompense', 'error');
+        }
         break;
       }
 
       case 'DELETE_REWARD_ITEM': {
         const itemId = action.payload;
+        const previousItem = state.rewardItems.find(r => r.id === itemId);
         dispatch({ type: 'DELETE_REWARD_ITEM', payload: itemId });
-        await supabase.from('reward_items').delete().eq('id', itemId);
+
+        try {
+          const { error } = await supabase.from('reward_items').delete().eq('id', itemId);
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error deleting reward item:', error);
+          if (previousItem) dispatch({ type: 'ADD_REWARD_ITEM', payload: previousItem });
+          showToast('Erreur de suppression de la récompense', 'error');
+        }
         break;
       }
 
       case 'SET_REWARD_THRESHOLDS': {
         dispatch({ type: 'SET_REWARD_THRESHOLDS', payload: action.payload });
         
-        // Upsert to Supabase
-        const { error } = await supabase.from('settings').upsert({
-          user_id: user.id,
-          profile: currentProfile,
-          reward_thresholds: action.payload
-        }, { onConflict: 'user_id,profile' });
+        try {
+          const { error } = await supabase.from('settings').upsert({
+            user_id: user.id,
+            profile: currentProfile,
+            reward_thresholds: action.payload
+          }, { onConflict: 'user_id,profile' });
 
-        if (error) {
+          if (error) throw error;
+        } catch (error) {
           console.error("Error saving thresholds to Supabase:", error);
+          showToast('Erreur de sauvegarde des seuils', 'error');
         }
         break;
       }
@@ -611,7 +749,6 @@ export function TargetProvider({ children }) {
     </TargetContext.Provider>
   );
 }
-
 
 // ===== Hook =====
 export function useTarget() {
