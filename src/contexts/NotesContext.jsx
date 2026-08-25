@@ -1,7 +1,16 @@
-import { createContext, useContext, useEffect, useState, useReducer } from 'react';
+import { createContext, useContext, useEffect, useState, useReducer, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 import { useProfile } from './ProfileContext';
+import { useToast } from './ToastContext';
+import {
+  saveLocalNotes,
+  loadLocalNotes,
+  enqueueNotesSyncAction,
+  processNotesSyncQueue,
+  getPendingNotesQueueCount,
+  isOfflineError
+} from '../utils/offlineSync';
 
 const NotesContext = createContext(null);
 
@@ -24,7 +33,6 @@ function notesReducer(state, action) {
         folders: state.folders.map(f => f.id === folderIdToUpdate ? { ...f, ...action.payload, id: action.payload.id } : f)
       };
     case 'DELETE_FOLDER': {
-      // Collect all descendant folder IDs recursively (mirrors DB cascade delete)
       const getAllDescendantIds = (folderId, allFolders) => {
         const children = allFolders.filter(f => f.parent_id === folderId);
         return children.reduce(
@@ -62,21 +70,111 @@ export function NotesProvider({ children }) {
   const [state, dispatch] = useReducer(notesReducer, initialState);
   const { user } = useAuth();
   const { currentProfile } = useProfile();
+  const { showToast } = useToast();
+
+  const [pendingNotesCount, setPendingNotesCount] = useState(0);
+  const [isSyncingNotes, setIsSyncingNotes] = useState(false);
+
+  const refreshPendingNotesCount = useCallback(() => {
+    if (user) {
+      setPendingNotesCount(getPendingNotesQueueCount(user.id, currentProfile));
+    }
+  }, [user, currentProfile]);
+
+  const syncNotesNow = useCallback(async () => {
+    if (!user || !navigator.onLine || isSyncingNotes) return;
+
+    const count = getPendingNotesQueueCount(user.id, currentProfile);
+    if (count === 0) {
+      setPendingNotesCount(0);
+      return;
+    }
+
+    setIsSyncingNotes(true);
+    try {
+      const result = await processNotesSyncQueue(user.id, currentProfile, supabase);
+      setPendingNotesCount(result.pendingCount);
+
+      if (result.processedCount > 0) {
+        showToast(`✅ ${result.processedCount} note(s) synchronisée(s) !`, 'success');
+      }
+    } catch (err) {
+      console.warn('Notes sync queue error:', err);
+    } finally {
+      setIsSyncingNotes(false);
+    }
+  }, [user, currentProfile, isSyncingNotes, showToast]);
+
+  // Online / Offline listener
+  useEffect(() => {
+    const handleOnline = () => {
+      syncNotesNow();
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [syncNotesNow]);
+
+  // Save notes state to local cache whenever it updates
+  useEffect(() => {
+    if (user && !state.loading) {
+      saveLocalNotes(user.id, currentProfile, state);
+      refreshPendingNotesCount();
+    }
+  }, [state, user, currentProfile, refreshPendingNotesCount]);
 
   useEffect(() => {
     if (!user) return;
 
-    const fetchData = async () => {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      const [{ data: folders }, { data: notes }] = await Promise.all([
-        supabase.from('folders').select('*').eq('user_id', user.id).eq('profile', currentProfile).order('name'),
-        supabase.from('notes').select('*').eq('user_id', user.id).eq('profile', currentProfile).order('updated_at', { ascending: false })
-      ]);
+    let isMounted = true;
 
+    // 1. Instant loading from local cache
+    const cached = loadLocalNotes(user.id, currentProfile);
+    if (cached) {
       dispatch({
         type: 'INITIALIZE',
-        payload: { folders: folders || [], notes: notes || [] }
+        payload: { folders: cached.folders || [], notes: cached.notes || [] }
       });
+      refreshPendingNotesCount();
+    }
+
+    const fetchData = async () => {
+      if (!navigator.onLine) {
+        if (!cached && isMounted) {
+          dispatch({ type: 'INITIALIZE', payload: { folders: [], notes: [] } });
+        }
+        return;
+      }
+
+      try {
+        // Sync pending notes queue before fetching
+        if (getPendingNotesQueueCount(user.id, currentProfile) > 0) {
+          await processNotesSyncQueue(user.id, currentProfile, supabase);
+          if (isMounted) refreshPendingNotesCount();
+        }
+
+        const [{ data: folders }, { data: notes }] = await Promise.all([
+          supabase.from('folders').select('*').eq('user_id', user.id).eq('profile', currentProfile).order('name'),
+          supabase.from('notes').select('*').eq('user_id', user.id).eq('profile', currentProfile).order('updated_at', { ascending: false })
+        ]);
+
+        if (!isMounted) return;
+
+        const payload = { folders: folders || [], notes: notes || [] };
+        dispatch({
+          type: 'INITIALIZE',
+          payload
+        });
+
+        saveLocalNotes(user.id, currentProfile, payload);
+      } catch (error) {
+        console.warn('Error fetching notes from server (using local cache):', error);
+        if (isMounted && !cached) {
+          dispatch({ type: 'INITIALIZE', payload: { folders: [], notes: [] } });
+        }
+      }
     };
 
     fetchData();
@@ -95,37 +193,48 @@ export function NotesProvider({ children }) {
       .subscribe();
 
     return () => {
+      isMounted = false;
       supabase.removeChannel(folderChannel);
       supabase.removeChannel(noteChannel);
     };
-  }, [user, currentProfile]);
+  }, [user, currentProfile, refreshPendingNotesCount]);
 
   const createFolder = async (name, parentId = null) => {
-    // Optimistic update
-    const tempId = `temp-${Date.now()}`;
+    const tempId = `fld-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     const newFolder = { id: tempId, name, parent_id: parentId, user_id: user.id, created_at: new Date().toISOString() };
     dispatch({ type: 'ADD_FOLDER', payload: newFolder });
+
+    if (!navigator.onLine) {
+      enqueueNotesSyncAction(user.id, currentProfile, 'ADD_FOLDER', newFolder);
+      refreshPendingNotesCount();
+      return newFolder;
+    }
 
     try {
       const { data, error } = await supabase
         .from('folders')
-        .insert({ name, parent_id: parentId, user_id: user.id, profile: currentProfile })
+        .insert({ id: tempId, name, parent_id: parentId, user_id: user.id, profile: currentProfile })
         .select()
         .single();
       if (error) throw error;
       
-      // Update the temp folder with real data
       dispatch({ type: 'UPDATE_FOLDER', payload: { ...data, oldId: tempId } });
       return data;
     } catch (error) {
-      dispatch({ type: 'DELETE_FOLDER', payload: tempId });
-      throw error;
+      if (isOfflineError(error)) {
+        enqueueNotesSyncAction(user.id, currentProfile, 'ADD_FOLDER', newFolder);
+        refreshPendingNotesCount();
+        return newFolder;
+      } else {
+        dispatch({ type: 'DELETE_FOLDER', payload: tempId });
+        showToast(`Erreur création dossier : ${error.message}`, 'error');
+        throw error;
+      }
     }
   };
 
   const createNote = async (title, folderId = null) => {
-    // Optimistic update
-    const tempId = `temp-${Date.now()}`;
+    const tempId = `note-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     const newNote = { 
       id: tempId, 
       title, 
@@ -137,10 +246,16 @@ export function NotesProvider({ children }) {
     };
     dispatch({ type: 'ADD_NOTE', payload: newNote });
 
+    if (!navigator.onLine) {
+      enqueueNotesSyncAction(user.id, currentProfile, 'ADD_NOTE', newNote);
+      refreshPendingNotesCount();
+      return newNote;
+    }
+
     try {
       const { data, error } = await supabase
         .from('notes')
-        .insert({ title, folder_id: folderId, user_id: user.id, profile: currentProfile })
+        .insert({ id: tempId, title, folder_id: folderId, user_id: user.id, profile: currentProfile })
         .select()
         .single();
       if (error) throw error;
@@ -148,57 +263,120 @@ export function NotesProvider({ children }) {
       dispatch({ type: 'UPDATE_NOTE', payload: { ...data, oldId: tempId } });
       return data;
     } catch (error) {
-      dispatch({ type: 'DELETE_NOTE', payload: tempId });
-      throw error;
+      if (isOfflineError(error)) {
+        enqueueNotesSyncAction(user.id, currentProfile, 'ADD_NOTE', newNote);
+        refreshPendingNotesCount();
+        return newNote;
+      } else {
+        dispatch({ type: 'DELETE_NOTE', payload: tempId });
+        showToast(`Erreur création note : ${error.message}`, 'error');
+        throw error;
+      }
     }
   };
 
   const updateFolder = async (id, updates) => {
-    const { data, error } = await supabase
-      .from('folders')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    dispatch({ type: 'UPDATE_FOLDER', payload: { id, ...updates } });
+
+    if (!navigator.onLine) {
+      enqueueNotesSyncAction(user.id, currentProfile, 'UPDATE_FOLDER', { id, ...updates });
+      refreshPendingNotesCount();
+      return { id, ...updates };
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('folders')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      if (isOfflineError(error)) {
+        enqueueNotesSyncAction(user.id, currentProfile, 'UPDATE_FOLDER', { id, ...updates });
+        refreshPendingNotesCount();
+      } else {
+        console.error('Error updating folder:', error);
+        showToast('Erreur de modification du dossier', 'error');
+      }
+    }
   };
 
   const deleteFolder = async (id) => {
     dispatch({ type: 'DELETE_FOLDER', payload: id });
+
+    if (!navigator.onLine) {
+      enqueueNotesSyncAction(user.id, currentProfile, 'DELETE_FOLDER', { id });
+      refreshPendingNotesCount();
+      return;
+    }
+
     try {
       const { error } = await supabase.from('folders').delete().eq('id', id);
       if (error) throw error;
     } catch (error) {
-      console.error('Error deleting folder:', error);
-      fetchData(); // Refresh if failed
+      if (isOfflineError(error)) {
+        enqueueNotesSyncAction(user.id, currentProfile, 'DELETE_FOLDER', { id });
+        refreshPendingNotesCount();
+      } else {
+        console.error('Error deleting folder:', error);
+        showToast('Erreur de suppression du dossier', 'error');
+      }
     }
   };
 
   const updateNote = async (id, updates) => {
-    // Update local state immediately
-    dispatch({ type: 'UPDATE_NOTE', payload: { id, ...updates } });
+    dispatch({ type: 'UPDATE_NOTE', payload: { id, ...updates, updated_at: new Date().toISOString() } });
     
-    const { data, error } = await supabase
-      .from('notes')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) throw error;
-    // Sync with server response
-    dispatch({ type: 'UPDATE_NOTE', payload: data });
-    return data;
+    if (!navigator.onLine) {
+      enqueueNotesSyncAction(user.id, currentProfile, 'UPDATE_NOTE', { id, ...updates });
+      refreshPendingNotesCount();
+      return { id, ...updates };
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      dispatch({ type: 'UPDATE_NOTE', payload: data });
+      return data;
+    } catch (error) {
+      if (isOfflineError(error)) {
+        enqueueNotesSyncAction(user.id, currentProfile, 'UPDATE_NOTE', { id, ...updates });
+        refreshPendingNotesCount();
+      } else {
+        console.error('Error updating note:', error);
+        showToast('Erreur d\'enregistrement de la note', 'error');
+      }
+    }
   };
 
   const deleteNote = async (id) => {
     dispatch({ type: 'DELETE_NOTE', payload: id });
+
+    if (!navigator.onLine) {
+      enqueueNotesSyncAction(user.id, currentProfile, 'DELETE_NOTE', { id });
+      refreshPendingNotesCount();
+      return;
+    }
+
     try {
       const { error } = await supabase.from('notes').delete().eq('id', id);
       if (error) throw error;
     } catch (error) {
-      console.error('Error deleting note:', error);
-      fetchData(); // Refresh if failed
+      if (isOfflineError(error)) {
+        enqueueNotesSyncAction(user.id, currentProfile, 'DELETE_NOTE', { id });
+        refreshPendingNotesCount();
+      } else {
+        console.error('Error deleting note:', error);
+        showToast('Erreur de suppression de la note', 'error');
+      }
     }
   };
 
@@ -210,7 +388,10 @@ export function NotesProvider({ children }) {
       deleteFolder, 
       createNote, 
       updateNote, 
-      deleteNote 
+      deleteNote,
+      pendingNotesCount,
+      isSyncingNotes,
+      syncNotesNow
     }}>
       {children}
     </NotesContext.Provider>

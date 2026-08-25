@@ -318,24 +318,6 @@ export function TargetProvider({ children }) {
         if (catErr) console.warn('Categories query notice:', catErr.message);
         if (objErr) console.warn('Objectives query notice:', objErr.message);
 
-        // Auto-seed default categories for perso profile if missing to prevent FK constraint failures
-        if (currentProfile === 'perso') {
-          const existingCatIds = new Set((categories || []).map(c => c.id));
-          const missingDefaults = defaultCategories.filter(d => !existingCatIds.has(d.id));
-          if (missingDefaults.length > 0) {
-            for (const cat of missingDefaults) {
-              await supabase.from('categories').insert({
-                id: cat.id,
-                user_id: user.id,
-                profile: 'perso',
-                label: cat.label,
-                icon: cat.icon,
-                color: cat.color
-              }).then(() => {}).catch(() => {});
-            }
-          }
-        }
-
         const transformedProgress = (progress || []).reduce((acc, p) => {
           if (!acc[p.week_id]) acc[p.week_id] = {};
           acc[p.week_id][p.objective_id] = p.value;

@@ -6,6 +6,12 @@
 const CACHE_KEY_PREFIX = 'target_offline_state_';
 const QUEUE_KEY_PREFIX = 'target_sync_queue_';
 
+const NOTES_CACHE_KEY_PREFIX = 'target_offline_notes_';
+const NOTES_QUEUE_KEY_PREFIX = 'target_notes_sync_queue_';
+
+const SPORT_CACHE_KEY_PREFIX = 'target_offline_sport_';
+const SPORT_QUEUE_KEY_PREFIX = 'target_sport_sync_queue_';
+
 /**
  * Get cache key for a specific user and profile
  */
@@ -15,6 +21,26 @@ const getCacheKey = (userId, profile) => `${CACHE_KEY_PREFIX}${userId}_${profile
  * Get sync queue key for a specific user and profile
  */
 const getQueueKey = (userId, profile) => `${QUEUE_KEY_PREFIX}${userId}_${profile || 'perso'}`;
+
+/**
+ * Get notes cache key for a specific user and profile
+ */
+const getNotesCacheKey = (userId, profile) => `${NOTES_CACHE_KEY_PREFIX}${userId}_${profile || 'perso'}`;
+
+/**
+ * Get notes sync queue key for a specific user and profile
+ */
+const getNotesQueueKey = (userId, profile) => `${NOTES_QUEUE_KEY_PREFIX}${userId}_${profile || 'perso'}`;
+
+/**
+ * Get sport cache key for a specific user
+ */
+const getSportCacheKey = (userId) => `${SPORT_CACHE_KEY_PREFIX}${userId}`;
+
+/**
+ * Get sport sync queue key for a specific user
+ */
+const getSportQueueKey = (userId) => `${SPORT_QUEUE_KEY_PREFIX}${userId}`;
 
 /**
  * Save complete target state to local storage for instant offline loading
@@ -115,6 +141,183 @@ export function clearSyncQueue(userId, profile) {
   if (!userId) return;
   const key = getQueueKey(userId, profile);
   localStorage.removeItem(key);
+}
+
+// ================= NOTES OFFLINE CACHE & QUEUE =================
+
+/**
+ * Save notes state (folders and notes) to local cache
+ */
+export function saveLocalNotes(userId, profile, notesState) {
+  if (!userId) return;
+  try {
+    const key = getNotesCacheKey(userId, profile);
+    const dataToSave = {
+      folders: notesState.folders || [],
+      notes: notesState.notes || [],
+      cachedAt: new Date().toISOString()
+    };
+    localStorage.setItem(key, JSON.stringify(dataToSave));
+  } catch (error) {
+    console.warn('Failed to save local notes to localStorage:', error);
+  }
+}
+
+/**
+ * Load notes state from local cache
+ */
+export function loadLocalNotes(userId, profile) {
+  if (!userId) return null;
+  try {
+    const key = getNotesCacheKey(userId, profile);
+    const saved = localStorage.getItem(key);
+    if (!saved) return null;
+    return JSON.parse(saved);
+  } catch (error) {
+    console.warn('Failed to load local notes from localStorage:', error);
+    return null;
+  }
+}
+
+/**
+ * Get all queued notes sync actions
+ */
+export function getNotesSyncQueue(userId, profile) {
+  if (!userId) return [];
+  try {
+    const key = getNotesQueueKey(userId, profile);
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : [];
+  } catch (error) {
+    console.warn('Failed to read notes sync queue:', error);
+    return [];
+  }
+}
+
+/**
+ * Save notes sync queue
+ */
+function saveNotesSyncQueue(userId, profile, queue) {
+  if (!userId) return;
+  try {
+    const key = getNotesQueueKey(userId, profile);
+    localStorage.setItem(key, JSON.stringify(queue));
+  } catch (error) {
+    console.warn('Failed to save notes sync queue:', error);
+  }
+}
+
+/**
+ * Add a note action to the offline sync queue
+ */
+export function enqueueNotesSyncAction(userId, profile, actionType, payload) {
+  if (!userId) return;
+  const queue = getNotesSyncQueue(userId, profile);
+  const actionItem = {
+    id: `sync_note_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+    type: actionType,
+    payload,
+    timestamp: new Date().toISOString()
+  };
+  
+  queue.push(actionItem);
+  saveNotesSyncQueue(userId, profile, queue);
+  return actionItem;
+}
+
+/**
+ * Count pending operations in the notes sync queue
+ */
+export function getPendingNotesQueueCount(userId, profile) {
+  return getNotesSyncQueue(userId, profile).length;
+}
+
+// ================= SPORT OFFLINE CACHE & QUEUE =================
+
+/**
+ * Save sport sessions to local cache
+ */
+export function saveLocalSport(userId, sessions) {
+  if (!userId) return;
+  try {
+    const key = getSportCacheKey(userId);
+    const dataToSave = {
+      sessions: sessions || [],
+      cachedAt: new Date().toISOString()
+    };
+    localStorage.setItem(key, JSON.stringify(dataToSave));
+  } catch (error) {
+    console.warn('Failed to save local sport to localStorage:', error);
+  }
+}
+
+/**
+ * Load sport sessions from local cache
+ */
+export function loadLocalSport(userId) {
+  if (!userId) return null;
+  try {
+    const key = getSportCacheKey(userId);
+    const saved = localStorage.getItem(key);
+    if (!saved) return null;
+    return JSON.parse(saved);
+  } catch (error) {
+    console.warn('Failed to load local sport from localStorage:', error);
+    return null;
+  }
+}
+
+/**
+ * Get all queued sport sync actions
+ */
+export function getSportSyncQueue(userId) {
+  if (!userId) return [];
+  try {
+    const key = getSportQueueKey(userId);
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : [];
+  } catch (error) {
+    console.warn('Failed to read sport sync queue:', error);
+    return [];
+  }
+}
+
+/**
+ * Save sport sync queue
+ */
+function saveSportSyncQueue(userId, queue) {
+  if (!userId) return;
+  try {
+    const key = getSportQueueKey(userId);
+    localStorage.setItem(key, JSON.stringify(queue));
+  } catch (error) {
+    console.warn('Failed to save sport sync queue:', error);
+  }
+}
+
+/**
+ * Add a sport action to the offline sync queue
+ */
+export function enqueueSportSyncAction(userId, actionType, payload) {
+  if (!userId) return;
+  const queue = getSportSyncQueue(userId);
+  const actionItem = {
+    id: `sync_sport_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+    type: actionType,
+    payload,
+    timestamp: new Date().toISOString()
+  };
+  
+  queue.push(actionItem);
+  saveSportSyncQueue(userId, queue);
+  return actionItem;
+}
+
+/**
+ * Count pending operations in the sport sync queue
+ */
+export function getPendingSportQueueCount(userId) {
+  return getSportSyncQueue(userId).length;
 }
 
 /**
@@ -298,11 +501,9 @@ export async function processSyncQueue(userId, profile, supabase) {
 
       if (reqError) {
         if (isOfflineError(reqError)) {
-          // Break loop and retry later if network failed during queue replay
           break;
         } else {
           console.warn(`Sync item failed permanently (${item.type}):`, reqError.message);
-          // Remove problematic item to avoid blocking the queue
           remainingQueue.shift();
           saveSyncQueue(userId, profile, remainingQueue);
           processedCount++;
@@ -310,7 +511,7 @@ export async function processSyncQueue(userId, profile, supabase) {
         }
       }
 
-      // Success: Remove item from remaining queue
+      // Success
       remainingQueue.shift();
       saveSyncQueue(userId, profile, remainingQueue);
       processedCount++;
@@ -320,6 +521,214 @@ export async function processSyncQueue(userId, profile, supabase) {
       }
       remainingQueue.shift();
       saveSyncQueue(userId, profile, remainingQueue);
+      processedCount++;
+    }
+  }
+
+  return {
+    success: remainingQueue.length === 0,
+    processedCount,
+    pendingCount: remainingQueue.length
+  };
+}
+
+/**
+ * Process all pending notes actions in the sync queue sequentially towards Supabase
+ */
+export async function processNotesSyncQueue(userId, profile, supabase) {
+  if (!userId || !navigator.onLine) {
+    return { success: false, processedCount: 0, pendingCount: getPendingNotesQueueCount(userId, profile) };
+  }
+
+  const queue = getNotesSyncQueue(userId, profile);
+  if (queue.length === 0) {
+    return { success: true, processedCount: 0, pendingCount: 0 };
+  }
+
+  let processedCount = 0;
+  const remainingQueue = [...queue];
+
+  for (let i = 0; i < queue.length; i++) {
+    const item = queue[i];
+    try {
+      let reqError = null;
+
+      switch (item.type) {
+        case 'ADD_FOLDER': {
+          const { error } = await supabase.from('folders').upsert({
+            id: item.payload.id,
+            name: item.payload.name,
+            parent_id: item.payload.parent_id || null,
+            user_id: userId,
+            profile: profile || 'perso'
+          }, { onConflict: 'id' });
+          reqError = error;
+          break;
+        }
+
+        case 'UPDATE_FOLDER': {
+          const { error } = await supabase.from('folders').update({
+            name: item.payload.name,
+            parent_id: item.payload.parent_id || null
+          }).eq('id', item.payload.id);
+          reqError = error;
+          break;
+        }
+
+        case 'DELETE_FOLDER': {
+          const { error } = await supabase.from('folders').delete().eq('id', item.payload.id);
+          reqError = error;
+          break;
+        }
+
+        case 'ADD_NOTE': {
+          const { error } = await supabase.from('notes').upsert({
+            id: item.payload.id,
+            title: item.payload.title,
+            folder_id: item.payload.folder_id || null,
+            content: item.payload.content || '',
+            user_id: userId,
+            profile: profile || 'perso',
+            created_at: item.payload.created_at || new Date().toISOString(),
+            updated_at: item.payload.updated_at || new Date().toISOString()
+          }, { onConflict: 'id' });
+          reqError = error;
+          break;
+        }
+
+        case 'UPDATE_NOTE': {
+          const updateData = { updated_at: new Date().toISOString() };
+          if (item.payload.title !== undefined) updateData.title = item.payload.title;
+          if (item.payload.content !== undefined) updateData.content = item.payload.content;
+          if (item.payload.folder_id !== undefined) updateData.folder_id = item.payload.folder_id;
+
+          const { error } = await supabase.from('notes').update(updateData).eq('id', item.payload.id);
+          reqError = error;
+          break;
+        }
+
+        case 'DELETE_NOTE': {
+          const { error } = await supabase.from('notes').delete().eq('id', item.payload.id);
+          reqError = error;
+          break;
+        }
+
+        default:
+          break;
+      }
+
+      if (reqError) {
+        if (isOfflineError(reqError)) {
+          break;
+        } else {
+          console.warn(`Notes sync item failed permanently (${item.type}):`, reqError.message);
+          remainingQueue.shift();
+          saveNotesSyncQueue(userId, profile, remainingQueue);
+          processedCount++;
+          continue;
+        }
+      }
+
+      // Success
+      remainingQueue.shift();
+      saveNotesSyncQueue(userId, profile, remainingQueue);
+      processedCount++;
+    } catch (err) {
+      if (isOfflineError(err)) {
+        break;
+      }
+      remainingQueue.shift();
+      saveNotesSyncQueue(userId, profile, remainingQueue);
+      processedCount++;
+    }
+  }
+
+  return {
+    success: remainingQueue.length === 0,
+    processedCount,
+    pendingCount: remainingQueue.length
+  };
+}
+
+/**
+ * Process all pending sport actions in the sync queue sequentially towards Supabase
+ */
+export async function processSportSyncQueue(userId, supabase) {
+  if (!userId || !navigator.onLine) {
+    return { success: false, processedCount: 0, pendingCount: getPendingSportQueueCount(userId) };
+  }
+
+  const queue = getSportSyncQueue(userId);
+  if (queue.length === 0) {
+    return { success: true, processedCount: 0, pendingCount: 0 };
+  }
+
+  let processedCount = 0;
+  const remainingQueue = [...queue];
+
+  for (let i = 0; i < queue.length; i++) {
+    const item = queue[i];
+    try {
+      let reqError = null;
+
+      switch (item.type) {
+        case 'ADD_SPORT_SESSION': {
+          const { error } = await supabase.from('sport_sessions').upsert({
+            id: item.payload.id,
+            user_id: userId,
+            name: item.payload.name,
+            exercises: item.payload.exercises || [],
+            total_time: item.payload.totalTime || 0,
+            created_at: item.payload.createdAt || new Date().toISOString(),
+            updated_at: item.payload.updatedAt || new Date().toISOString()
+          }, { onConflict: 'id' });
+          reqError = error;
+          break;
+        }
+
+        case 'UPDATE_SPORT_SESSION': {
+          const { error } = await supabase.from('sport_sessions').update({
+            name: item.payload.name,
+            exercises: item.payload.exercises || [],
+            total_time: item.payload.totalTime || 0,
+            updated_at: new Date().toISOString()
+          }).eq('id', item.payload.id);
+          reqError = error;
+          break;
+        }
+
+        case 'DELETE_SPORT_SESSION': {
+          const { error } = await supabase.from('sport_sessions').delete().eq('id', item.payload.id);
+          reqError = error;
+          break;
+        }
+
+        default:
+          break;
+      }
+
+      if (reqError) {
+        if (isOfflineError(reqError)) {
+          break;
+        } else {
+          console.warn(`Sport sync item failed permanently (${item.type}):`, reqError.message);
+          remainingQueue.shift();
+          saveSportSyncQueue(userId, remainingQueue);
+          processedCount++;
+          continue;
+        }
+      }
+
+      // Success
+      remainingQueue.shift();
+      saveSportSyncQueue(userId, remainingQueue);
+      processedCount++;
+    } catch (err) {
+      if (isOfflineError(err)) {
+        break;
+      }
+      remainingQueue.shift();
+      saveSportSyncQueue(userId, remainingQueue);
       processedCount++;
     }
   }

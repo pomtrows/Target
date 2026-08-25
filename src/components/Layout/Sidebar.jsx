@@ -6,6 +6,8 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTarget } from '../../contexts/TargetContext';
+import { useNotes } from '../../contexts/NotesContext';
+import { useSport } from '../../contexts/SportContext';
 import Modal from '../Shared/Modal';
 import {
   isNotificationSupported,
@@ -34,6 +36,17 @@ export default function Sidebar() {
   const { logout, isAdmin } = useAuth();
   const { currentProfile, setCurrentProfile } = useProfile();
   const { isOnline, isSyncing, pendingSyncCount, syncNow } = useTarget();
+  const { isSyncingNotes, pendingNotesCount, syncNotesNow } = useNotes();
+  const { isSyncingSport, pendingSportCount, syncSportNow } = useSport();
+
+  const totalPending = (pendingSyncCount || 0) + (pendingNotesCount || 0) + (pendingSportCount || 0);
+  const syncing = isSyncing || isSyncingNotes || isSyncingSport;
+
+  const handleSyncAll = () => {
+    syncNow();
+    syncNotesNow?.();
+    syncSportNow?.();
+  };
 
   // Notification settings states
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
@@ -194,25 +207,25 @@ export default function Sidebar() {
                 <WifiOff size={14} className="flex-shrink-0" />
                 <span>Hors-ligne</span>
               </div>
-              {pendingSyncCount > 0 && (
+              {totalPending > 0 && (
                 <span className="font-bold bg-accent-orange/20 px-1.5 py-0.5 rounded text-[10px]">
-                  {pendingSyncCount} en attente
+                  {totalPending} en attente
                 </span>
               )}
             </div>
-          ) : isSyncing ? (
+          ) : syncing ? (
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-accent-cyan/10 border border-accent-cyan/30 text-accent-cyan text-xs font-medium">
               <RotateCw size={14} className="animate-spin flex-shrink-0" />
               <span>Synchronisation en cours...</span>
             </div>
-          ) : pendingSyncCount > 0 ? (
+          ) : totalPending > 0 ? (
             <button
-              onClick={syncNow}
+              onClick={handleSyncAll}
               className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-accent-cyan/15 hover:bg-accent-cyan/25 border border-accent-cyan/40 text-accent-cyan text-xs font-bold transition-all cursor-pointer"
             >
               <div className="flex items-center gap-2">
                 <RotateCw size={14} />
-                <span>Synchroniser ({pendingSyncCount})</span>
+                <span>Synchroniser ({totalPending})</span>
               </div>
               <span className="text-[10px] uppercase underline">Envoi</span>
             </button>
