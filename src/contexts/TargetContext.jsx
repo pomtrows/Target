@@ -403,8 +403,12 @@ export function TargetProvider({ children }) {
       }
 
       case 'ADD_OBJECTIVE': {
+        let objId = action.payload.id;
+        if (!objId || state.objectives.some(o => o.id === objId)) {
+          objId = `obj-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+        }
         const newObj = {
-          id: action.payload.id || `obj-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          id: objId,
           title: action.payload.title,
           target: action.payload.target || 1,
           categoryId: action.payload.categoryId || 'autre',

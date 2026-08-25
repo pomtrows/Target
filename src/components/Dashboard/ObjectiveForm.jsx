@@ -54,7 +54,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
   const initialSchedule = getInitialSchedule(editObjective);
   const initialWeeks = getInitialWeeks(editObjective, weekId);
 
-  const [tempId] = useState(() => editObjective?.id || `obj-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`);
+  const [tempId, setTempId] = useState(() => editObjective?.id || `obj-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`);
   const [formNoteId, setFormNoteId] = useState(null);
   const [formAttachments, setFormAttachments] = useState(editObjective?.attachments || []);
   
@@ -212,6 +212,9 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
       const initSched = getInitialSchedule(editObjective);
       const initWks = getInitialWeeks(editObjective, weekId);
 
+      setTempId(editObjective?.id || `obj-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`);
+      setFormNoteId(null);
+      setFormAttachments(editObjective?.attachments || []);
       setTitle(editObjective?.title || '');
       setTarget(editObjective?.target || 1);
       setCategoryId(editObjective?.categoryId || 'autre');
@@ -315,6 +318,9 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
 
     onClose();
     // Reset
+    setTempId(`obj-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`);
+    setFormNoteId(null);
+    setFormAttachments([]);
     setTitle('');
     setTarget(1);
     setCategoryId('autre');
