@@ -38,6 +38,8 @@ const initialState = {
   rewardItems: [],
   progressTimestamps: {},
   rewardThresholds: { P1: 100, P2: 100, P3: 100 },
+  contacts: [],
+  notifications: [],
   loading: true,
 };
 
@@ -179,6 +181,28 @@ function targetReducer(state, action) {
       };
     }
 
+    case 'ADD_CONTACT':
+      return { ...state, contacts: [...state.contacts, action.payload] };
+
+    case 'UPDATE_CONTACT':
+      return {
+        ...state,
+        contacts: state.contacts.map((c) =>
+          c.id === action.payload.id ? { ...c, ...action.payload } : c
+        ),
+      };
+
+    case 'ADD_NOTIFICATION':
+      return { ...state, notifications: [action.payload, ...state.notifications] };
+
+    case 'UPDATE_NOTIFICATION':
+      return {
+        ...state,
+        notifications: state.notifications.map((n) =>
+          n.id === action.payload.id ? { ...n, ...action.payload } : n
+        ),
+      };
+
     default:
       return state;
   }
@@ -299,20 +323,30 @@ export function TargetProvider({ children }) {
           if (isMounted) refreshPendingCount();
         }
 
+        // D'abord on récupère les objectifs
+        const { data: objectives, error: objErr } = await supabase.from('objectives').select('*').or(`user_id.eq.${user.id},assigned_to.eq.${user.id}`).eq('profile', currentProfile);
+        
+        const objectiveIds = (objectives || []).map(o => o.id).join(',');
+        const progressQuery = objectiveIds.length > 0 
+          ? `user_id.eq.${user.id},objective_id.in.(${objectiveIds})` 
+          : `user_id.eq.${user.id}`;
+
         const [
           { data: categories, error: catErr },
-          { data: objectives, error: objErr },
           { data: progress, error: progErr },
           { data: rewards, error: rewErr },
           { data: rewardItems, error: rewItemErr },
-          { data: settingsData, error: setErr }
+          { data: settingsData, error: setErr },
+          { data: contacts, error: contactsErr },
+          { data: notifications, error: notifErr }
         ] = await Promise.all([
           supabase.from('categories').select('*').eq('user_id', user.id).eq('profile', currentProfile),
-          supabase.from('objectives').select('*').eq('user_id', user.id).eq('profile', currentProfile),
-          supabase.from('progress').select('*').eq('user_id', user.id),
+          supabase.from('progress').select('*').or(progressQuery),
           supabase.from('rewards').select('*').eq('user_id', user.id),
           supabase.from('reward_items').select('*').eq('user_id', user.id),
-          supabase.from('settings').select('*').eq('user_id', user.id).eq('profile', currentProfile).maybeSingle()
+          supabase.from('settings').select('*').eq('user_id', user.id).eq('profile', currentProfile).maybeSingle(),
+          supabase.from('contacts').select('*').or(`user_id.eq.${user.id},contact_user_id.eq.${user.id},contact_email.eq.${user.email}`),
+          supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
         ]);
 
         if (catErr) console.warn('Categories query notice:', catErr.message);
@@ -369,6 +403,8 @@ export function TargetProvider({ children }) {
           rewards: transformedRewards,
           rewardItems: rewardItems || [],
           rewardThresholds: savedThresholds,
+          contacts: contacts || [],
+          notifications: notifications || []
         };
 
         dispatch({
@@ -434,10 +470,16 @@ export function TargetProvider({ children }) {
     // Real-time subscriptions for multi-device sync
     const objChannel = supabase
       .channel('objectives-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'objectives', filter: `user_id=eq.${user.id}` }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'objectives' }, () => {
         fetchData();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'progress', filter: `user_id=eq.${user.id}` }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'progress' }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
         fetchData();
       })
       .subscribe();
@@ -510,7 +552,9 @@ export function TargetProvider({ children }) {
           attachments: action.payload.attachments || [],
           priority: action.payload.priority || 'P3',
           createdAt: new Date().toISOString().slice(0, 10),
-          user_id: user.id
+          user_id: user.id,
+          assigned_to: action.payload.assigned_to || null,
+          assignment_status: action.payload.assignment_status || null
         };
         
         // Optimistic local update
@@ -537,9 +581,20 @@ export function TargetProvider({ children }) {
             sub_objectives: newObj.subObjectives,
             attachments: newObj.attachments,
             priority: newObj.priority,
-            created_at: newObj.createdAt
+            created_at: newObj.createdAt,
+            assigned_to: action.payload.assigned_to || null,
+            assignment_status: action.payload.assignment_status || null
           });
           if (error) throw error;
+
+          if (action.payload.assigned_to) {
+            await supabase.from('notifications').insert({
+              user_id: action.payload.assigned_to,
+              type: 'TASK_ASSIGNED',
+              reference_id: newObj.id,
+              message: `On vous a assigné un nouvel objectif : ${newObj.title}`
+            });
+          }
         } catch (error) {
           if (isOfflineError(error)) {
             enqueueSyncAction(user.id, currentProfile, 'ADD_OBJECTIVE', newObj);
@@ -574,9 +629,39 @@ export function TargetProvider({ children }) {
             assignments: updated.assignments,
             sub_objectives: updated.subObjectives || [],
             attachments: updated.attachments || [],
-            priority: updated.priority || 'P3'
+            priority: updated.priority || 'P3',
+            ...(updated.assigned_to !== undefined && { assigned_to: updated.assigned_to }),
+            ...(updated.assignment_status !== undefined && { assignment_status: updated.assignment_status })
           }).eq('id', updated.id);
           if (error) throw error;
+          
+          if (updated.assigned_to && previousObj?.assigned_to !== updated.assigned_to) {
+            await supabase.from('notifications').insert({
+              user_id: updated.assigned_to,
+              type: 'TASK_ASSIGNED',
+              reference_id: updated.id,
+              message: `On vous a assigné un objectif : ${updated.title}`
+            });
+          }
+
+          if (updated.rejectReason && previousObj?.assigned_to) {
+            // C'est un refus
+            await supabase.from('notifications').insert({
+              user_id: previousObj.user_id, // L'assigneur
+              type: 'TASK_COMPLETED',
+              reference_id: updated.id,
+              message: `L'assignation de '${updated.title}' a été refusée. Motif : ${updated.rejectReason}`
+            });
+          } else if (updated.assignment_status !== previousObj?.assignment_status) {
+            if (updated.assignment_status === 'ACCEPTED') {
+              await supabase.from('notifications').insert({
+                user_id: updated.user_id, // L'assigneur
+                type: 'TASK_COMPLETED',
+                reference_id: updated.id,
+                message: `L'assignation de '${updated.title}' a été acceptée.`
+              });
+            }
+          }
         } catch (error) {
           if (isOfflineError(error)) {
             enqueueSyncAction(user.id, currentProfile, 'UPDATE_OBJECTIVE', updated);
@@ -662,6 +747,18 @@ export function TargetProvider({ children }) {
             updated_at: progressPayload.updatedAt
           }, { onConflict: 'week_id,objective_id' });
           if (error) throw error;
+          
+          // Notification si la tâche est complétée et que c'est une tâche assignée
+          const objective = state.objectives.find((o) => o.id === objectiveId);
+          const max = objective?.target || 1;
+          if (current >= max && previousValue < max && objective && objective.assigned_to === user.id && objective.user_id !== user.id) {
+            await supabase.from('notifications').insert({
+              user_id: objective.user_id, // Prévenir le créateur
+              type: 'TASK_COMPLETED',
+              reference_id: objectiveId,
+              message: `Votre contact a accompli la tâche : ${objective.title}`
+            });
+          }
         } catch (error) {
           if (isOfflineError(error)) {
             enqueueSyncAction(user.id, currentProfile, 'PROGRESS_UPDATE', progressPayload);
@@ -705,6 +802,21 @@ export function TargetProvider({ children }) {
             updated_at: progressPayload.updatedAt
           }, { onConflict: 'week_id,objective_id' });
           if (error) throw error;
+          
+          const objective = state.objectives.find((o) => o.id === objectiveId);
+          if (objective) {
+            const prevProgress = getObjectiveProgress(objective, { [objectiveId]: current });
+            const nextProgress = getObjectiveProgress(objective, { [objectiveId]: nextValue });
+            
+            if (nextProgress >= 1 && prevProgress < 1 && objective.assigned_to === user.id && objective.user_id !== user.id) {
+              await supabase.from('notifications').insert({
+                user_id: objective.user_id,
+                type: 'TASK_COMPLETED',
+                reference_id: objectiveId,
+                message: `Votre contact a accompli la tâche (sous-tâches terminées) : ${objective.title}`
+              });
+            }
+          }
         } catch (error) {
           if (isOfflineError(error)) {
             enqueueSyncAction(user.id, currentProfile, 'PROGRESS_UPDATE', progressPayload);

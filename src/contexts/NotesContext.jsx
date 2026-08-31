@@ -156,12 +156,16 @@ export function NotesProvider({ children }) {
           if (isMounted) refreshPendingNotesCount();
         }
 
-        const [{ data: folders }, { data: notes }] = await Promise.all([
-          supabase.from('folders').select('*').eq('user_id', user.id).eq('profile', currentProfile).order('name'),
-          supabase.from('notes').select('*').eq('user_id', user.id).eq('profile', currentProfile).order('updated_at', { ascending: false })
+        const [{ data: allFolders }, { data: allNotes }] = await Promise.all([
+          supabase.from('folders').select('*').order('name'),
+          supabase.from('notes').select('*').order('updated_at', { ascending: false })
         ]);
 
         if (!isMounted) return;
+
+        // On garde nos propres dossiers/notes (filtrés par profile) ET les dossiers/notes partagés (ceux où user_id !== user.id)
+        const folders = (allFolders || []).filter(f => (f.user_id === user.id && f.profile === currentProfile) || f.user_id !== user.id);
+        const notes = (allNotes || []).filter(n => (n.user_id === user.id && n.profile === currentProfile) || n.user_id !== user.id);
 
         const payload = { folders: folders || [], notes: notes || [] };
         dispatch({

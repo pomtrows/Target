@@ -17,6 +17,8 @@ import {
 } from '../../utils/notificationService';
 
 import { useProfile } from '../../contexts/ProfileContext';
+import ContactsModal from '../Contacts/ContactsModal';
+import NotificationCenter from '../Notifications/NotificationCenter';
 
 const navItems = [
   { path: '/', label: 'Objectifs', icon: Target },
@@ -51,11 +53,17 @@ export default function Sidebar() {
   // Notification settings states
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showContactsModal, setShowContactsModal] = useState(false);
+  const [showNotificationCenter, setShowNotificationCenter] = useState(false);
+  
   const { zoomLevel, setZoomLevel, maxColumns, setMaxColumns } = useSettings();
   const [notifSupported, setNotifSupported] = useState(false);
   const [notifPermission, setNotifPermission] = useState('default');
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [testResult, setTestResult] = useState(null);
+
+  const { state } = useTarget();
+  const unreadNotificationsCount = (state.notifications || []).filter(n => !n.read).length;
 
   useEffect(() => {
     setNotifSupported(isNotificationSupported());
@@ -264,11 +272,26 @@ export default function Sidebar() {
           </button>
 
           <button
-            onClick={() => setShowNotificationSettings(true)}
+            onClick={() => setShowContactsModal(true)}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-400 hover:text-dark-200 hover:bg-dark-700/50 transition-all duration-200"
           >
-            {notifEnabled && notifPermission === 'granted' ? <Bell size={20} className="text-accent-cyan animate-pulse" /> : <BellOff size={20} />}
-            Notifications
+            <Users size={20} />
+            Mes Contacts
+          </button>
+
+          <button
+            onClick={() => setShowNotificationCenter(true)}
+            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-dark-400 hover:text-dark-200 hover:bg-dark-700/50 transition-all duration-200"
+          >
+            <div className="flex items-center gap-3">
+              <Bell size={20} />
+              Notifications
+            </div>
+            {unreadNotificationsCount > 0 && (
+              <span className="bg-accent-violet text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                {unreadNotificationsCount}
+              </span>
+            )}
           </button>
 
           <button
@@ -281,102 +304,18 @@ export default function Sidebar() {
         </div>
       </motion.aside>
 
-      {/* Notification Settings Modal */}
-      <Modal
-        isOpen={showNotificationSettings}
-        onClose={() => setShowNotificationSettings(false)}
-        title="Paramètres de Notifications ⏱️"
-        maxWidth="max-w-md"
-      >
-        <div className="flex flex-col gap-6 text-dark-200">
-          <p className="text-sm leading-relaxed text-dark-300">
-            Activez les notifications pour recevoir des alertes automatiques <strong>15 minutes</strong> avant le début de vos objectifs planifiés.
-          </p>
+      {/* Contacts Modal */}
+      <ContactsModal 
+        isOpen={showContactsModal} 
+        onClose={() => setShowContactsModal(false)} 
+      />
 
-          {!notifSupported ? (
-            <div className="flex gap-3 p-4 bg-accent-red/10 border border-accent-red/20 rounded-2xl text-accent-red text-sm">
-              <Info size={18} className="flex-shrink-0 mt-0.5" />
-              <span>Votre navigateur ou appareil ne supporte pas les notifications locales.</span>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {/* Permission Status */}
-              <div className="flex justify-between items-center bg-dark-900/40 p-4 rounded-2xl border border-dark-600/30">
-                <span className="text-sm font-semibold">Autorisation système</span>
-                <span className={`text-xs font-black uppercase px-2.5 py-1 rounded-lg ${
-                  notifPermission === 'granted' ? 'bg-accent-green/20 text-accent-green' :
-                  notifPermission === 'denied' ? 'bg-accent-red/20 text-accent-red' :
-                  'bg-dark-600/30 text-dark-300'
-                }`}>
-                  {notifPermission === 'granted' ? 'Autorisé' :
-                   notifPermission === 'denied' ? 'Bloqué' :
-                   'Non configuré'}
-                </span>
-              </div>
-
-              {/* Toggle to turn notifications on/off in app */}
-              {notifPermission === 'granted' && (
-                <div className="flex justify-between items-center bg-dark-900/40 p-4 rounded-2xl border border-dark-600/30">
-                  <span className="text-sm font-semibold">Activer les alertes de planning</span>
-                  <button
-                    onClick={handleToggleNotifications}
-                    className={`w-12 h-6 rounded-full transition-all relative border-none cursor-pointer ${
-                      notifEnabled ? 'bg-accent-cyan' : 'bg-dark-600'
-                    }`}
-                  >
-                    <motion.div
-                      layout
-                      className="w-5 h-5 bg-dark-900 rounded-full absolute top-0.5 left-0.5"
-                      style={{ x: notifEnabled ? '24px' : '0px' }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    />
-                  </button>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              {notifPermission === 'default' && (
-                <button
-                  onClick={handleRequestPermission}
-                  className="w-full py-4 rounded-xl bg-gradient-to-r from-accent-cyan to-accent-violet text-dark-900 font-black text-sm flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all cursor-pointer border-none"
-                >
-                  <Bell size={16} />
-                  Autoriser les notifications
-                </button>
-              )}
-
-              {notifPermission === 'denied' && (
-                <div className="flex gap-3 p-4 bg-accent-orange/10 border border-accent-orange/20 rounded-2xl text-accent-orange text-xs leading-relaxed">
-                  <Info size={16} className="flex-shrink-0 mt-0.5" />
-                  <span>
-                    Les notifications sont bloquées par votre navigateur. Veuillez ouvrir les paramètres de votre navigateur ou de votre système pour autoriser les notifications de TARGET.
-                  </span>
-                </div>
-              )}
-
-              {notifPermission === 'granted' && notifEnabled && (
-                <button
-                  onClick={handleTestNotification}
-                  disabled={testResult === 'sending'}
-                  className="w-full py-3 rounded-xl bg-dark-700 hover:bg-dark-600 text-dark-100 font-bold text-sm flex items-center justify-center gap-2 border border-dark-600 transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {testResult === 'success' ? (
-                    <>
-                      <CheckCircle2 size={16} className="text-accent-green" />
-                      Notification envoyée !
-                    </>
-                  ) : (
-                    <>
-                      <Bell size={16} />
-                      {testResult === 'sending' ? 'Envoi...' : 'Tester la notification'}
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      </Modal>
+      {/* Notification Center */}
+      <NotificationCenter 
+        isOpen={showNotificationCenter} 
+        onClose={() => setShowNotificationCenter(false)} 
+        onOpenContacts={() => setShowContactsModal(true)}
+      />
 
       {/* Settings Modal */}
       <Modal
@@ -385,7 +324,7 @@ export default function Sidebar() {
         title="Réglages de l'application ⚙️"
         maxWidth="max-w-md"
       >
-        <div className="flex flex-col gap-6 text-dark-200">
+        <div className="flex flex-col gap-6 text-dark-200 h-[65vh] overflow-y-auto custom-scrollbar p-1">
           {/* Zoom Setting */}
           <div className="flex flex-col gap-3 bg-dark-900/40 p-4 rounded-2xl border border-dark-600/30">
             <label className="text-sm font-semibold text-dark-100 flex items-center gap-2">
@@ -441,6 +380,86 @@ export default function Sidebar() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Notifications Setting */}
+          <div className="flex flex-col gap-3 bg-dark-900/40 p-4 rounded-2xl border border-dark-600/30">
+            <label className="text-sm font-semibold text-dark-100 flex items-center gap-2">
+              Notifications Push
+            </label>
+            <p className="text-xs text-dark-400">
+              Activez les notifications pour recevoir des alertes automatiques 15 minutes avant le début de vos objectifs planifiés.
+            </p>
+
+            {!notifSupported ? (
+              <div className="flex gap-2 p-2.5 mt-2 bg-accent-red/10 border border-accent-red/20 rounded-xl text-accent-red text-xs">
+                <Info size={14} className="flex-shrink-0 mt-0.5" />
+                <span>Non supporté sur cet appareil.</span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3 mt-2">
+                <div className="flex justify-between items-center bg-dark-800/50 p-3 rounded-xl">
+                  <span className="text-xs font-semibold">Autorisation système</span>
+                  <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-md ${
+                    notifPermission === 'granted' ? 'bg-accent-green/20 text-accent-green' :
+                    notifPermission === 'denied' ? 'bg-accent-red/20 text-accent-red' :
+                    'bg-dark-600/50 text-dark-300'
+                  }`}>
+                    {notifPermission === 'granted' ? 'Autorisé' :
+                     notifPermission === 'denied' ? 'Bloqué' :
+                     'Non configuré'}
+                  </span>
+                </div>
+
+                {notifPermission === 'granted' && (
+                  <div className="flex justify-between items-center bg-dark-800/50 p-3 rounded-xl">
+                    <span className="text-xs font-semibold">Activer les alertes in-app</span>
+                    <button
+                      onClick={handleToggleNotifications}
+                      className={`w-10 h-5 rounded-full relative transition-all ${
+                        notifEnabled ? 'bg-accent-cyan' : 'bg-dark-600'
+                      }`}
+                    >
+                      <motion.div
+                        layout
+                        className="w-4 h-4 bg-dark-900 rounded-full absolute top-0.5 left-0.5"
+                        style={{ x: notifEnabled ? '20px' : '0px' }}
+                      />
+                    </button>
+                  </div>
+                )}
+
+                {notifPermission === 'default' && (
+                  <button
+                    onClick={handleRequestPermission}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-accent-cyan to-accent-violet text-dark-900 font-bold text-xs flex items-center justify-center gap-2 hover:shadow-[0_0_15px_rgba(34,211,238,0.2)] transition-all"
+                  >
+                    <Bell size={14} /> Autoriser les notifications
+                  </button>
+                )}
+
+                {notifPermission === 'denied' && (
+                  <div className="flex gap-2 p-3 bg-accent-orange/10 border border-accent-orange/20 rounded-xl text-accent-orange text-[11px] leading-tight">
+                    <Info size={14} className="flex-shrink-0" />
+                    <span>Bloqué par votre navigateur. Autorisez-les dans les paramètres de votre navigateur.</span>
+                  </div>
+                )}
+
+                {notifPermission === 'granted' && notifEnabled && (
+                  <button
+                    onClick={handleTestNotification}
+                    disabled={testResult === 'sending'}
+                    className="w-full py-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 text-dark-200 hover:text-dark-100 font-semibold text-xs flex items-center justify-center gap-2 border border-dark-600 transition-all disabled:opacity-50 mt-1"
+                  >
+                    {testResult === 'success' ? (
+                      <><CheckCircle2 size={14} className="text-accent-green" /> Envoyée !</>
+                    ) : (
+                      <><Bell size={14} /> {testResult === 'sending' ? 'Envoi...' : 'Tester la notification'}</>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </Modal>

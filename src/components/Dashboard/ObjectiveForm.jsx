@@ -99,6 +99,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
   const [categoryId, setCategoryId] = useState(editObjective?.categoryId || 'autre');
   const [priority, setPriority] = useState(editObjective?.priority || 'P3');
   const [sportSessionId, setSportSessionId] = useState(editObjective?.sportSessionId || '');
+  const [assignedTo, setAssignedTo] = useState(editObjective?.assigned_to || '');
   const [subObjectives, setSubObjectives] = useState(editObjective?.subObjectives || []);
   const [assignType, setAssignType] = useState(
     editObjective
@@ -220,6 +221,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
       setCategoryId(editObjective?.categoryId || 'autre');
       setPriority(editObjective?.priority || 'P3');
       setSportSessionId(editObjective?.sportSessionId || '');
+      setAssignedTo(editObjective?.assigned_to || '');
       setSubObjectives(editObjective?.subObjectives || []);
       setAssignType(
         editObjective
@@ -296,7 +298,9 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           sportSessionId: sportSessionId || null,
           assignments,
           subObjectives: finalSubObjectives,
-          attachments: formAttachments
+          attachments: formAttachments,
+          assigned_to: assignedTo || null,
+          assignment_status: assignedTo ? 'PENDING' : null
         },
       });
     } else {
@@ -311,7 +315,9 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           sportSessionId: sportSessionId || null,
           assignments,
           subObjectives: finalSubObjectives,
-          attachments: formAttachments
+          attachments: formAttachments,
+          assigned_to: assignedTo || null,
+          assignment_status: assignedTo ? 'PENDING' : null
         },
       });
     }
@@ -326,6 +332,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
     setCategoryId('autre');
     setPriority('P3');
     setSportSessionId('');
+    setAssignedTo('');
     setSubObjectives([]);
     setScheduleDays([]);
     setStartTime('');
@@ -561,10 +568,29 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           </div>
         )}
 
-        {/* Assignment */}
+        {/* Delegation / Assign to Contact */}
         <div>
           <label className="block text-sm font-medium text-dark-200 mb-3">
-            Assignation
+            Déléguer à un contact
+          </label>
+          <select
+            value={assignedTo}
+            onChange={(e) => setAssignedTo(e.target.value)}
+            className="w-full bg-dark-700/50 border border-dark-600/50 rounded-xl py-2.5 px-3 text-sm text-dark-100 focus:outline-none focus:border-accent-cyan/50 transition-colors mb-4"
+          >
+            <option value="">-- Non assigné (Tâche personnelle) --</option>
+            {state.contacts?.filter(c => c.status === 'ACCEPTED').map(c => (
+              <option key={c.id} value={c.contact_user_id || c.id}>
+                {c.contact_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Assignment (Week/Backlog) */}
+        <div>
+          <label className="block text-sm font-medium text-dark-200 mb-3">
+            Placer dans
           </label>
           <div className="flex gap-3 mb-4">
             <button

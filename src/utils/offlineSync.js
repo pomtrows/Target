@@ -80,6 +80,8 @@ export function saveLocalState(userId, profile, state) {
       rewards: state.rewards || {},
       rewardItems: state.rewardItems || [],
       rewardThresholds: state.rewardThresholds || { P1: 100, P2: 100, P3: 100 },
+      contacts: state.contacts || [],
+      notifications: state.notifications || [],
       cachedAt: new Date().toISOString()
     };
     localStorage.setItem(key, JSON.stringify(dataToSave));

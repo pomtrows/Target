@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Minus, Check, Pencil, Trash2, Play, FileText, Paperclip } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { useTarget } from '../../contexts/TargetContext';
 import { useSport } from '../../contexts/SportContext';
 import { useNotes } from '../../contexts/NotesContext';
@@ -11,6 +12,7 @@ import NoteEditor from '../Notes/NoteEditor';
 import AttachmentManager from '../Attachments/AttachmentManager';
 
 export default function ObjectiveCard({ objective, weekId, index, onEdit, onDelete, compactMode = false }) {
+  const { user } = useAuth();
   const { state, dispatch } = useTarget();
   const { sessions } = useSport();
   const { state: notesState, createFolder, createNote } = useNotes();
@@ -18,6 +20,8 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [showAttachmentsModal, setShowAttachmentsModal] = useState(false);
   const [objectiveNoteId, setObjectiveNoteId] = useState(null);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [rejectComment, setRejectComment] = useState('');
 
   const hasAttachments = objective.attachments && objective.attachments.length > 0;
 
@@ -151,7 +155,7 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
       <div className="flex-1 w-full">
         {/* Title */}
         <h3 
-          className="font-bold text-lg text-dark-100 mb-6 pl-1"
+          className="font-bold text-lg text-dark-100 mb-2 pl-1"
           style={{ 
             paddingRight: '100px',
             wordBreak: 'break-word',
@@ -161,10 +165,80 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
           {objective.title}
         </h3>
 
+        {/* Assignment Badge */}
+        {objective.assigned_to && (
+          <div className="mb-4 pl-1 text-xs">
+            {objective.user_id === user.id ? (
+              <span className="bg-dark-600/50 text-dark-300 px-2 py-1 rounded-md">
+                Délégué à {state.contacts?.find(c => c.contact_user_id === objective.assigned_to)?.contact_name || 'un contact'}
+                {objective.assignment_status === 'PENDING' && ' (En attente)'}
+                {objective.assignment_status === 'REJECTED' && ' (Refusé)'}
+              </span>
+            ) : (
+              <span className="bg-accent-violet/20 text-accent-violet px-2 py-1 rounded-md">
+                Assigné par {state.contacts?.find(c => c.contact_user_id === objective.user_id)?.contact_name || 'un contact'}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Counter Section OR Sub-objectives */}
         <div className="flex items-center mb-6 pl-1 pr-0 w-full" style={{ gap: compactMode ? '12px' : '35px' }}>
           <div className={hasSubObjectives ? "flex-1 min-w-0" : "grow min-w-0"}>
-            {hasSubObjectives ? (
+            {objective.assigned_to === user.id && objective.assignment_status === 'PENDING' ? (
+              isRejecting ? (
+                <div className="flex flex-col gap-2">
+                  <input
+                    type="text"
+                    value={rejectComment}
+                    onChange={(e) => setRejectComment(e.target.value)}
+                    placeholder="Motif du refus..."
+                    className="w-full bg-dark-700/50 border border-dark-600 rounded-lg px-3 py-1.5 text-sm text-dark-100 placeholder-dark-400 focus:outline-none focus:border-accent-red"
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        dispatch({ 
+                          type: 'UPDATE_OBJECTIVE', 
+                          payload: { 
+                            ...objective, 
+                            assigned_to: null, 
+                            assignment_status: null, 
+                            rejectReason: rejectComment || 'Sans commentaire' 
+                          } 
+                        });
+                        setIsRejecting(false);
+                      }}
+                      className="px-3 py-1 bg-accent-red/20 text-accent-red rounded-lg text-xs font-bold hover:bg-accent-red/30"
+                    >
+                      Confirmer le refus
+                    </button>
+                    <button
+                      onClick={() => setIsRejecting(false)}
+                      className="px-3 py-1 bg-dark-600/50 text-dark-300 rounded-lg text-xs hover:bg-dark-500/50"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => dispatch({ type: 'UPDATE_OBJECTIVE', payload: { ...objective, assignment_status: 'ACCEPTED' } })}
+                    className="px-3 py-1.5 bg-accent-green/20 text-accent-green rounded-lg text-sm font-medium hover:bg-accent-green/30"
+                  >
+                    Accepter
+                  </button>
+                  <button
+                    onClick={() => setIsRejecting(true)}
+                    className="px-3 py-1.5 bg-accent-red/20 text-accent-red rounded-lg text-sm font-medium hover:bg-accent-red/30"
+                  >
+                    Refuser
+                  </button>
+                </div>
+              )
+            ) : hasSubObjectives ? (
               <div className="space-y-2.5">
                 {objective.subObjectives.map((sub, i) => {
                   const isSubChecked = isBitSet(current, i);
