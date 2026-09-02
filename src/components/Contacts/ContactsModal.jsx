@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserPlus, Check, Trash2, Mail } from 'lucide-react';
+import Modal from '../Shared/Modal';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTarget } from '../../contexts/TargetContext';
@@ -175,145 +175,155 @@ export default function ContactsModal({ isOpen, onClose }) {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-dark-950/80 backdrop-blur-sm"
-          onClick={onClose}
-        />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-md glass-strong rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-dark-600/40"
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <span className="flex items-center gap-2">
+          <UserPlus className="text-accent-cyan" size={22} />
+          Mes Contacts
+        </span>
+      }
+      maxWidth="max-w-md"
+    >
+      <div 
+        className="flex flex-col text-dark-200"
+        style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '6px 4px' }}
+      >
+        {/* Formulaire d'ajout */}
+        <form 
+          onSubmit={handleAddContact} 
+          className="bg-dark-700/40 rounded-2xl border border-dark-600/40"
+          style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600/30 flex-shrink-0">
-            <h2 className="text-lg font-bold text-dark-100 flex items-center gap-2">
-              <UserPlus className="text-accent-cyan" size={20} />
-              Mes Contacts
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-1.5 text-dark-400 hover:text-dark-100 hover:bg-dark-700/50 rounded-xl transition-all cursor-pointer"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          {/* Body */}
-          <div className="p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
-            {/* Formulaire d'ajout */}
-            <form onSubmit={handleAddContact} className="bg-dark-700/40 p-5 rounded-2xl border border-dark-600/40 flex flex-col gap-3.5">
-              <h3 className="text-sm font-bold text-dark-100 flex items-center gap-2">
-                Ajouter un contact
-              </h3>
-              <div className="flex flex-col gap-3">
-                <input
-                  type="text"
-                  placeholder="Nom du contact (ex: Alice)"
-                  value={newContactName}
-                  onChange={(e) => setNewContactName(e.target.value)}
-                  className="w-full bg-dark-800 border border-dark-600/60 rounded-xl px-4 py-3 text-sm text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-all"
-                />
-                <input
-                  type="email"
-                  placeholder="Email (pour l'inviter sur Target)"
-                  value={newContactEmail}
-                  onChange={(e) => setNewContactEmail(e.target.value)}
-                  className="w-full bg-dark-800 border border-dark-600/60 rounded-xl px-4 py-3 text-sm text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-all"
-                />
-                <div className="flex gap-2.5 mt-1">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || (!newContactName.trim() && !newContactEmail.trim())}
-                    className="flex-1 bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 font-bold py-3 px-5 rounded-xl text-sm transition-all disabled:opacity-50 cursor-pointer shadow-sm active:scale-[0.99] flex items-center justify-center"
-                  >
-                    {isSubmitting ? 'Ajout...' : 'Ajouter'}
-                  </button>
-                  {newContactEmail && (
-                    <a
-                      href={`mailto:${newContactEmail}?subject=Rejoignez-moi sur Target&body=Bonjour, %0A%0AJe vous invite à me rejoindre sur l'application Target. %0ACréez un compte avec cette adresse email pour que nous puissions partager des objectifs !`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="bg-dark-600 hover:bg-dark-500 text-dark-100 p-3 rounded-xl transition-all flex items-center justify-center cursor-pointer shadow-sm"
-                      title="Envoyer un e-mail avec mon client de messagerie"
-                    >
-                      <Mail size={20} />
-                    </a>
-                  )}
-                </div>
-              </div>
-            </form>
-
-            {/* Demandes en attente */}
-            {pendingRequests.length > 0 && (
-              <div className="flex flex-col gap-3">
-                <h3 className="text-sm font-bold text-accent-violet flex items-center gap-2">
-                  <Mail size={16} /> Invitations reçues ({pendingRequests.length})
-                </h3>
-                <div className="flex flex-col gap-2.5">
-                  {pendingRequests.map(req => (
-                    <div key={req.id} className="flex items-center justify-between bg-dark-700/60 p-4 rounded-xl border border-accent-violet/30 gap-3">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-dark-100 text-sm">{getSenderDisplayName(req)}</span>
-                        <span className="text-xs text-dark-400">souhaite vous ajouter à ses contacts</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => handleAcceptRequest(req)} title="Accepter" className="p-2.5 bg-accent-green/20 text-accent-green rounded-xl hover:bg-accent-green/30 transition-colors cursor-pointer">
-                          <Check size={16} />
-                        </button>
-                        <button onClick={() => handleRejectRequest(req)} title="Refuser" className="p-2.5 bg-accent-red/20 text-accent-red rounded-xl hover:bg-accent-red/30 transition-colors cursor-pointer">
-                          <X size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Liste de mes contacts */}
-            <div className="flex flex-col gap-3">
-              <h3 className="text-sm font-bold text-dark-200">Mes contacts ({myContacts.length})</h3>
-              {myContacts.length === 0 ? (
-                <div className="text-dark-400 text-sm italic text-center py-6 bg-dark-700/20 rounded-xl border border-dashed border-dark-600/30">
-                  Aucun contact pour le moment.
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2.5">
-                  {myContacts.map(contact => (
-                    <div key={contact.id} className="flex items-center justify-between bg-dark-700/40 p-4 rounded-xl border border-dark-600/30 gap-3">
-                      <div>
-                        <div className="font-semibold text-dark-100 text-sm">{getContactDisplayName(contact)}</div>
-                        <div className="flex items-center gap-1.5 text-xs text-dark-400 mt-0.5">
-                          {contact.contact_email && <span>{contact.contact_email} • </span>}
-                          {contact.status === 'PENDING' && <span className="text-accent-orange font-medium">En attente...</span>}
-                          {contact.status === 'ACCEPTED' && <span className="text-accent-green font-medium">Connecté</span>}
-                          {contact.status === 'REJECTED' && <span className="text-accent-red font-medium">Refusé</span>}
-                        </div>
-                      </div>
-                      <button 
-                        onClick={() => handleDeleteContact(contact.id)}
-                        className="p-2 text-dark-400 hover:text-accent-red hover:bg-accent-red/10 rounded-lg transition-colors cursor-pointer"
-                        title="Supprimer ce contact"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+          <h3 className="text-sm font-bold text-dark-100 flex items-center gap-2">
+            Ajouter un contact
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <input
+              type="text"
+              placeholder="Nom du contact (ex: Alice)"
+              value={newContactName}
+              onChange={(e) => setNewContactName(e.target.value)}
+              className="w-full bg-dark-800 border border-dark-600/60 rounded-xl text-sm text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-all"
+              style={{ padding: '12px 16px' }}
+            />
+            <input
+              type="email"
+              placeholder="Email (pour l'inviter sur Target)"
+              value={newContactEmail}
+              onChange={(e) => setNewContactEmail(e.target.value)}
+              className="w-full bg-dark-800 border border-dark-600/60 rounded-xl text-sm text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-all"
+              style={{ padding: '12px 16px' }}
+            />
+            <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
+              <button
+                type="submit"
+                disabled={isSubmitting || (!newContactName.trim() && !newContactEmail.trim())}
+                className="flex-1 bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 font-bold rounded-xl text-sm transition-all disabled:opacity-50 cursor-pointer shadow-sm active:scale-[0.99] flex items-center justify-center"
+                style={{ padding: '12px 24px' }}
+              >
+                {isSubmitting ? 'Ajout...' : 'Ajouter'}
+              </button>
+              {newContactEmail && (
+                <a
+                  href={`mailto:${newContactEmail}?subject=Rejoignez-moi sur Target&body=Bonjour, %0A%0AJe vous invite à me rejoindre sur l'application Target. %0ACréez un compte avec cette adresse email pour que nous puissions partager des objectifs !`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="bg-dark-600 hover:bg-dark-500 text-dark-100 rounded-xl transition-all flex items-center justify-center cursor-pointer shadow-sm"
+                  style={{ padding: '12px 16px' }}
+                  title="Envoyer un e-mail avec mon client de messagerie"
+                >
+                  <Mail size={20} />
+                </a>
               )}
             </div>
           </div>
-        </motion.div>
+        </form>
+
+        {/* Demandes en attente */}
+        {pendingRequests.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h3 className="text-sm font-bold text-accent-violet flex items-center gap-2">
+              <Mail size={16} /> Invitations reçues ({pendingRequests.length})
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {pendingRequests.map(req => (
+                <div 
+                  key={req.id} 
+                  className="bg-dark-700/60 rounded-xl border border-accent-violet/30"
+                  style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}
+                >
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-dark-100 text-sm">{getSenderDisplayName(req)}</span>
+                    <span className="text-xs text-dark-400">souhaite vous ajouter à ses contacts</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleAcceptRequest(req)} 
+                      title="Accepter" 
+                      className="bg-accent-green/20 text-accent-green rounded-xl hover:bg-accent-green/30 transition-colors cursor-pointer"
+                      style={{ padding: '10px 14px' }}
+                    >
+                      <Check size={16} />
+                    </button>
+                    <button 
+                      onClick={() => handleRejectRequest(req)} 
+                      title="Refuser" 
+                      className="bg-accent-red/20 text-accent-red rounded-xl hover:bg-accent-red/30 transition-colors cursor-pointer"
+                      style={{ padding: '10px 14px' }}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Liste de mes contacts */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <h3 className="text-sm font-bold text-dark-200">Mes contacts ({myContacts.length})</h3>
+          {myContacts.length === 0 ? (
+            <div 
+              className="text-dark-400 text-sm italic text-center bg-dark-700/20 rounded-xl border border-dashed border-dark-600/30"
+              style={{ padding: '24px 16px' }}
+            >
+              Aucun contact pour le moment.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {myContacts.map(contact => (
+                <div 
+                  key={contact.id} 
+                  className="bg-dark-700/40 rounded-xl border border-dark-600/30"
+                  style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}
+                >
+                  <div>
+                    <div className="font-semibold text-dark-100 text-sm">{getContactDisplayName(contact)}</div>
+                    <div className="flex items-center gap-1.5 text-xs text-dark-400 mt-0.5">
+                      {contact.contact_email && <span>{contact.contact_email} • </span>}
+                      {contact.status === 'PENDING' && <span className="text-accent-orange font-medium">En attente...</span>}
+                      {contact.status === 'ACCEPTED' && <span className="text-accent-green font-medium">Connecté</span>}
+                      {contact.status === 'REJECTED' && <span className="text-accent-red font-medium">Refusé</span>}
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleDeleteContact(contact.id)}
+                    className="text-dark-400 hover:text-accent-red hover:bg-accent-red/10 rounded-lg transition-colors cursor-pointer"
+                    style={{ padding: '8px' }}
+                    title="Supprimer ce contact"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </AnimatePresence>
+    </Modal>
   );
 }
