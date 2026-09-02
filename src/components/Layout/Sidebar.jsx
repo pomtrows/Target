@@ -410,7 +410,8 @@ export default function Sidebar() {
               <button
                 type="submit"
                 disabled={isSavingName}
-                className="flex-shrink-0 px-5 py-2.5 bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 font-bold rounded-xl text-xs transition-all disabled:opacity-50 whitespace-nowrap cursor-pointer shadow-sm active:scale-95"
+                className="flex-shrink-0 bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 font-bold rounded-xl text-sm transition-all disabled:opacity-50 whitespace-nowrap cursor-pointer shadow-sm active:scale-95 flex items-center justify-center"
+                style={{ padding: '10px 24px' }}
               >
                 {isSavingName ? 'Enregistrement...' : nameSaved ? 'Enregistré !' : 'Enregistrer'}
               </button>
@@ -448,7 +449,8 @@ export default function Sidebar() {
             </div>
             <button 
               onClick={() => setZoomLevel(1)}
-              className="mt-2 py-1.5 rounded-lg bg-dark-700 hover:bg-dark-600 text-xs font-medium text-dark-200 transition-colors"
+              className="mt-2 rounded-xl bg-dark-700 hover:bg-dark-600 text-xs font-medium text-dark-200 transition-colors cursor-pointer"
+              style={{ padding: '8px 16px' }}
             >
               Réinitialiser le zoom
             </button>
@@ -497,11 +499,14 @@ export default function Sidebar() {
               <div className="flex flex-col gap-3 mt-2">
                 <div className="flex justify-between items-center bg-dark-800/50 p-3 rounded-xl">
                   <span className="text-xs font-semibold">Autorisation système</span>
-                  <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-md ${
-                    notifPermission === 'granted' ? 'bg-accent-green/20 text-accent-green' :
-                    notifPermission === 'denied' ? 'bg-accent-red/20 text-accent-red' :
-                    'bg-dark-600/50 text-dark-300'
-                  }`}>
+                  <span 
+                    className={`inline-flex items-center justify-center text-xs font-bold uppercase rounded-lg tracking-wide ${
+                      notifPermission === 'granted' ? 'bg-accent-green/20 text-accent-green border border-accent-green/40' :
+                      notifPermission === 'denied' ? 'bg-accent-red/20 text-accent-red border border-accent-red/40' :
+                      'bg-dark-600/50 text-dark-300 border border-dark-500/40'
+                    }`}
+                    style={{ padding: '6px 14px' }}
+                  >
                     {notifPermission === 'granted' ? 'Autorisé' :
                      notifPermission === 'denied' ? 'Bloqué' :
                      'Non configuré'}
@@ -529,7 +534,8 @@ export default function Sidebar() {
                 {notifPermission === 'default' && (
                   <button
                     onClick={handleRequestPermission}
-                    className="w-full py-3 rounded-xl bg-gradient-to-r from-accent-cyan to-accent-violet text-dark-900 font-bold text-xs flex items-center justify-center gap-2 hover:shadow-[0_0_15px_rgba(34,211,238,0.2)] transition-all"
+                    className="w-full rounded-xl bg-gradient-to-r from-accent-cyan to-accent-violet text-dark-900 font-bold text-xs flex items-center justify-center gap-2 hover:shadow-[0_0_15px_rgba(34,211,238,0.2)] transition-all cursor-pointer"
+                    style={{ padding: '12px 18px' }}
                   >
                     <Bell size={14} /> Autoriser les notifications
                   </button>
@@ -546,7 +552,8 @@ export default function Sidebar() {
                   <button
                     onClick={handleTestNotification}
                     disabled={testResult === 'sending'}
-                    className="w-full py-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 text-dark-200 hover:text-dark-100 font-semibold text-xs flex items-center justify-center gap-2 border border-dark-600 transition-all disabled:opacity-50 mt-1"
+                    className="w-full rounded-xl bg-dark-700 hover:bg-dark-600 text-dark-200 hover:text-dark-100 font-semibold text-xs flex items-center justify-center gap-2 border border-dark-600 transition-all disabled:opacity-50 mt-1 cursor-pointer"
+                    style={{ padding: '10px 16px' }}
                   >
                     {testResult === 'success' ? (
                       <><CheckCircle2 size={14} className="text-accent-green" /> Envoyée !</>
