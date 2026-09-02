@@ -480,7 +480,9 @@ export function TargetProvider({ children }) {
               objectivesUpdated = true;
               
               if (navigator.onLine) {
-                supabase.from('objectives').update({ assignments: newAssignments }).eq('id', obj.id).catch(() => {});
+                supabase.from('objectives').update({ assignments: newAssignments }).eq('id', obj.id).then(({ error }) => {
+                  if (error) console.error('Error rolling over objective:', error);
+                });
               } else {
                 enqueueSyncAction(user.id, currentProfile, 'UPDATE_OBJECTIVE', { id: obj.id, assignments: newAssignments });
               }
@@ -830,7 +832,9 @@ export function TargetProvider({ children }) {
         if (navigator.onLine) {
           for (let i = 0; i < newCategories.length; i++) {
             const cat = newCategories[i];
-            supabase.from('categories').update({ order_index: i }).eq('id', cat.id).catch(() => {});
+            supabase.from('categories').update({ order_index: i }).eq('id', cat.id).then(({ error }) => {
+              if (error) console.error('Error updating category order:', error);
+            });
           }
         }
         break;
