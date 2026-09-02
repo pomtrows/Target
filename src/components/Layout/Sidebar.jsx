@@ -399,18 +399,18 @@ export default function Sidebar() {
             <p className="text-xs text-dark-400">
               Ce nom apparaîtra chez vos contacts lorsqu'ils acceptent vos invitations ou que vous leur assignez des objectifs.
             </p>
-            <form onSubmit={handleSaveUserName} className="flex gap-2 mt-1">
+            <form onSubmit={handleSaveUserName} className="flex items-center gap-3 mt-1">
               <input
                 type="text"
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
                 placeholder={user?.email || "Votre nom..."}
-                className="flex-1 bg-dark-800 border border-dark-600 rounded-xl px-4 py-2 text-sm text-dark-100 placeholder:text-dark-500 focus:outline-none focus:border-accent-cyan transition-colors"
+                className="flex-1 min-w-0 bg-dark-800/80 border border-dark-600/50 rounded-xl px-4 py-2.5 text-sm text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-colors"
               />
               <button
                 type="submit"
                 disabled={isSavingName}
-                className="px-4 py-2 bg-accent-cyan text-dark-900 font-bold rounded-xl text-xs hover:bg-accent-cyan/90 transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                className="flex-shrink-0 px-5 py-2.5 bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 font-bold rounded-xl text-xs transition-all disabled:opacity-50 whitespace-nowrap cursor-pointer shadow-sm active:scale-95"
               >
                 {isSavingName ? 'Enregistrement...' : nameSaved ? 'Enregistré !' : 'Enregistrer'}
               </button>
