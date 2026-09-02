@@ -176,7 +176,7 @@ export default function Sidebar() {
       <button
         onClick={() => setMobileOpen(true)}
         className="md:hidden flex items-center justify-center rounded-xl glass text-dark-200 hover:text-dark-100 transition-colors mobile-sidebar-toggle cursor-pointer"
-        style={{ position: 'fixed', top: '12px', left: '16px', width: '40px', height: '40px', zIndex: 100 }}
+        style={{ position: 'fixed', top: '12px', left: '16px', width: '40px', height: '40px', zIndex: 70 }}
         title="Menu"
       >
         <Menu size={22} />
@@ -186,7 +186,7 @@ export default function Sidebar() {
       <button
         onClick={() => setShowNotificationCenter(true)}
         className="md:hidden flex items-center justify-center rounded-full glass text-dark-200 hover:text-dark-100 transition-all cursor-pointer shadow-sm relative"
-        style={{ position: 'fixed', top: '12px', right: '16px', width: '40px', height: '40px', zIndex: 100 }}
+        style={{ position: 'fixed', top: '12px', right: '16px', width: '40px', height: '40px', zIndex: 70 }}
         title="Notifications"
       >
         <Bell size={22} />
@@ -221,17 +221,23 @@ export default function Sidebar() {
       {/* Mobile backdrop */}
       {mobileOpen && (
         <motion.div
-          className="fixed inset-0 bg-black/50 z-[90] md:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm md:hidden"
+          style={{ zIndex: 110 }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <motion.aside
-        className="fixed top-0 left-0 w-64 bg-dark-800 border-r border-dark-600/30 z-[100] flex flex-col transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0 overflow-hidden"
-        style={{ transform: mobileOpen ? 'translateX(0)' : undefined, height: 'var(--app-height, 100vh)' }}
+        className="fixed top-0 left-0 w-64 bg-dark-800 border-r border-dark-600/30 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 overflow-hidden"
+        style={{ 
+          transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)', 
+          height: 'var(--app-height, 100vh)',
+          zIndex: 120 
+        }}
         data-sidebar
       >
         {/* Close button mobile */}
