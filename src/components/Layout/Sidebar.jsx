@@ -175,21 +175,44 @@ export default function Sidebar() {
       {/* Mobile toggle */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed top-4 left-4 z-[100] md:hidden p-2 rounded-xl glass text-dark-200 hover:text-dark-100 transition-colors mobile-sidebar-toggle cursor-pointer"
+        className="md:hidden flex items-center justify-center rounded-xl glass text-dark-200 hover:text-dark-100 transition-colors mobile-sidebar-toggle cursor-pointer"
+        style={{ position: 'fixed', top: '12px', left: '16px', width: '40px', height: '40px', zIndex: 100 }}
         title="Menu"
       >
         <Menu size={22} />
       </button>
 
-      {/* Mobile Notification Button (Header top-right) */}
+      {/* Mobile Notification Button (Header top-right - Facebook style) */}
       <button
         onClick={() => setShowNotificationCenter(true)}
-        className="fixed top-4 right-4 z-[100] md:hidden p-2 rounded-xl glass text-dark-200 hover:text-dark-100 transition-colors cursor-pointer relative shadow-sm"
+        className="md:hidden flex items-center justify-center rounded-full glass text-dark-200 hover:text-dark-100 transition-all cursor-pointer shadow-sm relative"
+        style={{ position: 'fixed', top: '12px', right: '16px', width: '40px', height: '40px', zIndex: 100 }}
         title="Notifications"
       >
         <Bell size={22} />
         {unreadNotificationsCount > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 bg-accent-red text-white text-[11px] font-black min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center shadow-md animate-pulse">
+          <span
+            className="pointer-events-none shadow-md"
+            style={{
+              position: 'absolute',
+              top: '-4px',
+              right: '-6px',
+              backgroundColor: '#e41e3f',
+              color: '#ffffff',
+              fontSize: '11px',
+              fontWeight: '800',
+              minWidth: '20px',
+              height: '20px',
+              padding: '0 5px',
+              borderRadius: '9999px',
+              border: '2px solid var(--color-dark-800, #ffffff)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              lineHeight: 1,
+              zIndex: 10
+            }}
+          >
             {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
           </span>
         )}
@@ -207,7 +230,7 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <motion.aside
-        className="fixed top-0 left-0 w-64 bg-dark-800 border-r border-dark-600/30 z-[100] flex flex-col transition-transform duration-300 ease-in-out"
+        className="fixed top-0 left-0 w-64 bg-dark-800 border-r border-dark-600/30 z-[100] flex flex-col transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0 overflow-hidden"
         style={{ transform: mobileOpen ? 'translateX(0)' : undefined, height: 'var(--app-height, 100vh)' }}
         data-sidebar
       >

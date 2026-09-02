@@ -693,15 +693,37 @@ export default function WeekView() {
               </button>
             </div>
 
-            {/* Notification button on Desktop */}
+            {/* Notification button on Desktop (Facebook style) */}
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('open-notifications'))}
-              className="hidden md:flex items-center justify-center p-2 rounded-full bg-dark-800/95 hover:bg-dark-700/80 border border-dark-600/30 text-dark-300 hover:text-dark-100 transition-all relative cursor-pointer shadow-sm"
+              className="hidden md:flex items-center justify-center rounded-full bg-dark-800/95 hover:bg-dark-700/80 border border-dark-600/40 text-dark-300 hover:text-dark-100 transition-all relative cursor-pointer shadow-sm hover:scale-105 active:scale-95 flex-shrink-0"
+              style={{ width: '38px', height: '38px', marginLeft: '6px' }}
               title="Notifications"
             >
-              <Bell size={16} />
+              <Bell size={20} />
               {unreadNotificationsCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-accent-red text-white text-[10px] font-black min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center shadow-md animate-pulse">
+                <span
+                  className="pointer-events-none shadow-md"
+                  style={{
+                    position: 'absolute',
+                    top: '-4px',
+                    right: '-6px',
+                    backgroundColor: '#e41e3f',
+                    color: '#ffffff',
+                    fontSize: '11px',
+                    fontWeight: '800',
+                    minWidth: '20px',
+                    height: '20px',
+                    padding: '0 5px',
+                    borderRadius: '9999px',
+                    border: '2px solid var(--color-dark-800, #ffffff)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    lineHeight: 1,
+                    zIndex: 10
+                  }}
+                >
                   {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                 </span>
               )}
