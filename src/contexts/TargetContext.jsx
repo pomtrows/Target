@@ -364,7 +364,7 @@ export function TargetProvider({ children }) {
           supabase.from('rewards').select('*').eq('user_id', user.id),
           supabase.from('reward_items').select('*').eq('user_id', user.id),
           supabase.from('settings').select('*').eq('user_id', user.id).eq('profile', currentProfile).maybeSingle(),
-          supabase.from('contacts').select('*').or(`user_id.eq.${user.id},contact_user_id.eq.${user.id},contact_email.eq.${user.email}`),
+          supabase.from('contacts').select('*').or(`user_id.eq.${user.id},contact_user_id.eq.${user.id},contact_email.ilike.${user.email}`),
           supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
           supabase.from('profiles').select('*').then(r => r).catch(err => ({ data: [], error: err }))
         ]);
@@ -534,7 +534,10 @@ export function TargetProvider({ children }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => {
         fetchData();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, (payload) => {
+        if (payload.new && payload.new.user_id === user.id && !payload.new.read) {
+          showToast(payload.new.message, 'info');
+        }
         fetchData();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
@@ -653,7 +656,6 @@ export function TargetProvider({ children }) {
               const { error: notifErr } = await supabase.from('notifications').insert({
                 user_id: action.payload.assigned_to,
                 type: 'TASK_ASSIGNED',
-                reference_id: newObj.id,
                 message: `${myName} vous a assigné un nouvel objectif : ${newObj.title}`
               });
               if (notifErr) {
@@ -708,7 +710,6 @@ export function TargetProvider({ children }) {
               const { error: notifErr } = await supabase.from('notifications').insert({
                 user_id: updated.assigned_to,
                 type: 'TASK_ASSIGNED',
-                reference_id: updated.id,
                 message: `${myName} vous a assigné un objectif : ${updated.title}`
               });
               if (notifErr) {
@@ -727,7 +728,6 @@ export function TargetProvider({ children }) {
                 await supabase.from('notifications').insert({
                   user_id: assignerId,
                   type: 'TASK_REJECTED',
-                  reference_id: updated.id,
                   message: `${myName} a refusé votre objectif : ${updated.title}.${reasonText}`
                 });
               } catch (nErr) {
@@ -741,7 +741,6 @@ export function TargetProvider({ children }) {
                 await supabase.from('notifications').insert({
                   user_id: assignerId,
                   type: 'TASK_ACCEPTED',
-                  reference_id: updated.id,
                   message: `${myName} a accepté votre objectif : ${updated.title}`
                 });
               } catch (nErr) {
@@ -843,7 +842,6 @@ export function TargetProvider({ children }) {
               await supabase.from('notifications').insert({
                 user_id: objective.user_id, // Prévenir le créateur
                 type: 'TASK_COMPLETED',
-                reference_id: objectiveId,
                 message: `${myName} a accompli votre objectif : ${objective.title}`
               });
             } catch (nErr) {
@@ -904,7 +902,6 @@ export function TargetProvider({ children }) {
                 await supabase.from('notifications').insert({
                   user_id: objective.user_id,
                   type: 'TASK_COMPLETED',
-                  reference_id: objectiveId,
                   message: `${myName} a accompli votre objectif : ${objective.title}`
                 });
               } catch (nErr) {

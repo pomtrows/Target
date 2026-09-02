@@ -88,6 +88,21 @@ export default function ContactsModal({ isOpen, onClose }) {
       if (error) throw error;
       
       dispatch({ type: 'ADD_CONTACT', payload: data });
+
+      // Envoyer une notification réelle si le compte destinataire existe
+      if (targetUserId && targetUserId !== user.id) {
+        try {
+          const myDisplayName = user.user_metadata?.display_name || localStorage.getItem('target-user-display-name') || user.email;
+          await supabase.from('notifications').insert({
+            user_id: targetUserId,
+            type: 'CONTACT_INVITE',
+            message: `${myDisplayName} vous invite à partager des objectifs.`
+          });
+        } catch (nErr) {
+          console.warn('Error inserting contact invite notification:', nErr);
+        }
+      }
+
       showToast(email ? 'Invitation envoyée ! En attente d\'acceptation.' : 'Contact ajouté avec succès !', 'success');
       setNewContactName('');
       setNewContactEmail('');

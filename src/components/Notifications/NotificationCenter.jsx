@@ -10,7 +10,12 @@ export default function NotificationCenter({ isOpen, onClose, onOpenContacts }) 
   const { user } = useAuth();
   const { showToast } = useToast();
 
-  const pendingContacts = state.contacts?.filter(c => c.contact_email === user.email && c.status === 'PENDING' && c.user_id !== user.id) || [];
+  const pendingContacts = state.contacts?.filter(c => {
+    if (c.status !== 'PENDING' || c.user_id === user?.id) return false;
+    const isTargetUser = c.contact_user_id === user?.id;
+    const isTargetEmail = c.contact_email && user?.email && c.contact_email.toLowerCase() === user.email.toLowerCase();
+    return isTargetUser || isTargetEmail;
+  }) || [];
   
   // Combinaison des notifications de la DB avec les invitations virtuelles
   const notifications = [

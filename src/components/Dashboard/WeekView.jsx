@@ -330,9 +330,12 @@ export default function WeekView() {
   const weekParam = searchParams.get('week');
   const [currentWeek, setCurrentWeek] = useState(weekParam || getCurrentWeekId());
 
-  const pendingContactInvites = (state.contacts || []).filter(
-    c => c.contact_email === user?.email && c.status === 'PENDING' && c.user_id !== user?.id
-  ).length;
+  const pendingContactInvites = (state.contacts || []).filter(c => {
+    if (c.status !== 'PENDING' || c.user_id === user?.id) return false;
+    const isTargetUser = c.contact_user_id === user?.id;
+    const isTargetEmail = c.contact_email && user?.email && c.contact_email.toLowerCase() === user.email.toLowerCase();
+    return isTargetUser || isTargetEmail;
+  }).length;
   const unreadNotificationsCount = (state.notifications || []).filter(n => !n.read).length + pendingContactInvites;
 
   useEffect(() => {
