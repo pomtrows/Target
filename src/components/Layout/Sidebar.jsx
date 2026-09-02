@@ -249,7 +249,10 @@ export default function Sidebar() {
         <div className="px-4 py-4 border-t border-dark-600/30 mb-32 flex flex-col gap-4" style={{ paddingLeft: '15px' }}>
           
           <button
-            onClick={() => setShowSettingsModal(true)}
+            onClick={() => {
+              setShowSettingsModal(true);
+              setMobileOpen(false);
+            }}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-400 hover:text-dark-200 hover:bg-dark-700/50 transition-all duration-200"
           >
             <Sliders size={20} />
@@ -272,7 +275,10 @@ export default function Sidebar() {
           </button>
 
           <button
-            onClick={() => setShowContactsModal(true)}
+            onClick={() => {
+              setShowContactsModal(true);
+              setMobileOpen(false);
+            }}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-400 hover:text-dark-200 hover:bg-dark-700/50 transition-all duration-200"
           >
             <Users size={20} />
@@ -280,7 +286,10 @@ export default function Sidebar() {
           </button>
 
           <button
-            onClick={() => setShowNotificationCenter(true)}
+            onClick={() => {
+              setShowNotificationCenter(true);
+              setMobileOpen(false);
+            }}
             className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-dark-400 hover:text-dark-200 hover:bg-dark-700/50 transition-all duration-200"
           >
             <div className="flex items-center gap-3">

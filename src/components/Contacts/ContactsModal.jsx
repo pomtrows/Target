@@ -85,6 +85,7 @@ export default function ContactsModal({ isOpen, onClose }) {
       const { error } = await supabase.from('contacts').delete().eq('id', contactId);
       if (error) throw error;
       
+      dispatch({ type: 'DELETE_CONTACT', payload: contactId });
       showToast('Contact supprimé.', 'info');
     } catch (err) {
       console.error(err);
@@ -96,7 +97,7 @@ export default function ContactsModal({ isOpen, onClose }) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

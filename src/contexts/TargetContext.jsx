@@ -192,6 +192,12 @@ function targetReducer(state, action) {
         ),
       };
 
+    case 'DELETE_CONTACT':
+      return {
+        ...state,
+        contacts: state.contacts.filter((c) => c.id !== action.payload),
+      };
+
     case 'ADD_NOTIFICATION':
       return { ...state, notifications: [action.payload, ...state.notifications] };
 
@@ -302,7 +308,9 @@ export function TargetProvider({ children }) {
           progressTimestamps: cached.progressTimestamps || {},
           rewards: cached.rewards || {},
           rewardItems: cached.rewardItems || [],
-          rewardThresholds: cached.rewardThresholds || { P1: 100, P2: 100, P3: 100 }
+          rewardThresholds: cached.rewardThresholds || { P1: 100, P2: 100, P3: 100 },
+          contacts: cached.contacts || [],
+          notifications: cached.notifications || []
         }
       });
       refreshPendingCount();
