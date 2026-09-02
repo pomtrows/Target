@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Pencil, AlertTriangle, List, Clock, Check, FileText, Columns3, Filter, Search, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Pencil, AlertTriangle, List, Clock, Check, FileText, Columns3, Filter, Search, X, Bell } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useNotes } from '../../contexts/NotesContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import NoteEditor from '../Notes/NoteEditor';
@@ -322,11 +323,17 @@ function CompactObjectiveCard({ objective, weekId, onEdit, onDelete }) {
 }
 
 export default function WeekView() {
+  const { user } = useAuth();
   const { state, dispatch } = useTarget();
   const { maxColumns } = useSettings();
   const [searchParams] = useSearchParams();
   const weekParam = searchParams.get('week');
   const [currentWeek, setCurrentWeek] = useState(weekParam || getCurrentWeekId());
+
+  const pendingContactInvites = (state.contacts || []).filter(
+    c => c.contact_email === user?.email && c.status === 'PENDING' && c.user_id !== user?.id
+  ).length;
+  const unreadNotificationsCount = (state.notifications || []).filter(n => !n.read).length + pendingContactInvites;
 
   useEffect(() => {
     if (weekParam && weekParam !== currentWeek) {
@@ -631,7 +638,7 @@ export default function WeekView() {
 
         {/* Header Actions: Toggle view */}
         {!showForm && (
-          <div className="fixed top-[12px] left-1/2 -translate-x-1/2 z-[80] md:absolute md:top-1/2 md:right-[3px] md:-translate-y-1/2 md:left-auto md:translate-x-0 flex-shrink-0">
+          <div className="fixed top-[12px] left-1/2 -translate-x-1/2 z-[80] md:absolute md:top-1/2 md:right-[3px] md:-translate-y-1/2 md:left-auto md:translate-x-0 flex-shrink-0 flex items-center gap-2">
             <div 
               className="flex items-center gap-0.5 bg-dark-800/95 rounded-full border border-dark-600/30 backdrop-blur-md flex-shrink-0 shadow-sm"
               style={{ padding: '3px 4px' }}
@@ -685,6 +692,20 @@ export default function WeekView() {
                 <span>Mois</span>
               </button>
             </div>
+
+            {/* Notification button on Desktop */}
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('open-notifications'))}
+              className="hidden md:flex items-center justify-center p-2 rounded-full bg-dark-800/95 hover:bg-dark-700/80 border border-dark-600/30 text-dark-300 hover:text-dark-100 transition-all relative cursor-pointer shadow-sm"
+              title="Notifications"
+            >
+              <Bell size={16} />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-accent-red text-white text-[10px] font-black min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center shadow-md animate-pulse">
+                  {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                </span>
+              )}
+            </button>
           </div>
         )}
       </div>

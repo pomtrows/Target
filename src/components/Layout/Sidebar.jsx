@@ -66,7 +66,16 @@ export default function Sidebar() {
 
   const { state } = useTarget();
   const { showToast } = useToast();
-  const unreadNotificationsCount = (state.notifications || []).filter(n => !n.read).length;
+  const pendingContactInvites = (state.contacts || []).filter(
+    c => c.contact_email === user?.email && c.status === 'PENDING' && c.user_id !== user?.id
+  ).length;
+  const unreadNotificationsCount = (state.notifications || []).filter(n => !n.read).length + pendingContactInvites;
+
+  useEffect(() => {
+    const handleOpenNotifs = () => setShowNotificationCenter(true);
+    window.addEventListener('open-notifications', handleOpenNotifs);
+    return () => window.removeEventListener('open-notifications', handleOpenNotifs);
+  }, []);
 
   const [userName, setUserName] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
@@ -166,9 +175,24 @@ export default function Sidebar() {
       {/* Mobile toggle */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed top-4 left-4 z-[100] md:hidden p-2 rounded-xl glass text-dark-200 hover:text-dark-100 transition-colors mobile-sidebar-toggle"
+        className="fixed top-4 left-4 z-[100] md:hidden p-2 rounded-xl glass text-dark-200 hover:text-dark-100 transition-colors mobile-sidebar-toggle cursor-pointer"
+        title="Menu"
       >
         <Menu size={22} />
+      </button>
+
+      {/* Mobile Notification Button (Header top-right) */}
+      <button
+        onClick={() => setShowNotificationCenter(true)}
+        className="fixed top-4 right-4 z-[100] md:hidden p-2 rounded-xl glass text-dark-200 hover:text-dark-100 transition-colors cursor-pointer relative shadow-sm"
+        title="Notifications"
+      >
+        <Bell size={22} />
+        {unreadNotificationsCount > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 bg-accent-red text-white text-[11px] font-black min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center shadow-md animate-pulse">
+            {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+          </span>
+        )}
       </button>
 
       {/* Mobile backdrop */}
@@ -353,7 +377,7 @@ export default function Sidebar() {
               Notifications
             </div>
             {unreadNotificationsCount > 0 && (
-              <span className="bg-accent-violet text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+              <span className="bg-accent-red text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
                 {unreadNotificationsCount}
               </span>
             )}
