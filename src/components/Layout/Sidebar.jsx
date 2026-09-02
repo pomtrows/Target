@@ -1,7 +1,9 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Target, Inbox, BarChart3, Settings, Menu, X, Sun, Moon, LogOut, Users, FileText, Dumbbell, Bell, BellOff, Info, CheckCircle2, Gift, Sliders, Wifi, WifiOff, RotateCw } from 'lucide-react';
+import { Target, Inbox, BarChart3, Settings, Menu, X, Sun, Moon, LogOut, Users, FileText, Dumbbell, Bell, BellOff, Info, CheckCircle2, Gift, Sliders, Wifi, WifiOff, RotateCw, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import { useToast } from '../../contexts/ToastContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -63,7 +65,61 @@ export default function Sidebar() {
   const [testResult, setTestResult] = useState(null);
 
   const { state } = useTarget();
+  const { showToast } = useToast();
   const unreadNotificationsCount = (state.notifications || []).filter(n => !n.read).length;
+
+  const [userName, setUserName] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [nameSaved, setNameSaved] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      const saved = user.user_metadata?.display_name || localStorage.getItem('target-user-display-name') || '';
+      setUserName(saved);
+    }
+  }, [user]);
+
+  const handleSaveUserName = async (e) => {
+    if (e) e.preventDefault();
+    if (!user) return;
+    setIsSavingName(true);
+    try {
+      const trimmed = userName.trim();
+      // 1. Update Supabase Auth user metadata
+      await supabase.auth.updateUser({ data: { display_name: trimmed } });
+      localStorage.setItem('target-user-display-name', trimmed);
+
+      // 2. Upsert in profiles table
+      try {
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          email: user.email,
+          display_name: trimmed,
+          updated_at: new Date().toISOString()
+        });
+      } catch (err) {
+        console.warn('Profiles upsert notice:', err);
+      }
+
+      // 3. Update reciprocal contact records where this user is the contact
+      if (trimmed) {
+        try {
+          await supabase.from('contacts').update({ contact_name: trimmed }).eq('contact_user_id', user.id);
+        } catch (err) {
+          console.warn('Contacts update notice:', err);
+        }
+      }
+
+      setNameSaved(true);
+      showToast('Nom d\'utilisateur enregistré !', 'success');
+      setTimeout(() => setNameSaved(false), 2500);
+    } catch (err) {
+      console.error('Error saving user name:', err);
+      showToast('Erreur lors de l\'enregistrement.', 'error');
+    } finally {
+      setIsSavingName(false);
+    }
+  };
 
   useEffect(() => {
     setNotifSupported(isNotificationSupported());
@@ -334,6 +390,38 @@ export default function Sidebar() {
         maxWidth="max-w-md"
       >
         <div className="flex flex-col gap-6 text-dark-200 h-[65vh] overflow-y-auto custom-scrollbar p-1">
+          {/* Nom d'utilisateur */}
+          <div className="flex flex-col gap-3 bg-dark-900/40 p-4 rounded-2xl border border-dark-600/30">
+            <label className="text-sm font-semibold text-dark-100 flex items-center gap-2">
+              <User size={18} className="text-accent-cyan" />
+              Mon Nom d'utilisateur
+            </label>
+            <p className="text-xs text-dark-400">
+              Ce nom apparaîtra chez vos contacts lorsqu'ils acceptent vos invitations ou que vous leur assignez des objectifs.
+            </p>
+            <form onSubmit={handleSaveUserName} className="flex gap-2 mt-1">
+              <input
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                placeholder={user?.email || "Votre nom..."}
+                className="flex-1 bg-dark-800 border border-dark-600 rounded-xl px-4 py-2 text-sm text-dark-100 placeholder:text-dark-500 focus:outline-none focus:border-accent-cyan transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={isSavingName}
+                className="px-4 py-2 bg-accent-cyan text-dark-900 font-bold rounded-xl text-xs hover:bg-accent-cyan/90 transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+              >
+                {isSavingName ? 'Enregistrement...' : nameSaved ? 'Enregistré !' : 'Enregistrer'}
+              </button>
+            </form>
+            {!userName.trim() && (
+              <p className="text-[11px] text-dark-400 italic">
+                Par défaut, votre adresse e-mail ({user?.email}) sera affichée.
+              </p>
+            )}
+          </div>
+
           {/* Zoom Setting */}
           <div className="flex flex-col gap-3 bg-dark-900/40 p-4 rounded-2xl border border-dark-600/30">
             <label className="text-sm font-semibold text-dark-100 flex items-center gap-2">

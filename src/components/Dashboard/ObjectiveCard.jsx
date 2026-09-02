@@ -23,6 +23,17 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
   const [isRejecting, setIsRejecting] = useState(false);
   const [rejectComment, setRejectComment] = useState('');
 
+  const getUserDisplayName = (userId) => {
+    if (!userId) return 'un contact';
+    if (state.profiles && state.profiles[userId]) {
+      const p = state.profiles[userId];
+      if (p.display_name) return p.display_name;
+      if (p.email) return p.email;
+    }
+    const c = state.contacts?.find(item => item.contact_user_id === userId || item.user_id === userId);
+    return c?.contact_name || c?.contact_email || 'un contact';
+  };
+
   const hasAttachments = objective.attachments && objective.attachments.length > 0;
 
   const handleOpenNotes = async (e) => {
@@ -170,13 +181,13 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
           <div className="mb-4 pl-1 text-xs">
             {objective.user_id === user.id ? (
               <span className="bg-dark-600/50 text-dark-300 px-2 py-1 rounded-md">
-                Délégué à {state.contacts?.find(c => c.contact_user_id === objective.assigned_to)?.contact_name || 'un contact'}
+                Délégué à {getUserDisplayName(objective.assigned_to)}
                 {objective.assignment_status === 'PENDING' && ' (En attente)'}
                 {objective.assignment_status === 'REJECTED' && ' (Refusé)'}
               </span>
             ) : (
               <span className="bg-accent-violet/20 text-accent-violet px-2 py-1 rounded-md">
-                Assigné par {state.contacts?.find(c => c.contact_user_id === objective.user_id)?.contact_name || 'un contact'}
+                Assigné par {getUserDisplayName(objective.user_id)}
               </span>
             )}
           </div>

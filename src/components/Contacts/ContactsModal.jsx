@@ -19,6 +19,24 @@ export default function ContactsModal({ isOpen, onClose }) {
   const myContacts = contacts.filter(c => c.user_id === user.id);
   const pendingRequests = contacts.filter(c => c.contact_email === user.email && c.status === 'PENDING' && c.user_id !== user.id);
 
+  const getContactDisplayName = (contact) => {
+    if (contact.contact_user_id && state.profiles && state.profiles[contact.contact_user_id]) {
+      const p = state.profiles[contact.contact_user_id];
+      if (p.display_name) return p.display_name;
+      if (p.email) return p.email;
+    }
+    return contact.contact_name || contact.contact_email || 'Contact';
+  };
+
+  const getSenderDisplayName = (req) => {
+    if (state.profiles && state.profiles[req.user_id]) {
+      const p = state.profiles[req.user_id];
+      if (p.display_name) return p.display_name;
+      if (p.email) return p.email;
+    }
+    return req.contact_name || 'Un utilisateur';
+  };
+
   const handleAddContact = async (e) => {
     e.preventDefault();
     if (!newContactName.trim()) return;
@@ -48,6 +66,7 @@ export default function ContactsModal({ isOpen, onClose }) {
 
   const handleAcceptRequest = async (contact) => {
     try {
+      // 1. Mettre à jour la demande d'origine en ACCEPTED
       const { error } = await supabase.from('contacts').update({
         status: 'ACCEPTED',
         contact_user_id: user.id
@@ -56,7 +75,40 @@ export default function ContactsModal({ isOpen, onClose }) {
       if (error) throw error;
       
       dispatch({ type: 'UPDATE_CONTACT', payload: { id: contact.id, status: 'ACCEPTED', contact_user_id: user.id } });
-      showToast('Demande acceptée !', 'success');
+
+      // 2. Créer également le contact réciproque chez la personne qui a accepté
+      const inviterProfile = state.profiles ? state.profiles[contact.user_id] : null;
+      const inviterName = inviterProfile?.display_name || inviterProfile?.email || contact.contact_name || 'Contact';
+      const myDisplayName = user.user_metadata?.display_name || localStorage.getItem('target-user-display-name') || user.email;
+
+      const existing = (state.contacts || []).find(c => c.user_id === user.id && (c.contact_user_id === contact.user_id || (inviterProfile?.email && c.contact_email === inviterProfile.email)));
+
+      if (!existing) {
+        const { data: reciprocal, error: recipErr } = await supabase.from('contacts').insert({
+          user_id: user.id,
+          contact_name: inviterName,
+          contact_email: inviterProfile?.email || null,
+          contact_user_id: contact.user_id,
+          status: 'ACCEPTED'
+        }).select().single();
+
+        if (!recipErr && reciprocal) {
+          dispatch({ type: 'ADD_CONTACT', payload: reciprocal });
+        }
+      }
+
+      // 3. Envoyer une notification à l'expéditeur de l'invitation
+      try {
+        await supabase.from('notifications').insert({
+          user_id: contact.user_id,
+          type: 'CONTACT_INVITE',
+          message: `${myDisplayName} a accepté votre invitation de contact.`
+        });
+      } catch (notifErr) {
+        console.warn('Notification error on accept contact:', notifErr);
+      }
+
+      showToast('Demande acceptée ! Vous êtes maintenant contacts.', 'success');
     } catch (err) {
       console.error(err);
       showToast('Erreur lors de l\'acceptation.', 'error');
@@ -171,17 +223,20 @@ export default function ContactsModal({ isOpen, onClose }) {
             {pendingRequests.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-sm font-semibold text-accent-violet mb-3 flex items-center gap-2">
-                  <Mail size={16} /> Invitations reçues
+                  <Mail size={16} /> Invitations reçues ({pendingRequests.length})
                 </h3>
                 <div className="space-y-2">
                   {pendingRequests.map(req => (
-                    <div key={req.id} className="flex items-center justify-between bg-dark-700 p-3 rounded-lg border border-accent-violet/30">
-                      <span className="font-medium text-dark-100">{req.contact_name}</span>
+                    <div key={req.id} className="flex items-center justify-between bg-dark-700 p-3 rounded-xl border border-accent-violet/30">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-dark-100">{getSenderDisplayName(req)}</span>
+                        <span className="text-xs text-dark-400">souhaite vous ajouter à ses contacts</span>
+                      </div>
                       <div className="flex gap-2">
-                        <button onClick={() => handleAcceptRequest(req)} className="p-1.5 bg-accent-green/20 text-accent-green rounded-md hover:bg-accent-green/30 transition-colors">
+                        <button onClick={() => handleAcceptRequest(req)} title="Accepter" className="p-2 bg-accent-green/20 text-accent-green rounded-lg hover:bg-accent-green/30 transition-colors">
                           <Check size={16} />
                         </button>
-                        <button onClick={() => handleRejectRequest(req)} className="p-1.5 bg-accent-red/20 text-accent-red rounded-md hover:bg-accent-red/30 transition-colors">
+                        <button onClick={() => handleRejectRequest(req)} title="Refuser" className="p-2 bg-accent-red/20 text-accent-red rounded-lg hover:bg-accent-red/30 transition-colors">
                           <X size={16} />
                         </button>
                       </div>
@@ -199,18 +254,20 @@ export default function ContactsModal({ isOpen, onClose }) {
               ) : (
                 <div className="space-y-2">
                   {myContacts.map(contact => (
-                    <div key={contact.id} className="flex items-center justify-between bg-dark-900/50 p-3 rounded-lg border border-dark-700">
+                    <div key={contact.id} className="flex items-center justify-between bg-dark-900/50 p-3 rounded-xl border border-dark-700">
                       <div>
-                        <div className="font-medium text-dark-100">{contact.contact_name}</div>
-                        <div className="text-xs text-dark-400">
-                          {contact.status === 'PENDING' && 'En attente...'}
-                          {contact.status === 'ACCEPTED' && <span className="text-accent-green">Validé</span>}
-                          {contact.status === 'REJECTED' && <span className="text-accent-red">Refusé</span>}
+                        <div className="font-medium text-dark-100">{getContactDisplayName(contact)}</div>
+                        <div className="flex items-center gap-1.5 text-xs text-dark-400">
+                          {contact.contact_email && <span>{contact.contact_email} • </span>}
+                          {contact.status === 'PENDING' && <span className="text-accent-orange font-medium">En attente...</span>}
+                          {contact.status === 'ACCEPTED' && <span className="text-accent-green font-medium">Connecté</span>}
+                          {contact.status === 'REJECTED' && <span className="text-accent-red font-medium">Refusé</span>}
                         </div>
                       </div>
                       <button 
                         onClick={() => handleDeleteContact(contact.id)}
-                        className="p-2 text-dark-400 hover:text-accent-red hover:bg-accent-red/10 rounded-lg transition-colors"
+                        className="p-2 text-dark-400 hover:text-accent-red hover:bg-accent-red/10 rounded-lg transition-colors cursor-pointer"
+                        title="Supprimer ce contact"
                       >
                         <Trash2 size={16} />
                       </button>

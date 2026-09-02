@@ -579,11 +579,18 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
             className="w-full bg-dark-700/50 border border-dark-600/50 rounded-xl py-2.5 px-3 text-sm text-dark-100 focus:outline-none focus:border-accent-cyan/50 transition-colors mb-4"
           >
             <option value="">-- Non assigné (Tâche personnelle) --</option>
-            {state.contacts?.filter(c => c.status === 'ACCEPTED').map(c => (
-              <option key={c.id} value={c.contact_user_id || c.id}>
-                {c.contact_name}
-              </option>
-            ))}
+            {state.contacts?.filter(c => c.status === 'ACCEPTED').map(c => {
+              const displayName = (c.contact_user_id && state.profiles && state.profiles[c.contact_user_id]?.display_name)
+                || (c.contact_user_id && state.profiles && state.profiles[c.contact_user_id]?.email)
+                || c.contact_name
+                || c.contact_email
+                || 'Contact';
+              return (
+                <option key={c.id} value={c.contact_user_id || c.id}>
+                  {displayName}
+                </option>
+              );
+            })}
           </select>
         </div>
 

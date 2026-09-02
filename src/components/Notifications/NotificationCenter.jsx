@@ -15,14 +15,18 @@ export default function NotificationCenter({ isOpen, onClose, onOpenContacts }) 
   // Combinaison des notifications de la DB avec les invitations virtuelles
   const notifications = [
     ...(state.notifications || []),
-    ...pendingContacts.map(c => ({
-      id: `contact-invite-${c.id}`,
-      type: 'CONTACT_INVITE',
-      message: `${c.contact_name} vous invite à partager des objectifs.`,
-      read: false,
-      created_at: c.created_at,
-      contact_id: c.id
-    }))
+    ...pendingContacts.map(c => {
+      const senderProfile = state.profiles ? state.profiles[c.user_id] : null;
+      const senderName = senderProfile?.display_name || senderProfile?.email || c.contact_name || 'Un utilisateur';
+      return {
+        id: `contact-invite-${c.id}`,
+        type: 'CONTACT_INVITE',
+        message: `${senderName} vous invite à partager des objectifs.`,
+        read: false,
+        created_at: c.created_at,
+        contact_id: c.id
+      };
+    })
   ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   const handleMarkAsRead = async (id) => {

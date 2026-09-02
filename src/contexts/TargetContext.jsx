@@ -40,6 +40,7 @@ const initialState = {
   rewardThresholds: { P1: 100, P2: 100, P3: 100 },
   contacts: [],
   notifications: [],
+  profiles: {},
   loading: true,
 };
 
@@ -209,6 +210,15 @@ function targetReducer(state, action) {
         ),
       };
 
+    case 'SET_PROFILES':
+      return { ...state, profiles: action.payload };
+
+    case 'UPDATE_PROFILE':
+      return {
+        ...state,
+        profiles: { ...state.profiles, [action.payload.id]: action.payload },
+      };
+
     default:
       return state;
   }
@@ -354,8 +364,27 @@ export function TargetProvider({ children }) {
           supabase.from('reward_items').select('*').eq('user_id', user.id),
           supabase.from('settings').select('*').eq('user_id', user.id).eq('profile', currentProfile).maybeSingle(),
           supabase.from('contacts').select('*').or(`user_id.eq.${user.id},contact_user_id.eq.${user.id},contact_email.eq.${user.email}`),
-          supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+          supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+          supabase.from('profiles').select('*').then(r => r).catch(err => ({ data: [], error: err }))
         ]);
+
+        const profilesMap = (profilesRes?.data || []).reduce((acc, p) => {
+          acc[p.id] = p;
+          return acc;
+        }, {});
+
+        // Auto-upsert current user profile if available
+        const currentDisplayName = user.user_metadata?.display_name || localStorage.getItem('target-user-display-name') || '';
+        if (user.email) {
+          try {
+            supabase.from('profiles').upsert({
+              id: user.id,
+              email: user.email,
+              display_name: currentDisplayName,
+              updated_at: new Date().toISOString()
+            }).then(() => {});
+          } catch {}
+        }
 
         if (catErr) console.warn('Categories query notice:', catErr.message);
         if (objErr) console.warn('Objectives query notice:', objErr.message);
@@ -412,7 +441,8 @@ export function TargetProvider({ children }) {
           rewardItems: rewardItems || [],
           rewardThresholds: savedThresholds,
           contacts: contacts || [],
-          notifications: notifications || []
+          notifications: notifications || [],
+          profiles: profilesMap
         };
 
         dispatch({
@@ -490,6 +520,9 @@ export function TargetProvider({ children }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
         fetchData();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchData();
+      })
       .subscribe();
 
     return () => {
@@ -501,6 +534,7 @@ export function TargetProvider({ children }) {
   // Wrapper for dispatch to handle async side effects, offline queuing, rollback and user feedback
   const userDispatch = async (action) => {
     if (!user) return;
+    const myName = user.user_metadata?.display_name || localStorage.getItem('target-user-display-name') || user.email;
 
     switch (action.type) {
       case 'TRIGGER_ROLLOVER': {
@@ -602,7 +636,7 @@ export function TargetProvider({ children }) {
               user_id: action.payload.assigned_to,
               type: 'TASK_ASSIGNED',
               reference_id: newObj.id,
-              message: `On vous a assigné un nouvel objectif : ${newObj.title}`
+              message: `${myName} vous a assigné un nouvel objectif : ${newObj.title}`
             });
           }
         } catch (error) {
@@ -650,7 +684,7 @@ export function TargetProvider({ children }) {
               user_id: updated.assigned_to,
               type: 'TASK_ASSIGNED',
               reference_id: updated.id,
-              message: `On vous a assigné un objectif : ${updated.title}`
+              message: `${myName} vous a assigné un objectif : ${updated.title}`
             });
           }
 
@@ -660,7 +694,7 @@ export function TargetProvider({ children }) {
               user_id: previousObj.user_id, // L'assigneur
               type: 'TASK_COMPLETED',
               reference_id: updated.id,
-              message: `L'assignation de '${updated.title}' a été refusée. Motif : ${updated.rejectReason}`
+              message: `${myName} a refusé l'assignation de '${updated.title}'. Motif : ${updated.rejectReason}`
             });
           } else if (updated.assignment_status !== previousObj?.assignment_status) {
             if (updated.assignment_status === 'ACCEPTED') {
@@ -668,7 +702,7 @@ export function TargetProvider({ children }) {
                 user_id: updated.user_id, // L'assigneur
                 type: 'TASK_COMPLETED',
                 reference_id: updated.id,
-                message: `L'assignation de '${updated.title}' a été acceptée.`
+                message: `${myName} a accepté l'assignation de '${updated.title}'.`
               });
             }
           }
@@ -766,7 +800,7 @@ export function TargetProvider({ children }) {
               user_id: objective.user_id, // Prévenir le créateur
               type: 'TASK_COMPLETED',
               reference_id: objectiveId,
-              message: `Votre contact a accompli la tâche : ${objective.title}`
+              message: `${myName} a accompli la tâche : ${objective.title}`
             });
           }
         } catch (error) {
@@ -823,7 +857,7 @@ export function TargetProvider({ children }) {
                 user_id: objective.user_id,
                 type: 'TASK_COMPLETED',
                 reference_id: objectiveId,
-                message: `Votre contact a accompli la tâche (sous-tâches terminées) : ${objective.title}`
+                message: `${myName} a accompli la tâche (sous-tâches terminées) : ${objective.title}`
               });
             }
           }
