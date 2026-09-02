@@ -648,13 +648,20 @@ export function TargetProvider({ children }) {
           });
           if (error) throw error;
 
-          if (action.payload.assigned_to) {
-            await supabase.from('notifications').insert({
-              user_id: action.payload.assigned_to,
-              type: 'TASK_ASSIGNED',
-              reference_id: newObj.id,
-              message: `${myName} vous a assigné un nouvel objectif : ${newObj.title}`
-            });
+          if (action.payload.assigned_to && action.payload.assigned_to !== user.id) {
+            try {
+              const { error: notifErr } = await supabase.from('notifications').insert({
+                user_id: action.payload.assigned_to,
+                type: 'TASK_ASSIGNED',
+                reference_id: newObj.id,
+                message: `${myName} vous a assigné un nouvel objectif : ${newObj.title}`
+              });
+              if (notifErr) {
+                console.error('Erreur Supabase notification TASK_ASSIGNED:', notifErr);
+              }
+            } catch (notifErr) {
+              console.error('Exception notification TASK_ASSIGNED:', notifErr);
+            }
           }
         } catch (error) {
           if (isOfflineError(error)) {
@@ -696,13 +703,20 @@ export function TargetProvider({ children }) {
           }).eq('id', updated.id);
           if (error) throw error;
           
-          if (updated.assigned_to && previousObj?.assigned_to !== updated.assigned_to) {
-            await supabase.from('notifications').insert({
-              user_id: updated.assigned_to,
-              type: 'TASK_ASSIGNED',
-              reference_id: updated.id,
-              message: `${myName} vous a assigné un objectif : ${updated.title}`
-            });
+          if (updated.assigned_to && previousObj?.assigned_to !== updated.assigned_to && updated.assigned_to !== user.id) {
+            try {
+              const { error: notifErr } = await supabase.from('notifications').insert({
+                user_id: updated.assigned_to,
+                type: 'TASK_ASSIGNED',
+                reference_id: updated.id,
+                message: `${myName} vous a assigné un objectif : ${updated.title}`
+              });
+              if (notifErr) {
+                console.error('Erreur Supabase notification TASK_ASSIGNED on update:', notifErr);
+              }
+            } catch (notifErr) {
+              console.error('Exception notification TASK_ASSIGNED on update:', notifErr);
+            }
           }
 
           if (updated.assignment_status === 'REJECTED' && (previousObj?.assignment_status !== 'REJECTED' || updated.rejectReason)) {

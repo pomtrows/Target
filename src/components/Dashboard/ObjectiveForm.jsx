@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Plus, Trash2, Dumbbell, FileText, Paperclip } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useSport } from '../../contexts/SportContext';
 import { useNotes } from '../../contexts/NotesContext';
 import Modal from '../Shared/Modal';
@@ -48,8 +49,23 @@ const TIME_SLOTS = (() => {
 
 export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObjective = null }) {
   const { state, dispatch } = useTarget();
+  const { user } = useAuth();
   const { sessions } = useSport();
   const { state: notesState, createFolder, createNote } = useNotes();
+
+  const delegatableContacts = useMemo(() => {
+    if (!state.contacts) return [];
+    const seen = new Set();
+    return state.contacts.filter(c => {
+      if (c.status !== 'ACCEPTED') return false;
+      if (!c.contact_user_id) return false;
+      if (c.contact_user_id === user?.id) return false;
+      if (c.contact_email && user?.email && c.contact_email.toLowerCase() === user.email.toLowerCase()) return false;
+      if (seen.has(c.contact_user_id)) return false;
+      seen.add(c.contact_user_id);
+      return true;
+    });
+  }, [state.contacts, user]);
 
   const initialSchedule = getInitialSchedule(editObjective);
   const initialWeeks = getInitialWeeks(editObjective, weekId);
@@ -579,14 +595,14 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
             className="w-full bg-dark-700/50 border border-dark-600/50 rounded-xl py-2.5 px-3 text-sm text-dark-100 focus:outline-none focus:border-accent-cyan/50 transition-colors mb-4"
           >
             <option value="">-- Non assigné (Tâche personnelle) --</option>
-            {state.contacts?.filter(c => c.status === 'ACCEPTED' && c.contact_user_id).map(c => {
+            {delegatableContacts.map(c => {
               const displayName = (state.profiles && state.profiles[c.contact_user_id]?.display_name)
                 || (state.profiles && state.profiles[c.contact_user_id]?.email)
                 || c.contact_name
                 || c.contact_email
                 || 'Contact';
               return (
-                <option key={c.id} value={c.contact_user_id}>
+                <option key={c.contact_user_id} value={c.contact_user_id}>
                   {displayName}
                 </option>
               );

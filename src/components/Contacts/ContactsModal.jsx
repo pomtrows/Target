@@ -52,6 +52,11 @@ export default function ContactsModal({ isOpen, onClose }) {
       name = email.split('@')[0];
     }
 
+    if (email && user.email && email.toLowerCase() === user.email.toLowerCase()) {
+      showToast('Vous ne pouvez pas vous ajouter vous-même en contact.', 'error');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       // Chercher si ce compte Target existe déjà dans profiles
