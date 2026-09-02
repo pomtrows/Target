@@ -39,21 +39,51 @@ export default function ContactsModal({ isOpen, onClose }) {
 
   const handleAddContact = async (e) => {
     e.preventDefault();
-    if (!newContactName.trim()) return;
-    
+    let name = newContactName.trim();
+    let email = newContactEmail.trim();
+
+    if (!name && !email) return;
+
+    // Si l'utilisateur a saisi une adresse email dans le champ Nom
+    if (!email && name.includes('@')) {
+      email = name;
+      name = email.split('@')[0];
+    } else if (!name && email) {
+      name = email.split('@')[0];
+    }
+
     setIsSubmitting(true);
     try {
+      // Chercher si ce compte Target existe déjà dans profiles
+      let targetUserId = null;
+      if (email && state.profiles) {
+        const found = Object.values(state.profiles).find(
+          p => p.email && p.email.toLowerCase() === email.toLowerCase()
+        );
+        if (found) {
+          targetUserId = found.id;
+          if (!name || name === email.split('@')[0]) {
+            name = found.display_name || name;
+          }
+        }
+      }
+
+      // Si une adresse email est spécifiée, l'invitation DOIT rester en attente (PENDING)
+      // jusqu'à ce que le destinataire accepte !
+      const status = email ? 'PENDING' : 'ACCEPTED';
+
       const { data, error } = await supabase.from('contacts').insert({
         user_id: user.id,
-        contact_name: newContactName,
-        contact_email: newContactEmail || null,
-        status: newContactEmail ? 'PENDING' : 'ACCEPTED'
+        contact_name: name,
+        contact_email: email || null,
+        contact_user_id: targetUserId,
+        status: status
       }).select().single();
       
       if (error) throw error;
       
       dispatch({ type: 'ADD_CONTACT', payload: data });
-      showToast('Contact ajouté avec succès !', 'success');
+      showToast(email ? 'Invitation envoyée ! En attente d\'acceptation.' : 'Contact ajouté avec succès !', 'success');
       setNewContactName('');
       setNewContactEmail('');
     } catch (err) {
@@ -187,15 +217,14 @@ export default function ContactsModal({ isOpen, onClose }) {
               <div className="flex flex-col gap-3">
                 <input
                   type="text"
-                  placeholder="Nom du contact"
+                  placeholder="Nom du contact (ex: Alice)"
                   value={newContactName}
                   onChange={(e) => setNewContactName(e.target.value)}
                   className="w-full bg-dark-800 border border-dark-600/60 rounded-xl px-4 py-3 text-sm text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-all"
-                  required
                 />
                 <input
                   type="email"
-                  placeholder="Email (optionnel, pour l'inviter)"
+                  placeholder="Email (pour l'inviter sur Target)"
                   value={newContactEmail}
                   onChange={(e) => setNewContactEmail(e.target.value)}
                   className="w-full bg-dark-800 border border-dark-600/60 rounded-xl px-4 py-3 text-sm text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-all"
@@ -203,7 +232,7 @@ export default function ContactsModal({ isOpen, onClose }) {
                 <div className="flex gap-2.5 mt-1">
                   <button
                     type="submit"
-                    disabled={isSubmitting || !newContactName.trim()}
+                    disabled={isSubmitting || (!newContactName.trim() && !newContactEmail.trim())}
                     className="flex-1 bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 font-bold py-3 px-5 rounded-xl text-sm transition-all disabled:opacity-50 cursor-pointer shadow-sm active:scale-[0.99] flex items-center justify-center"
                   >
                     {isSubmitting ? 'Ajout...' : 'Ajouter'}

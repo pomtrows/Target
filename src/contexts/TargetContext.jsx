@@ -387,6 +387,22 @@ export function TargetProvider({ children }) {
           } catch {}
         }
 
+        // Auto-link contacts that have an email matching a profile if contact_user_id is missing
+        (contacts || []).forEach(c => {
+          if (!c.contact_user_id && (c.contact_email || c.contact_name?.includes('@'))) {
+            const targetEmail = (c.contact_email || c.contact_name).toLowerCase().trim();
+            const matchedProfile = Object.values(profilesMap).find(p => p.email && p.email.toLowerCase() === targetEmail);
+            if (matchedProfile) {
+              c.contact_user_id = matchedProfile.id;
+              if (!c.contact_email) c.contact_email = matchedProfile.email;
+              supabase.from('contacts').update({ 
+                contact_user_id: matchedProfile.id,
+                contact_email: matchedProfile.email 
+              }).eq('id', c.id).then(() => {});
+            }
+          }
+        });
+
         if (catErr) console.warn('Categories query notice:', catErr.message);
         if (objErr) console.warn('Objectives query notice:', objErr.message);
 
