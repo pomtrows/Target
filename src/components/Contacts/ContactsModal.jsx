@@ -161,32 +161,36 @@ export default function ContactsModal({ isOpen, onClose }) {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-md bg-dark-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-dark-700"
+          className="relative w-full max-w-md glass-strong rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-dark-600/40"
         >
-          <div className="flex items-center justify-between p-4 border-b border-dark-700 bg-dark-800/50">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600/30 flex-shrink-0">
             <h2 className="text-lg font-bold text-dark-100 flex items-center gap-2">
               <UserPlus className="text-accent-cyan" size={20} />
               Mes Contacts
             </h2>
             <button
               onClick={onClose}
-              className="p-2 text-dark-400 hover:text-dark-100 hover:bg-dark-700 rounded-xl transition-all"
+              className="p-1.5 text-dark-400 hover:text-dark-100 hover:bg-dark-700/50 rounded-xl transition-all cursor-pointer"
             >
               <X size={20} />
             </button>
           </div>
 
-          <div className="p-4 overflow-y-auto custom-scrollbar">
+          {/* Body */}
+          <div className="p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
             {/* Formulaire d'ajout */}
-            <form onSubmit={handleAddContact} className="bg-dark-700/50 p-4 rounded-xl border border-dark-600 mb-6">
-              <h3 className="text-sm font-semibold text-dark-200 mb-3">Ajouter un contact</h3>
-              <div className="space-y-3">
+            <form onSubmit={handleAddContact} className="bg-dark-700/40 p-5 rounded-2xl border border-dark-600/40 flex flex-col gap-3.5">
+              <h3 className="text-sm font-bold text-dark-100 flex items-center gap-2">
+                Ajouter un contact
+              </h3>
+              <div className="flex flex-col gap-3">
                 <input
                   type="text"
                   placeholder="Nom du contact"
                   value={newContactName}
                   onChange={(e) => setNewContactName(e.target.value)}
-                  className="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-2.5 text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-colors"
+                  className="w-full bg-dark-800 border border-dark-600/60 rounded-xl px-4 py-3 text-sm text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-all"
                   required
                 />
                 <input
@@ -194,13 +198,13 @@ export default function ContactsModal({ isOpen, onClose }) {
                   placeholder="Email (optionnel, pour l'inviter)"
                   value={newContactEmail}
                   onChange={(e) => setNewContactEmail(e.target.value)}
-                  className="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-2.5 text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-colors"
+                  className="w-full bg-dark-800 border border-dark-600/60 rounded-xl px-4 py-3 text-sm text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-all"
                 />
-                <div className="flex gap-2">
+                <div className="flex gap-2.5 mt-1">
                   <button
                     type="submit"
                     disabled={isSubmitting || !newContactName.trim()}
-                    className="flex-1 bg-accent-cyan text-dark-900 font-bold py-2.5 rounded-lg hover:bg-accent-cyan/90 transition-all disabled:opacity-50"
+                    className="flex-1 bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 font-bold py-3 px-5 rounded-xl text-sm transition-all disabled:opacity-50 cursor-pointer shadow-sm active:scale-[0.99] flex items-center justify-center"
                   >
                     {isSubmitting ? 'Ajout...' : 'Ajouter'}
                   </button>
@@ -209,7 +213,7 @@ export default function ContactsModal({ isOpen, onClose }) {
                       href={`mailto:${newContactEmail}?subject=Rejoignez-moi sur Target&body=Bonjour, %0A%0AJe vous invite à me rejoindre sur l'application Target. %0ACréez un compte avec cette adresse email pour que nous puissions partager des objectifs !`}
                       target="_blank"
                       rel="noreferrer"
-                      className="bg-dark-600 text-dark-100 p-2.5 rounded-lg hover:bg-dark-500 transition-all flex items-center justify-center"
+                      className="bg-dark-600 hover:bg-dark-500 text-dark-100 p-3 rounded-xl transition-all flex items-center justify-center cursor-pointer shadow-sm"
                       title="Envoyer un e-mail avec mon client de messagerie"
                     >
                       <Mail size={20} />
@@ -221,22 +225,22 @@ export default function ContactsModal({ isOpen, onClose }) {
 
             {/* Demandes en attente */}
             {pendingRequests.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-accent-violet mb-3 flex items-center gap-2">
+              <div className="flex flex-col gap-3">
+                <h3 className="text-sm font-bold text-accent-violet flex items-center gap-2">
                   <Mail size={16} /> Invitations reçues ({pendingRequests.length})
                 </h3>
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2.5">
                   {pendingRequests.map(req => (
-                    <div key={req.id} className="flex items-center justify-between bg-dark-700 p-3 rounded-xl border border-accent-violet/30">
+                    <div key={req.id} className="flex items-center justify-between bg-dark-700/60 p-4 rounded-xl border border-accent-violet/30 gap-3">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-dark-100">{getSenderDisplayName(req)}</span>
+                        <span className="font-semibold text-dark-100 text-sm">{getSenderDisplayName(req)}</span>
                         <span className="text-xs text-dark-400">souhaite vous ajouter à ses contacts</span>
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={() => handleAcceptRequest(req)} title="Accepter" className="p-2 bg-accent-green/20 text-accent-green rounded-lg hover:bg-accent-green/30 transition-colors">
+                        <button onClick={() => handleAcceptRequest(req)} title="Accepter" className="p-2.5 bg-accent-green/20 text-accent-green rounded-xl hover:bg-accent-green/30 transition-colors cursor-pointer">
                           <Check size={16} />
                         </button>
-                        <button onClick={() => handleRejectRequest(req)} title="Refuser" className="p-2 bg-accent-red/20 text-accent-red rounded-lg hover:bg-accent-red/30 transition-colors">
+                        <button onClick={() => handleRejectRequest(req)} title="Refuser" className="p-2.5 bg-accent-red/20 text-accent-red rounded-xl hover:bg-accent-red/30 transition-colors cursor-pointer">
                           <X size={16} />
                         </button>
                       </div>
@@ -247,17 +251,19 @@ export default function ContactsModal({ isOpen, onClose }) {
             )}
 
             {/* Liste de mes contacts */}
-            <div>
-              <h3 className="text-sm font-semibold text-dark-200 mb-3">Mes contacts ({myContacts.length})</h3>
+            <div className="flex flex-col gap-3">
+              <h3 className="text-sm font-bold text-dark-200">Mes contacts ({myContacts.length})</h3>
               {myContacts.length === 0 ? (
-                <p className="text-dark-400 text-sm italic text-center py-4">Aucun contact pour le moment.</p>
+                <div className="text-dark-400 text-sm italic text-center py-6 bg-dark-700/20 rounded-xl border border-dashed border-dark-600/30">
+                  Aucun contact pour le moment.
+                </div>
               ) : (
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2.5">
                   {myContacts.map(contact => (
-                    <div key={contact.id} className="flex items-center justify-between bg-dark-900/50 p-3 rounded-xl border border-dark-700">
+                    <div key={contact.id} className="flex items-center justify-between bg-dark-700/40 p-4 rounded-xl border border-dark-600/30 gap-3">
                       <div>
-                        <div className="font-medium text-dark-100">{getContactDisplayName(contact)}</div>
-                        <div className="flex items-center gap-1.5 text-xs text-dark-400">
+                        <div className="font-semibold text-dark-100 text-sm">{getContactDisplayName(contact)}</div>
+                        <div className="flex items-center gap-1.5 text-xs text-dark-400 mt-0.5">
                           {contact.contact_email && <span>{contact.contact_email} • </span>}
                           {contact.status === 'PENDING' && <span className="text-accent-orange font-medium">En attente...</span>}
                           {contact.status === 'ACCEPTED' && <span className="text-accent-green font-medium">Connecté</span>}
