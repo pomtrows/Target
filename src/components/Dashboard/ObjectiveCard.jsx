@@ -214,8 +214,7 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
                           type: 'UPDATE_OBJECTIVE', 
                           payload: { 
                             ...objective, 
-                            assigned_to: null, 
-                            assignment_status: null, 
+                            assignment_status: 'REJECTED', 
                             rejectReason: rejectComment || 'Sans commentaire' 
                           } 
                         });

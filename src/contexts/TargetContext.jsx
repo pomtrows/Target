@@ -705,22 +705,34 @@ export function TargetProvider({ children }) {
             });
           }
 
-          if (updated.rejectReason && previousObj?.assigned_to) {
-            // C'est un refus
-            await supabase.from('notifications').insert({
-              user_id: previousObj.user_id, // L'assigneur
-              type: 'TASK_COMPLETED',
-              reference_id: updated.id,
-              message: `${myName} a refusé l'assignation de '${updated.title}'. Motif : ${updated.rejectReason}`
-            });
-          } else if (updated.assignment_status !== previousObj?.assignment_status) {
-            if (updated.assignment_status === 'ACCEPTED') {
-              await supabase.from('notifications').insert({
-                user_id: updated.user_id, // L'assigneur
-                type: 'TASK_COMPLETED',
-                reference_id: updated.id,
-                message: `${myName} a accepté l'assignation de '${updated.title}'.`
-              });
+          if (updated.assignment_status === 'REJECTED' && (previousObj?.assignment_status !== 'REJECTED' || updated.rejectReason)) {
+            const assignerId = updated.user_id || previousObj?.user_id;
+            if (assignerId && assignerId !== user.id) {
+              const reasonText = updated.rejectReason ? ` Motif : ${updated.rejectReason}` : '';
+              try {
+                await supabase.from('notifications').insert({
+                  user_id: assignerId,
+                  type: 'TASK_REJECTED',
+                  reference_id: updated.id,
+                  message: `${myName} a refusé votre objectif : ${updated.title}.${reasonText}`
+                });
+              } catch (nErr) {
+                console.warn('Error inserting rejection notification:', nErr);
+              }
+            }
+          } else if (updated.assignment_status === 'ACCEPTED' && previousObj?.assignment_status !== 'ACCEPTED') {
+            const assignerId = updated.user_id || previousObj?.user_id;
+            if (assignerId && assignerId !== user.id) {
+              try {
+                await supabase.from('notifications').insert({
+                  user_id: assignerId,
+                  type: 'TASK_ACCEPTED',
+                  reference_id: updated.id,
+                  message: `${myName} a accepté votre objectif : ${updated.title}`
+                });
+              } catch (nErr) {
+                console.warn('Error inserting acceptance notification:', nErr);
+              }
             }
           }
         } catch (error) {
@@ -813,12 +825,16 @@ export function TargetProvider({ children }) {
           const objective = state.objectives.find((o) => o.id === objectiveId);
           const max = objective?.target || 1;
           if (current >= max && previousValue < max && objective && objective.assigned_to === user.id && objective.user_id !== user.id) {
-            await supabase.from('notifications').insert({
-              user_id: objective.user_id, // Prévenir le créateur
-              type: 'TASK_COMPLETED',
-              reference_id: objectiveId,
-              message: `${myName} a accompli la tâche : ${objective.title}`
-            });
+            try {
+              await supabase.from('notifications').insert({
+                user_id: objective.user_id, // Prévenir le créateur
+                type: 'TASK_COMPLETED',
+                reference_id: objectiveId,
+                message: `${myName} a accompli votre objectif : ${objective.title}`
+              });
+            } catch (nErr) {
+              console.warn('Error inserting task completed notification:', nErr);
+            }
           }
         } catch (error) {
           if (isOfflineError(error)) {
@@ -870,12 +886,16 @@ export function TargetProvider({ children }) {
             const nextProgress = getObjectiveProgress(objective, { [objectiveId]: nextValue });
             
             if (nextProgress >= 1 && prevProgress < 1 && objective.assigned_to === user.id && objective.user_id !== user.id) {
-              await supabase.from('notifications').insert({
-                user_id: objective.user_id,
-                type: 'TASK_COMPLETED',
-                reference_id: objectiveId,
-                message: `${myName} a accompli la tâche (sous-tâches terminées) : ${objective.title}`
-              });
+              try {
+                await supabase.from('notifications').insert({
+                  user_id: objective.user_id,
+                  type: 'TASK_COMPLETED',
+                  reference_id: objectiveId,
+                  message: `${myName} a accompli votre objectif : ${objective.title}`
+                });
+              } catch (nErr) {
+                console.warn('Error inserting sub-task completed notification:', nErr);
+              }
             }
           }
         } catch (error) {
