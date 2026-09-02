@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Pencil, AlertTriangle, List, Clock, Check, FileText, Columns3, Filter } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Pencil, AlertTriangle, List, Clock, Check, FileText, Columns3, Filter, Search, X } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useNotes } from '../../contexts/NotesContext';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -17,6 +17,14 @@ import AgendaView from './AgendaView';
 import MonthView from './MonthView';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
+const normalizeText = (text) => {
+  return (text || '')
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+};
 
 const getObjectiveSchedule = (objective) => {
   const assignments = objective?.assignments || [];
@@ -345,8 +353,12 @@ export default function WeekView() {
   const [filterFutureWeeks, setFilterFutureWeeks] = useState(false);
   const [showPriorityBreakdown, setShowPriorityBreakdown] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const categoryDropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
+  const searchContainerRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 640);
@@ -359,10 +371,21 @@ export default function WeekView() {
       if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
         setIsCategoryDropdownOpen(false);
       }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+        if (!searchQuery.trim()) {
+          setIsSearchOpen(false);
+        }
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (isSearchOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [isSearchOpen]);
 
   const objectives = useMemo(
     () => getObjectivesForWeek(state.objectives, currentWeek, getWeeksInMonth, filterFutureWeeks),
@@ -418,9 +441,26 @@ export default function WeekView() {
       if (filterCategory) {
         if (obj.categoryId !== filterCategory) return false;
       }
+      if (searchQuery.trim()) {
+        const query = normalizeText(searchQuery.trim());
+        const tokens = query.split(/\s+/).filter(Boolean);
+        const objTitle = normalizeText(obj.title);
+        const subTitles = (obj.subObjectives || []).map((sub) => {
+          const text = typeof sub === 'string' ? sub : sub?.title;
+          return normalizeText(text);
+        });
+
+        const matchesDirect = objTitle.includes(query) || subTitles.some((st) => st.includes(query));
+        const matchesTokens =
+          tokens.length > 1 &&
+          (tokens.every((t) => objTitle.includes(t)) ||
+            subTitles.some((st) => tokens.every((t) => st.includes(t))));
+
+        if (!matchesDirect && !matchesTokens) return false;
+      }
       return true;
     });
-  }, [objectives, filterIncomplete, filterToday, filterPriority, priorityFilterIds, filterCategory, weekProgress, todayDayId]);
+  }, [objectives, filterIncomplete, filterToday, filterPriority, priorityFilterIds, filterCategory, searchQuery, weekProgress, todayDayId]);
 
   const { prev, next } = getAdjacentWeeks(currentWeek);
 
@@ -860,6 +900,70 @@ export default function WeekView() {
               <Calendar size={14} />
               <span>Futur</span>
             </button>
+
+            {/* Search Filter */}
+            <div className="relative" ref={searchContainerRef}>
+              {isSearchOpen || searchQuery ? (
+                <div 
+                  className="flex items-center gap-2 rounded-full text-xs font-semibold transition-all bg-dark-800/95 border border-accent-cyan/60 text-accent-cyan shadow-sm"
+                  style={{ padding: '3px 8px 3px 12px', minHeight: '28px' }}
+                >
+                  <Search size={14} className="text-accent-cyan flex-shrink-0" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        if (searchQuery) {
+                          setSearchQuery('');
+                        } else {
+                          setIsSearchOpen(false);
+                        }
+                      }
+                    }}
+                    placeholder="Rechercher..."
+                    className="bg-transparent text-dark-100 placeholder-dark-400 focus:outline-none text-xs w-28 sm:w-36"
+                    autoFocus
+                  />
+                  {searchQuery ? (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        searchInputRef.current?.focus();
+                      }}
+                      className="p-1 hover:text-white text-dark-400 transition-colors border-none bg-transparent cursor-pointer rounded-full flex items-center justify-center"
+                      title="Effacer"
+                    >
+                      <X size={13} />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setIsSearchOpen(false)}
+                      className="p-1 hover:text-white text-dark-400 transition-colors border-none bg-transparent cursor-pointer rounded-full flex items-center justify-center"
+                      title="Fermer"
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsSearchOpen(true)}
+                  className={`flex items-center gap-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                    searchQuery
+                      ? 'bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/50 shadow-sm font-bold'
+                      : 'bg-dark-800/40 text-dark-400 border border-dark-600/25 hover:border-dark-500/40 hover:text-dark-200'
+                  }`}
+                  style={{ padding: '5px 12px' }}
+                  title="Rechercher un objectif ou sous-objectif"
+                >
+                  <Search size={14} />
+                  <span>Recherche</span>
+                </button>
+              )}
+            </div>
           </div>
         )}
 
@@ -981,6 +1085,32 @@ export default function WeekView() {
               <p className="text-sm text-dark-500 mb-6">
                 Ajoutez des objectifs pour commencer à tracker votre semaine
               </p>
+            </motion.div>
+          )}
+
+          {objectives.length > 0 && filteredObjectives.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-12"
+            >
+              <div className="w-12 h-12 rounded-full bg-dark-700/50 flex items-center justify-center mx-auto mb-3 text-dark-400">
+                <Search size={22} />
+              </div>
+              <h3 className="text-base font-semibold text-dark-200 mb-1">Aucun résultat trouvé</h3>
+              <p className="text-xs text-dark-400 mb-4">
+                {searchQuery.trim()
+                  ? `Aucun objectif ou sous-objectif ne correspond à "${searchQuery}"`
+                  : 'Aucun objectif ne correspond aux filtres sélectionnés'}
+              </p>
+              {searchQuery.trim() && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-dark-700 hover:bg-dark-600 text-dark-200 transition-colors border-none cursor-pointer"
+                >
+                  Effacer la recherche
+                </button>
+              )}
             </motion.div>
           )}
         </div>
