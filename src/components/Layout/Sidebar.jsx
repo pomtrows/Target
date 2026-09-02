@@ -37,7 +37,7 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
-  const { logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const { currentProfile, setCurrentProfile } = useProfile();
   const { isOnline, isSyncing, pendingSyncCount, syncNow } = useTarget();
   const { isSyncingNotes, pendingNotesCount, syncNotesNow } = useNotes();

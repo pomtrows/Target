@@ -356,7 +356,8 @@ export function TargetProvider({ children }) {
           { data: rewardItems, error: rewItemErr },
           { data: settingsData, error: setErr },
           { data: contacts, error: contactsErr },
-          { data: notifications, error: notifErr }
+          { data: notifications, error: notifErr },
+          profilesRes
         ] = await Promise.all([
           supabase.from('categories').select('*').eq('user_id', user.id).eq('profile', currentProfile),
           supabase.from('progress').select('*').or(progressQuery),
