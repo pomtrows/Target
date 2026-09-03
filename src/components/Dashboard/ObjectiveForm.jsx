@@ -567,7 +567,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
         {/* Assignment (Week/Backlog) */}
         <div>
           <label className="block text-sm font-medium text-dark-200 mb-3">
-            Placer dans
+            Planifier
           </label>
           <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3 mb-4">
             <button
@@ -595,7 +595,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
               }`}
               style={{ padding: '6px 12px' }}
             >
-              📅 Planifier
+              📅 Jour/heure
             </button>
             <button
               type="button"
