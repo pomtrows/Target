@@ -90,13 +90,15 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
   const color = isCompleted ? '#22c55e' : getProgressColor(progress);
 
   const isDeletedByAssignee = useMemo(() => {
+    if (objective.assignment_status !== 'REJECTED' && objective.assignment_status !== 'DELETED') {
+      return false;
+    }
     if (objective.assignment_status === 'DELETED') return true;
     if (objective.assignments?.includes('status:deleted')) return true;
     const notifs = state.notifications || [];
     return notifs.some(n => 
-      n.message && 
-      n.message.includes(objective.title) && 
-      n.message.toLowerCase().includes('supprimé')
+      n.reference_id === objective.id && 
+      n.message?.toLowerCase().includes('supprimé')
     );
   }, [objective, state.notifications]);
 
@@ -205,8 +207,9 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
             {objective.user_id === user.id ? (
               <span className="bg-dark-600/50 text-dark-300 px-2 py-1 rounded-md">
                 Délégué à {getUserDisplayName(objective.assigned_to)}
-                {objective.assignment_status === 'PENDING' && ' (En attente)'}
-                {isDeletedByAssignee ? (
+                {objective.assignment_status === 'PENDING' ? (
+                  ' (En attente)'
+                ) : isDeletedByAssignee ? (
                   <span className="text-accent-red font-medium"> (Supprimé)</span>
                 ) : objective.assignment_status === 'REJECTED' ? (
                   <span className="text-amber-400 font-medium"> (Décliné)</span>
