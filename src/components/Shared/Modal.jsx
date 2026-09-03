@@ -12,7 +12,8 @@ export default function Modal({
   closeOnOutsideClick = true,
   headerPadding,
   bodyPadding,
-  bodyClassName = ''
+  bodyClassName = '',
+  centerTitle = false
 }) {
   useEffect(() => {
     if (isOpen) {
@@ -54,13 +55,13 @@ export default function Modal({
           >
             {/* Header */}
             <div 
-              className="flex items-center justify-between border-b border-dark-600/50 flex-shrink-0"
+              className={`flex items-center ${centerTitle ? 'justify-center relative' : 'justify-between'} border-b border-dark-600/50 flex-shrink-0`}
               style={{ padding: headerPadding || '14px 16px' }}
             >
-              <h2 className="text-xl sm:text-2xl font-bold text-dark-100">{title}</h2>
+              <h2 className={`text-xl sm:text-2xl font-bold text-dark-100 ${centerTitle ? 'text-center px-8' : ''}`}>{title}</h2>
               <button
                 onClick={onClose}
-                className="p-1.5 sm:p-2 rounded-xl text-dark-400 hover:text-dark-100 hover:bg-dark-600/50 transition-colors"
+                className={`${centerTitle ? 'absolute right-3.5 sm:right-4 top-1/2 -translate-y-1/2' : ''} p-1.5 sm:p-2 rounded-xl text-dark-400 hover:text-dark-100 hover:bg-dark-600/50 transition-colors`}
               >
                 <X size={24} className="sm:w-7 sm:h-7" />
               </button>

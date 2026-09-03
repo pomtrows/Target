@@ -379,8 +379,9 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
         onClose={onClose}
         title={editObjective ? 'Modifier l\'objectif' : 'Nouvel objectif'}
         closeOnOutsideClick={false}
-        headerPadding="10px 16px 8px 16px"
-        bodyPadding="8px 16px 14px 16px"
+        centerTitle={true}
+        headerPadding="12px 16px 10px 16px"
+        bodyPadding="6px 16px 14px 16px"
       >
       <form 
         onSubmit={handleSubmit} 
@@ -388,9 +389,6 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
       >
         {/* Title */}
         <div>
-          <label className="block text-sm font-medium text-dark-200 mb-2">
-            Titre de l'objectif
-          </label>
           <input
             type="text"
             value={title}
@@ -399,6 +397,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
               setTitle(val.charAt(0).toUpperCase() + val.slice(1));
             }}
             placeholder="Ex: Courir, Lire, Méditer..."
+            aria-label="Titre de l'objectif"
             autoFocus
             className="w-full bg-dark-700/50 border border-dark-600/50 rounded-xl py-2.5 text-sm text-dark-100 placeholder-dark-500 focus:outline-none focus:border-accent-cyan/50 transition-colors"
             style={{ paddingLeft: '16px', paddingRight: '16px' }}
