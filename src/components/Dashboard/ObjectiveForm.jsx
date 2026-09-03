@@ -695,11 +695,11 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
         </div>
 
         {/* Note, Attachments & Delegation */}
-        <div className="flex flex-wrap gap-2.5 sm:gap-3 pt-2">
+        <div className="flex flex-wrap gap-2.5 sm:gap-3 pt-3 mt-1.5">
           <button
             type="button"
             onClick={handleOpenNotes}
-            className={`flex-1 min-w-[90px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
+            className={`flex-1 min-w-[90px] flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
               (formNoteId || (() => {
                 const notesFolder = notesState.folders.find(f => f.name === 'Objectifs');
                 const objectiveNote = notesFolder ? notesState.notes.find(n => n.folder_id === notesFolder.id && n.title === tempId) : null;
@@ -716,7 +716,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           <button
             type="button"
             onClick={() => setShowAttachmentsModal(true)}
-            className={`flex-1 min-w-[110px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
+            className={`flex-1 min-w-[110px] flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
               formAttachments.length > 0 
                 ? 'bg-accent-violet/15 text-accent-violet border border-accent-violet/30' 
                 : 'bg-dark-800/40 text-dark-300 border border-dark-600/30 hover:bg-dark-700/50 hover:text-dark-200'
@@ -729,7 +729,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           <button
             type="button"
             onClick={() => setShowDelegateModal(true)}
-            className={`flex-1 min-w-[100px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
+            className={`flex-1 min-w-[100px] flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
               assignedTo
                 ? 'bg-accent-green/15 text-accent-green border border-accent-green/30' 
                 : 'bg-dark-800/40 text-dark-300 border border-dark-600/30 hover:bg-dark-700/50 hover:text-dark-200'
