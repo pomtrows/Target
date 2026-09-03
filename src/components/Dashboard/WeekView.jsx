@@ -557,6 +557,11 @@ export default function WeekView() {
     });
 
     return Object.values(groups).sort((a, b) => {
+      const isAutreA = a.category.id === 'autre' || a.category.label?.trim().toLowerCase() === 'autre';
+      const isAutreB = b.category.id === 'autre' || b.category.label?.trim().toLowerCase() === 'autre';
+      if (isAutreA && !isAutreB) return -1;
+      if (!isAutreA && isAutreB) return 1;
+
       const orderA = categoryOrderMap[a.category.id] !== undefined ? categoryOrderMap[a.category.id] : 999;
       const orderB = categoryOrderMap[b.category.id] !== undefined ? categoryOrderMap[b.category.id] : 999;
       return orderA - orderB;
@@ -573,6 +578,16 @@ export default function WeekView() {
     { id: 7, label: 'Dimanche' },
     { id: 'unscheduled', label: 'Non planifiés' }
   ], []);
+
+  const sortedCategories = useMemo(() => {
+    return [...(state.categories || [])].sort((a, b) => {
+      const isAutreA = a.id === 'autre' || a.label?.trim().toLowerCase() === 'autre';
+      const isAutreB = b.id === 'autre' || b.label?.trim().toLowerCase() === 'autre';
+      if (isAutreA && !isAutreB) return -1;
+      if (!isAutreA && isAutreB) return 1;
+      return 0;
+    });
+  }, [state.categories]);
 
   const isWideLayout = viewMode !== 'list';
 
@@ -914,7 +929,7 @@ export default function WeekView() {
                   >
                     Toutes les catégories
                   </button>
-                  {state.categories.map(cat => (
+                  {sortedCategories.map(cat => (
                     <button
                       key={cat.id}
                       onClick={() => {

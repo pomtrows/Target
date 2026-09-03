@@ -67,6 +67,16 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
     });
   }, [state.contacts, user]);
 
+  const sortedCategories = useMemo(() => {
+    return [...(state.categories || [])].sort((a, b) => {
+      const isAutreA = a.id === 'autre' || a.label?.trim().toLowerCase() === 'autre';
+      const isAutreB = b.id === 'autre' || b.label?.trim().toLowerCase() === 'autre';
+      if (isAutreA && !isAutreB) return -1;
+      if (!isAutreA && isAutreB) return 1;
+      return 0;
+    });
+  }, [state.categories]);
+
   const initialSchedule = getInitialSchedule(editObjective);
   const initialWeeks = getInitialWeeks(editObjective, weekId);
 
@@ -482,7 +492,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
             Catégorie
           </label>
           <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-            {state.categories.map((cat) => (
+            {sortedCategories.map((cat) => (
               <button
                 key={cat.id}
                 type="button"

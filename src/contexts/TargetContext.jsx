@@ -18,6 +18,7 @@ const TargetContext = createContext(null);
 
 // ===== Default Categories =====
 const defaultCategories = [
+  { id: 'autre', label: 'Autre', icon: '📌', color: '#94a3b8' },
   { id: 'alimentation', label: 'Alimentation', icon: '🥗', color: '#22c55e' },
   { id: 'sport', label: 'Sport', icon: '🏃', color: '#0891b2' },
   { id: 'kids', label: 'Kids', icon: '🧘', color: '#0ea5e9' },
@@ -26,7 +27,6 @@ const defaultCategories = [
   { id: 'maison', label: 'Maison', icon: '🏠', color: '#991b1b' },
   { id: 'shopping', label: 'Shopping', icon: '🛒', color: '#ea580c' },
   { id: 'culture', label: 'Culture', icon: '🏛️', color: '#0284c7' },
-  { id: 'autre', label: 'Autre', icon: '📌', color: '#94a3b8' },
 ];
 
 // ===== Initial State =====
@@ -435,6 +435,11 @@ export function TargetProvider({ children }) {
         let fetchedCategories = categories && categories.length > 0 ? categories : (currentProfile === 'pro' ? [] : defaultCategories);
         const savedOrder = JSON.parse(localStorage.getItem(`target_categories_order_${user.id}_${currentProfile}`)) || {};
         fetchedCategories.sort((a, b) => {
+          const isAutreA = a.id === 'autre' || a.label?.trim().toLowerCase() === 'autre';
+          const isAutreB = b.id === 'autre' || b.label?.trim().toLowerCase() === 'autre';
+          if (isAutreA && !isAutreB) return -1;
+          if (!isAutreA && isAutreB) return 1;
+
           const orderA = a.order_index !== undefined && a.order_index !== null ? a.order_index : (savedOrder[a.id] !== undefined ? savedOrder[a.id] : 999);
           const orderB = b.order_index !== undefined && b.order_index !== null ? b.order_index : (savedOrder[b.id] !== undefined ? savedOrder[b.id] : 999);
           return orderA - orderB;
