@@ -13,7 +13,8 @@ export default function Modal({
   headerPadding,
   bodyPadding,
   bodyClassName = '',
-  centerTitle = false
+  centerTitle = false,
+  className = ''
 }) {
   useEffect(() => {
     if (isOpen) {
