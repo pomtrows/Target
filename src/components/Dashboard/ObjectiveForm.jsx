@@ -546,55 +546,6 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           )}
         </div>
 
-        {/* Planning (Jours et Horaires) */}
-        {!showPlanningSection ? (
-          <button
-            type="button"
-            onClick={() => {
-              setIsPlanningModalOpen(true);
-              setAssignType('week');
-            }}
-            className="w-full flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all py-2.5 bg-dark-800/40 text-dark-300 border border-dark-600/30 hover:border-accent-cyan/50 hover:text-accent-cyan cursor-pointer"
-          >
-            📅 Planifier
-          </button>
-        ) : (
-          <div className="bg-dark-900/30 p-4 rounded-2xl border border-dark-600/20 flex items-center justify-between">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-bold text-dark-400 uppercase tracking-wider">
-                Planification
-              </span>
-              <span className="text-sm text-dark-200">
-                {scheduleDays.length > 0
-                  ? `${scheduleDays.map(d => ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'][d - 1]).join(', ')}`
-                  : 'Aucun jour sélectionné'}
-                {startTime || endTime ? ` à ${startTime || '00:00'} - ${endTime || '23:59'}` : ''}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setIsPlanningModalOpen(true)}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/20 hover:bg-accent-cyan/20 transition-all"
-              >
-                Modifier
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowPlanningSection(false);
-                  setScheduleDays([]);
-                  setStartTime('');
-                  setEndTime('');
-                }}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-accent-red bg-accent-red/10 border border-accent-red/20 hover:bg-accent-red/20 transition-all"
-              >
-                Retirer
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Delegation / Assign to Contact */}
         <div>
           <label className="block text-sm font-medium text-dark-200 mb-3">
@@ -626,11 +577,11 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           <label className="block text-sm font-medium text-dark-200 mb-3">
             Placer dans
           </label>
-          <div className="flex gap-3 mb-4">
+          <div className="flex flex-wrap gap-2.5 sm:gap-3 mb-4">
             <button
               type="button"
               onClick={() => setAssignType('week')}
-              className={`rounded-xl text-sm font-medium transition-all ${
+              className={`rounded-xl text-xs sm:text-sm font-medium transition-all ${
                 assignType === 'week'
                   ? 'bg-accent-cyan/20 text-accent-cyan border border-accent-cyan/30'
                   : 'bg-dark-700/50 text-dark-400 border border-dark-600/30 hover:text-dark-300'
@@ -641,8 +592,23 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
             </button>
             <button
               type="button"
+              onClick={() => {
+                setIsPlanningModalOpen(true);
+                setAssignType('week');
+              }}
+              className={`rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                showPlanningSection
+                  ? 'bg-accent-cyan/20 text-accent-cyan border border-accent-cyan/30'
+                  : 'bg-dark-700/50 text-dark-400 border border-dark-600/30 hover:text-dark-300'
+              }`}
+              style={{ padding: '6px 12px' }}
+            >
+              📅 Planifier
+            </button>
+            <button
+              type="button"
               onClick={() => setAssignType('backlog')}
-              className={`rounded-xl text-sm font-medium transition-all ${
+              className={`rounded-xl text-xs sm:text-sm font-medium transition-all ${
                 assignType === 'backlog'
                   ? 'bg-accent-violet/20 text-accent-violet border border-accent-violet/30'
                   : 'bg-dark-700/50 text-dark-400 border border-dark-600/30 hover:text-dark-300'
@@ -652,6 +618,44 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
               📋 Backlog
             </button>
           </div>
+
+          {/* Planning Summary Card */}
+          {showPlanningSection && assignType === 'week' && (
+            <div className="bg-dark-900/30 p-4 rounded-2xl border border-dark-600/20 flex items-center justify-between mb-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-bold text-dark-400 uppercase tracking-wider">
+                  Planification
+                </span>
+                <span className="text-sm text-dark-200">
+                  {scheduleDays.length > 0
+                    ? `${scheduleDays.map(d => ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'][d - 1]).join(', ')}`
+                    : 'Aucun jour sélectionné'}
+                  {startTime || endTime ? ` à ${startTime || '00:00'} - ${endTime || '23:59'}` : ''}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsPlanningModalOpen(true)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/20 hover:bg-accent-cyan/20 transition-all"
+                >
+                  Modifier
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPlanningSection(false);
+                    setScheduleDays([]);
+                    setStartTime('');
+                    setEndTime('');
+                  }}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold text-accent-red bg-accent-red/10 border border-accent-red/20 hover:bg-accent-red/20 transition-all"
+                >
+                  Retirer
+                </button>
+              </div>
+            </div>
+          )}
 
           {assignType === 'week' && (
             <div className="relative mt-4" style={{ marginTop: '16px' }} ref={dropdownRef}>
