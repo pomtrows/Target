@@ -398,24 +398,6 @@ export default function Sidebar() {
           </button>
 
           <button
-            onClick={() => {
-              setShowNotificationCenter(true);
-              setMobileOpen(false);
-            }}
-            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-dark-400 hover:text-dark-200 hover:bg-dark-700/50 transition-all duration-200"
-          >
-            <div className="flex items-center gap-3">
-              <Bell size={20} />
-              Notifications
-            </div>
-            {unreadNotificationsCount > 0 && (
-              <span className="bg-accent-red text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
-                {unreadNotificationsCount}
-              </span>
-            )}
-          </button>
-
-          <button
             onClick={logout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-500 hover:text-accent-red hover:bg-accent-red/10 transition-all duration-200"
           >

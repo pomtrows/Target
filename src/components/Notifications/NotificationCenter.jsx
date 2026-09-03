@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { X, Bell, UserPlus, Target, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useTarget } from '../../contexts/TargetContext';
@@ -6,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 
 export default function NotificationCenter({ isOpen, onClose, onOpenContacts }) {
+  const navigate = useNavigate();
   const { state, dispatch } = useTarget();
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -65,12 +67,55 @@ export default function NotificationCenter({ isOpen, onClose, onOpenContacts }) 
     }
   };
 
+  const findObjectiveForNotif = (notif) => {
+    const objectives = state.objectives || [];
+    if (notif.reference_id) {
+      const byRef = objectives.find(o => o.id === notif.reference_id);
+      if (byRef) return byRef;
+    }
+    if (notif.message && notif.message.includes(':')) {
+      const parts = notif.message.split(':');
+      let titlePart = parts.slice(1).join(':').trim();
+      if (titlePart.includes('. Motif :')) {
+        titlePart = titlePart.split('. Motif :')[0].trim();
+      }
+      if (titlePart.endsWith('.')) {
+        titlePart = titlePart.slice(0, -1).trim();
+      }
+      const byTitle = objectives.find(o => 
+        o.title.trim().toLowerCase() === titlePart.toLowerCase() ||
+        titlePart.toLowerCase().includes(o.title.trim().toLowerCase())
+      );
+      if (byTitle) return byTitle;
+    }
+    return null;
+  };
+
   const handleNotificationClick = (notif) => {
     if (!notif.read) handleMarkAsRead(notif.id);
     
     if (notif.type === 'CONTACT_INVITE') {
       onClose();
       if (onOpenContacts) onOpenContacts();
+      return;
+    }
+
+    const targetObj = findObjectiveForNotif(notif);
+    if (targetObj) {
+      onClose();
+      const targetWeek = (targetObj.assignments || []).find(a => 
+        typeof a === 'string' && (a.match(/^\d{4}-S\d{2}$/) || a.match(/^\d{4}-W\d{2}$/))
+      );
+
+      if (targetWeek) {
+        navigate(`/?week=${targetWeek}&highlight=${targetObj.id}`);
+      } else {
+        navigate(`/backlog?highlight=${targetObj.id}`);
+      }
+
+      window.dispatchEvent(new CustomEvent('highlight-objective', {
+        detail: { objectiveId: targetObj.id, weekId: targetWeek }
+      }));
     }
   };
 

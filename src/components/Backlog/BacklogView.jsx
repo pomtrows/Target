@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Inbox, Plus, Trash2, Pencil, Filter } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
@@ -8,9 +9,51 @@ import ObjectiveForm from '../Dashboard/ObjectiveForm';
 
 export default function BacklogView() {
   const { state, dispatch } = useTarget();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showForm, setShowForm] = useState(false);
   const [editObjective, setEditObjective] = useState(null);
   const [filterCategory, setFilterCategory] = useState(null);
+  const [highlightedObjectiveId, setHighlightedObjectiveId] = useState(null);
+
+  const highlightParam = searchParams.get('highlight');
+
+  useEffect(() => {
+    const handleHighlight = (e) => {
+      const { objectiveId } = e.detail || {};
+      if (objectiveId) {
+        setHighlightedObjectiveId(objectiveId);
+        setTimeout(() => {
+          const el = document.getElementById(`objective-card-${objectiveId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 200);
+        setTimeout(() => setHighlightedObjectiveId(null), 3000);
+      }
+    };
+
+    window.addEventListener('highlight-objective', handleHighlight);
+    return () => window.removeEventListener('highlight-objective', handleHighlight);
+  }, []);
+
+  useEffect(() => {
+    if (highlightParam) {
+      setHighlightedObjectiveId(highlightParam);
+      setTimeout(() => {
+        const el = document.getElementById(`objective-card-${highlightParam}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+      const timer = setTimeout(() => {
+        setHighlightedObjectiveId(null);
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('highlight');
+        setSearchParams(newParams, { replace: true });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightParam]);
 
   const backlogObjectives = useMemo(() => {
     let objectives = getBacklogObjectives(state.objectives);
@@ -101,12 +144,24 @@ export default function BacklogView() {
             return (
               <motion.div
                 key={obj.id}
+                id={`objective-card-${obj.id}`}
                 layout
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                animate={{ 
+                  opacity: 1, 
+                  y: 0,
+                  scale: highlightedObjectiveId === obj.id ? [1, 1.05, 1, 1.05, 1] : 1
+                }}
                 exit={{ opacity: 0, x: 100 }}
+                transition={{ 
+                  scale: highlightedObjectiveId === obj.id ? { duration: 1.2, ease: "easeInOut" } : undefined
+                }}
                 style={{ padding: '16px 10px' }}
-                className="group rounded-2xl bg-dark-700/50 border border-dark-400/40 hover:border-dark-400/60 transition-all"
+                className={`group rounded-2xl bg-dark-700/50 border transition-all ${
+                  highlightedObjectiveId === obj.id 
+                    ? 'border-accent-cyan ring-4 ring-accent-cyan shadow-[0_0_35px_rgba(6,182,212,0.8)] z-20 bg-dark-700/80' 
+                    : 'border-dark-400/40 hover:border-dark-400/60'
+                }`}
               >
                 <div className="flex items-center gap-4">
                   {/* Category icon */}

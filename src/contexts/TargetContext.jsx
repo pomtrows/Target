@@ -663,6 +663,7 @@ export function TargetProvider({ children }) {
               const { error: notifErr } = await supabase.from('notifications').insert({
                 user_id: action.payload.assigned_to,
                 type: 'TASK_ASSIGNED',
+                reference_id: newObj.id,
                 message: `${myName} vous a assigné un nouvel objectif : ${newObj.title}`
               });
               if (notifErr) {
@@ -717,6 +718,7 @@ export function TargetProvider({ children }) {
               const { error: notifErr } = await supabase.from('notifications').insert({
                 user_id: updated.assigned_to,
                 type: 'TASK_ASSIGNED',
+                reference_id: updated.id,
                 message: `${myName} vous a assigné un objectif : ${updated.title}`
               });
               if (notifErr) {
@@ -735,6 +737,7 @@ export function TargetProvider({ children }) {
                 await supabase.from('notifications').insert({
                   user_id: assignerId,
                   type: 'TASK_REJECTED',
+                  reference_id: updated.id,
                   message: `${myName} a décliné votre objectif : ${updated.title}.${reasonText}`
                 });
               } catch (nErr) {
@@ -748,6 +751,7 @@ export function TargetProvider({ children }) {
                 await supabase.from('notifications').insert({
                   user_id: assignerId,
                   type: 'TASK_ACCEPTED',
+                  reference_id: updated.id,
                   message: `${myName} a accepté votre objectif : ${updated.title}`
                 });
               } catch (nErr) {
@@ -798,6 +802,7 @@ export function TargetProvider({ children }) {
               await supabase.from('notifications').insert({
                 user_id: previousObj.user_id,
                 type: 'TASK_REJECTED',
+                reference_id: previousObj.id,
                 message: `${myName} a supprimé l'objectif que vous lui aviez assigné : ${previousObj.title}`
               });
             } catch (notifErr) {
@@ -875,6 +880,7 @@ export function TargetProvider({ children }) {
               await supabase.from('notifications').insert({
                 user_id: objective.user_id, // Prévenir le créateur
                 type: 'TASK_COMPLETED',
+                reference_id: objective.id,
                 message: `${myName} a accompli votre objectif : ${objective.title}`
               });
             } catch (nErr) {
@@ -935,6 +941,7 @@ export function TargetProvider({ children }) {
                 await supabase.from('notifications').insert({
                   user_id: objective.user_id,
                   type: 'TASK_COMPLETED',
+                  reference_id: objective.id,
                   message: `${myName} a accompli votre objectif : ${objective.title}`
                 });
               } catch (nErr) {

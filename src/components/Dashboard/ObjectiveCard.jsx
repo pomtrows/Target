@@ -11,7 +11,7 @@ import Modal from '../Shared/Modal';
 import NoteEditor from '../Notes/NoteEditor';
 import AttachmentManager from '../Attachments/AttachmentManager';
 
-export default function ObjectiveCard({ objective, weekId, index, onEdit, onDelete, compactMode = false }) {
+export default function ObjectiveCard({ objective, weekId, index, onEdit, onDelete, compactMode = false, isHighlighted = false }) {
   const { user } = useAuth();
   const { state, dispatch } = useTarget();
   const { sessions } = useSport();
@@ -148,12 +148,24 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
   return (
     <motion.div
       layout
+      id={`objective-card-${objective.id}`}
       initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      animate={{ 
+        opacity: 1, 
+        y: 0,
+        scale: isHighlighted ? [1, 1.05, 1, 1.05, 1] : 1
+      }}
       exit={{ opacity: 0, y: -20 }}
-      transition={{ delay: index * 0.05 }}
+      transition={{ 
+        delay: index * 0.05,
+        scale: isHighlighted ? { duration: 1.2, ease: "easeInOut" } : undefined
+      }}
       style={{ padding: compactMode ? '12px 14px 10px 14px' : '16px 20px 12px 20px' }}
-      className="group relative h-full min-h-[110px] rounded-[24px] bg-dark-700/40 border border-dark-600 transition-all duration-300 hover:bg-dark-700/60 flex flex-col justify-between shadow-xl hover:shadow-2xl"
+      className={`group relative h-full min-h-[110px] rounded-[24px] bg-dark-700/40 border transition-all duration-300 flex flex-col justify-between shadow-xl ${
+        isHighlighted
+          ? 'border-accent-cyan ring-4 ring-accent-cyan shadow-[0_0_35px_rgba(6,182,212,0.8)] z-20 bg-dark-700/80'
+          : 'border-dark-600 hover:bg-dark-700/60 hover:shadow-2xl'
+      }`}
     >
       {/* Edit/Delete Icons (Top Right) */}
       <div 

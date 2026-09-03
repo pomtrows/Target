@@ -326,9 +326,10 @@ export default function WeekView() {
   const { user } = useAuth();
   const { state, dispatch } = useTarget();
   const { maxColumns } = useSettings();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const weekParam = searchParams.get('week');
   const [currentWeek, setCurrentWeek] = useState(weekParam || getCurrentWeekId());
+  const [highlightedObjectiveId, setHighlightedObjectiveId] = useState(null);
 
   const pendingContactInvites = (state.contacts || []).filter(c => {
     if (c.status !== 'PENDING' || c.user_id === user?.id) return false;
@@ -343,6 +344,50 @@ export default function WeekView() {
       setCurrentWeek(weekParam);
     }
   }, [weekParam]);
+
+  useEffect(() => {
+    const handleHighlight = (e) => {
+      const { objectiveId, weekId } = e.detail || {};
+      if (weekId && weekId !== currentWeek) {
+        setCurrentWeek(weekId);
+      }
+      if (objectiveId) {
+        setHighlightedObjectiveId(objectiveId);
+        setTimeout(() => {
+          const el = document.getElementById(`objective-card-${objectiveId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 250);
+        setTimeout(() => {
+          setHighlightedObjectiveId(null);
+        }, 3500);
+      }
+    };
+
+    window.addEventListener('highlight-objective', handleHighlight);
+    return () => window.removeEventListener('highlight-objective', handleHighlight);
+  }, [currentWeek]);
+
+  const highlightParam = searchParams.get('highlight');
+  useEffect(() => {
+    if (highlightParam) {
+      setHighlightedObjectiveId(highlightParam);
+      setTimeout(() => {
+        const el = document.getElementById(`objective-card-${highlightParam}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 350);
+      const timer = setTimeout(() => {
+        setHighlightedObjectiveId(null);
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('highlight');
+        setSearchParams(newParams, { replace: true });
+      }, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightParam, currentWeek]);
 
   // Déclencher le report automatique à chaque changement de semaine affichée
   useEffect(() => {
@@ -1127,6 +1172,7 @@ export default function WeekView() {
                           onEdit={handleEdit}
                           onDelete={handleDelete}
                           compactMode={maxColumns >= 3}
+                          isHighlighted={highlightedObjectiveId === obj.id}
                         />
                       </div>
                     ))}
