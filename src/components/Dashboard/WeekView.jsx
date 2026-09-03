@@ -1221,7 +1221,11 @@ export default function WeekView() {
             Êtes-vous sûr ?
           </p>
           <p className="text-dark-400 text-sm" style={{ marginBottom: '32px' }}>
-            L'objectif <strong className="text-dark-200">"{deleteConfirm?.title}"</strong> sera définitivement supprimé.
+            {deleteConfirm?.assigned_to === user?.id && deleteConfirm?.user_id !== user?.id ? (
+              <>Cet objectif vous a été assigné. Il sera <strong className="text-dark-200">retiré de votre liste</strong> et son créateur en sera notifié.</>
+            ) : (
+              <>L'objectif <strong className="text-dark-200">"{deleteConfirm?.title}"</strong> sera définitivement supprimé.</>
+            )}
           </p>
           <div className="flex gap-3 w-full">
             <button
@@ -1234,7 +1238,7 @@ export default function WeekView() {
               onClick={confirmDelete}
               className="flex-1 py-3 rounded-xl bg-accent-red text-white font-bold hover:bg-accent-red/80 transition-all cursor-pointer border-none"
             >
-              Supprimer
+              {deleteConfirm?.assigned_to === user?.id && deleteConfirm?.user_id !== user?.id ? 'Retirer' : 'Supprimer'}
             </button>
           </div>
         </div>

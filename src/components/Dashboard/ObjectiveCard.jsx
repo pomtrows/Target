@@ -183,7 +183,7 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
               <span className="bg-dark-600/50 text-dark-300 px-2 py-1 rounded-md">
                 Délégué à {getUserDisplayName(objective.assigned_to)}
                 {objective.assignment_status === 'PENDING' && ' (En attente)'}
-                {objective.assignment_status === 'REJECTED' && ' (Refusé)'}
+                {objective.assignment_status === 'REJECTED' && ' (Décliné / Supprimé)'}
               </span>
             ) : (
               <span className="bg-accent-violet/20 text-accent-violet px-2 py-1 rounded-md">

@@ -422,15 +422,17 @@ export function TargetProvider({ children }) {
           return acc;
         }, {});
 
-        const transformedObjectives = (objectives || []).map(o => ({
-          ...o,
-          categoryId: o.category_id,
-          sportSessionId: o.sport_session_id || null,
-          subObjectives: o.sub_objectives || [],
-          attachments: o.attachments || [],
-          priority: o.priority || 'P3',
-          createdAt: o.created_at
-        }));
+        const transformedObjectives = (objectives || [])
+          .filter(o => !(o.assigned_to === user.id && o.user_id !== user.id && o.assignment_status === 'REJECTED'))
+          .map(o => ({
+            ...o,
+            categoryId: o.category_id,
+            sportSessionId: o.sport_session_id || null,
+            subObjectives: o.sub_objectives || [],
+            attachments: o.attachments || [],
+            priority: o.priority || 'P3',
+            createdAt: o.created_at
+          }));
 
         let fetchedCategories = categories && categories.length > 0 ? categories : (currentProfile === 'pro' ? [] : defaultCategories);
         const savedOrder = JSON.parse(localStorage.getItem(`target_categories_order_${user.id}_${currentProfile}`)) || {};
@@ -770,20 +772,43 @@ export function TargetProvider({ children }) {
 
       case 'DELETE_OBJECTIVE': {
         const previousObj = state.objectives.find(o => o.id === action.payload);
+        const isAssignedToMe = previousObj && previousObj.assigned_to === user.id && previousObj.user_id !== user.id;
+
         dispatch({ type: 'DELETE_OBJECTIVE', payload: action.payload });
 
         if (!navigator.onLine) {
-          enqueueSyncAction(user.id, currentProfile, 'DELETE_OBJECTIVE', { id: action.payload });
+          enqueueSyncAction(user.id, currentProfile, 'DELETE_OBJECTIVE', { id: action.payload, isAssigned: isAssignedToMe });
           refreshPendingCount();
           return;
         }
 
         try {
-          const { error } = await supabase.from('objectives').delete().eq('id', action.payload);
-          if (error) throw error;
+          if (isAssignedToMe) {
+            // L'objectif a été créé par un tiers et m'a été assigné : on le conserve pour le créateur
+            const { error } = await supabase.from('objectives').update({
+              assignment_status: 'REJECTED'
+            }).eq('id', action.payload);
+            if (error) throw error;
+
+            // Notification pour le créateur de l'objectif
+            try {
+              const myName = user.user_metadata?.display_name || localStorage.getItem('target-user-display-name') || user.email;
+              await supabase.from('notifications').insert({
+                user_id: previousObj.user_id,
+                type: 'TASK_REJECTED',
+                message: `${myName} a supprimé l'objectif que vous lui aviez assigné : ${previousObj.title}`
+              });
+            } catch (notifErr) {
+              console.warn('Erreur envoi notification suppression:', notifErr);
+            }
+          } else {
+            // C'est mon propre objectif : suppression définitive de la base
+            const { error } = await supabase.from('objectives').delete().eq('id', action.payload);
+            if (error) throw error;
+          }
         } catch (error) {
           if (isOfflineError(error)) {
-            enqueueSyncAction(user.id, currentProfile, 'DELETE_OBJECTIVE', { id: action.payload });
+            enqueueSyncAction(user.id, currentProfile, 'DELETE_OBJECTIVE', { id: action.payload, isAssigned: isAssignedToMe });
             refreshPendingCount();
           } else {
             console.error('Error deleting objective:', error);

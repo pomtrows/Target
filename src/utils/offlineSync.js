@@ -422,8 +422,15 @@ export async function processSyncQueue(userId, profile, supabase) {
         }
 
         case 'DELETE_OBJECTIVE': {
-          const { error } = await supabase.from('objectives').delete().eq('id', item.payload.id);
-          reqError = error;
+          if (item.payload.isAssigned) {
+            const { error } = await supabase.from('objectives').update({
+              assignment_status: 'REJECTED'
+            }).eq('id', item.payload.id);
+            reqError = error;
+          } else {
+            const { error } = await supabase.from('objectives').delete().eq('id', item.payload.id);
+            reqError = error;
+          }
           break;
         }
 
