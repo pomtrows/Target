@@ -379,6 +379,8 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
         onClose={onClose}
         title={editObjective ? 'Modifier l\'objectif' : 'Nouvel objectif'}
         closeOnOutsideClick={false}
+        headerPadding="10px 16px 8px 16px"
+        bodyPadding="8px 16px 14px 16px"
       >
       <form 
         onSubmit={handleSubmit} 
@@ -386,7 +388,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
       >
         {/* Title */}
         <div>
-          <label className="block text-sm font-medium text-dark-200 mb-3">
+          <label className="block text-sm font-medium text-dark-200 mb-2">
             Titre de l'objectif
           </label>
           <input
@@ -445,10 +447,9 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
             <button
               type="button"
               onClick={addSubObjective}
-              className="flex-1 px-4 rounded-xl text-xs font-bold text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/20 hover:bg-accent-cyan/20 transition-all flex items-center justify-center gap-2"
-              style={{ paddingTop: '5px', paddingBottom: '5px' }}
+              className="flex-1 h-[42px] px-3 sm:px-4 rounded-xl text-xs font-bold text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/20 hover:bg-accent-cyan/20 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
             >
-              <Plus size={16} /> Ajouter des sous-tâches
+              <Plus size={16} className="shrink-0" /> Sous-tâches
             </button>
           )}
         </div>
@@ -555,7 +556,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
             }}
             className="w-full flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all py-2.5 bg-dark-800/40 text-dark-300 border border-dark-600/30 hover:border-accent-cyan/50 hover:text-accent-cyan cursor-pointer"
           >
-            📅 Planifier l'objectif
+            📅 Planifier
           </button>
         ) : (
           <div className="bg-dark-900/30 p-4 rounded-2xl border border-dark-600/20 flex items-center justify-between">

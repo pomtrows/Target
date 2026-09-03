@@ -3,7 +3,17 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
-export default function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-xl', closeOnOutsideClick = true }) {
+export default function Modal({ 
+  isOpen, 
+  onClose, 
+  title, 
+  children, 
+  maxWidth = 'max-w-xl', 
+  closeOnOutsideClick = true,
+  headerPadding,
+  bodyPadding,
+  bodyClassName = ''
+}) {
   useEffect(() => {
     if (isOpen) {
       document.body.classList.add('modal-open');
@@ -45,7 +55,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
             {/* Header */}
             <div 
               className="flex items-center justify-between border-b border-dark-600/50 flex-shrink-0"
-              style={{ padding: '14px 16px' }}
+              style={{ padding: headerPadding || '14px 16px' }}
             >
               <h2 className="text-xl sm:text-2xl font-bold text-dark-100">{title}</h2>
               <button
@@ -57,7 +67,10 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
             </div>
 
             {/* Body */}
-            <div className="overflow-y-auto custom-scrollbar" style={{ padding: '14px 16px' }}>
+            <div 
+              className={`overflow-y-auto custom-scrollbar ${bodyClassName}`}
+              style={{ padding: bodyPadding || '14px 16px' }}
+            >
               {children}
             </div>
           </motion.div>
