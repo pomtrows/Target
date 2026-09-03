@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Minus, Check, Pencil, Trash2, Play, FileText, Paperclip } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -88,6 +88,17 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
   const progress = getObjectiveProgress(objective, weekProgress);
   const isCompleted = progress >= 1;
   const color = isCompleted ? '#22c55e' : getProgressColor(progress);
+
+  const isDeletedByAssignee = useMemo(() => {
+    if (objective.assignment_status === 'DELETED') return true;
+    if (objective.assignments?.includes('status:deleted')) return true;
+    const notifs = state.notifications || [];
+    return notifs.some(n => 
+      n.message && 
+      n.message.includes(objective.title) && 
+      n.message.toLowerCase().includes('supprimé')
+    );
+  }, [objective, state.notifications]);
 
   const handleIncrement = () => {
     dispatch({
@@ -183,7 +194,11 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
               <span className="bg-dark-600/50 text-dark-300 px-2 py-1 rounded-md">
                 Délégué à {getUserDisplayName(objective.assigned_to)}
                 {objective.assignment_status === 'PENDING' && ' (En attente)'}
-                {objective.assignment_status === 'REJECTED' && ' (Décliné / Supprimé)'}
+                {isDeletedByAssignee ? (
+                  <span className="text-accent-red font-medium"> (Supprimé)</span>
+                ) : objective.assignment_status === 'REJECTED' ? (
+                  <span className="text-amber-400 font-medium"> (Décliné)</span>
+                ) : null}
               </span>
             ) : (
               <span className="bg-accent-violet/20 text-accent-violet px-2 py-1 rounded-md">

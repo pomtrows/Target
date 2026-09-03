@@ -735,7 +735,7 @@ export function TargetProvider({ children }) {
                 await supabase.from('notifications').insert({
                   user_id: assignerId,
                   type: 'TASK_REJECTED',
-                  message: `${myName} a refusé votre objectif : ${updated.title}.${reasonText}`
+                  message: `${myName} a décliné votre objectif : ${updated.title}.${reasonText}`
                 });
               } catch (nErr) {
                 console.warn('Error inserting rejection notification:', nErr);
@@ -784,9 +784,11 @@ export function TargetProvider({ children }) {
 
         try {
           if (isAssignedToMe) {
-            // L'objectif a été créé par un tiers et m'a été assigné : on le conserve pour le créateur
+            // L'objectif a été créé par un tiers et m'a été assigné : on le conserve pour le créateur en le marquant supprimé
+            const updatedAssignments = Array.from(new Set([...(previousObj.assignments || []), 'status:deleted']));
             const { error } = await supabase.from('objectives').update({
-              assignment_status: 'REJECTED'
+              assignment_status: 'REJECTED',
+              assignments: updatedAssignments
             }).eq('id', action.payload);
             if (error) throw error;
 
@@ -808,7 +810,8 @@ export function TargetProvider({ children }) {
           }
         } catch (error) {
           if (isOfflineError(error)) {
-            enqueueSyncAction(user.id, currentProfile, 'DELETE_OBJECTIVE', { id: action.payload, isAssigned: isAssignedToMe });
+            const updatedAssignments = previousObj ? Array.from(new Set([...(previousObj.assignments || []), 'status:deleted'])) : [];
+            enqueueSyncAction(user.id, currentProfile, 'DELETE_OBJECTIVE', { id: action.payload, isAssigned: isAssignedToMe, assignments: updatedAssignments });
             refreshPendingCount();
           } else {
             console.error('Error deleting objective:', error);

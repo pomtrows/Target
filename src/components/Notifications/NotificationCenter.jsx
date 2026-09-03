@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bell, UserPlus, Target, CheckCircle, XCircle } from 'lucide-react';
+import { X, Bell, UserPlus, Target, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useTarget } from '../../contexts/TargetContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -143,8 +143,13 @@ export default function NotificationCenter({ isOpen, onClose, onOpenContacts }) 
                   Icon = CheckCircle;
                   colorClass = notif.read ? 'text-dark-300 bg-dark-700' : 'text-accent-green bg-accent-green/10';
                 } else if (notif.type === 'TASK_REJECTED') {
-                  Icon = XCircle;
-                  colorClass = notif.read ? 'text-dark-300 bg-dark-700' : 'text-accent-red bg-accent-red/10';
+                  const isDeleted = notif.message?.toLowerCase().includes('supprimé');
+                  Icon = isDeleted ? Trash2 : XCircle;
+                  colorClass = notif.read 
+                    ? 'text-dark-300 bg-dark-700' 
+                    : isDeleted 
+                      ? 'text-accent-red bg-accent-red/10' 
+                      : 'text-amber-400 bg-amber-400/10';
                 } else if (notif.type === 'TASK_COMPLETED') {
                   Icon = CheckCircle;
                   colorClass = notif.read ? 'text-dark-300 bg-dark-700' : 'text-accent-green bg-accent-green/10';
