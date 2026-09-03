@@ -30,7 +30,7 @@ export default function Modal({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:pl-64"
+          className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 md:pl-64"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -47,7 +47,7 @@ export default function Modal({
 
           {/* Content */}
           <motion.div
-            className={`relative w-full ${maxWidth} glass-strong rounded-2xl shadow-2xl flex flex-col max-h-[90vh]`}
+            className={`relative w-full ${maxWidth} glass-strong rounded-2xl shadow-2xl flex flex-col max-h-[90dvh] ${className}`}
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -69,7 +69,7 @@ export default function Modal({
 
             {/* Body */}
             <div 
-              className={`overflow-y-auto custom-scrollbar ${bodyClassName}`}
+              className={`overflow-y-auto custom-scrollbar flex-1 ${bodyClassName}`}
               style={{ padding: bodyPadding || '14px 16px' }}
             >
               {children}

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Plus, Trash2, Dumbbell, FileText, Paperclip } from 'lucide-react';
+import { Plus, Trash2, Dumbbell, FileText, Paperclip, UserPlus, Check } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSport } from '../../contexts/SportContext';
@@ -86,6 +86,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
   
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [showAttachmentsModal, setShowAttachmentsModal] = useState(false);
+  const [showDelegateModal, setShowDelegateModal] = useState(false);
   
   const handleOpenNotes = async (e) => {
     e.preventDefault();
@@ -126,6 +127,21 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
   const [priority, setPriority] = useState(editObjective?.priority || 'P3');
   const [sportSessionId, setSportSessionId] = useState(editObjective?.sportSessionId || '');
   const [assignedTo, setAssignedTo] = useState(editObjective?.assigned_to || '');
+  const assignedContactName = useMemo(() => {
+    if (!assignedTo) return null;
+    const c = delegatableContacts.find(c => c.contact_user_id === assignedTo);
+    if (c) {
+      return (state.profiles && state.profiles[c.contact_user_id]?.display_name)
+        || (state.profiles && state.profiles[c.contact_user_id]?.email)
+        || c.contact_name
+        || c.contact_email
+        || 'Délégué';
+    }
+    if (state.profiles && state.profiles[assignedTo]) {
+      return state.profiles[assignedTo].display_name || state.profiles[assignedTo].email || 'Délégué';
+    }
+    return 'Délégué';
+  }, [assignedTo, delegatableContacts, state.profiles]);
   const [subObjectives, setSubObjectives] = useState(editObjective?.subObjectives || []);
   const [assignType, setAssignType] = useState(
     editObjective
@@ -382,6 +398,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
         centerTitle={true}
         headerPadding="10px 16px 4px 16px"
         bodyPadding="2px 16px 14px 16px"
+        className="h-[90dvh] sm:h-auto"
       >
       <form 
         onSubmit={handleSubmit} 
@@ -546,38 +563,13 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           )}
         </div>
 
-        {/* Delegation / Assign to Contact */}
-        <div>
-          <label className="block text-sm font-medium text-dark-200 mb-3">
-            Déléguer à un contact
-          </label>
-          <select
-            value={assignedTo}
-            onChange={(e) => setAssignedTo(e.target.value)}
-            className="w-full bg-dark-700/50 border border-dark-600/50 rounded-xl py-2.5 px-3 text-sm text-dark-100 focus:outline-none focus:border-accent-cyan/50 transition-colors mb-4"
-          >
-            <option value="">-- Non assigné (Tâche personnelle) --</option>
-            {delegatableContacts.map(c => {
-              const displayName = (state.profiles && state.profiles[c.contact_user_id]?.display_name)
-                || (state.profiles && state.profiles[c.contact_user_id]?.email)
-                || c.contact_name
-                || c.contact_email
-                || 'Contact';
-              return (
-                <option key={c.contact_user_id} value={c.contact_user_id}>
-                  {displayName}
-                </option>
-              );
-            })}
-          </select>
-        </div>
 
         {/* Assignment (Week/Backlog) */}
         <div>
           <label className="block text-sm font-medium text-dark-200 mb-3">
             Placer dans
           </label>
-          <div className="flex flex-wrap gap-2.5 sm:gap-3 mb-4">
+          <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3 mb-4">
             <button
               type="button"
               onClick={() => setAssignType('week')}
@@ -702,12 +694,12 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           )}
         </div>
 
-        {/* Note and Attachments */}
-        <div className="flex gap-3 pt-2">
+        {/* Note, Attachments & Delegation */}
+        <div className="flex flex-wrap gap-2.5 sm:gap-3 pt-2">
           <button
             type="button"
             onClick={handleOpenNotes}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+            className={`flex-1 min-w-[90px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
               (formNoteId || (() => {
                 const notesFolder = notesState.folders.find(f => f.name === 'Objectifs');
                 const objectiveNote = notesFolder ? notesState.notes.find(n => n.folder_id === notesFolder.id && n.title === tempId) : null;
@@ -717,21 +709,36 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
                 : 'bg-dark-800/40 text-dark-300 border border-dark-600/30 hover:bg-dark-700/50 hover:text-dark-200'
             }`}
           >
-            <FileText size={16} />
+            <FileText size={16} className="shrink-0" />
             <span>Note</span>
           </button>
           
           <button
             type="button"
             onClick={() => setShowAttachmentsModal(true)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+            className={`flex-1 min-w-[110px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
               formAttachments.length > 0 
                 ? 'bg-accent-violet/15 text-accent-violet border border-accent-violet/30' 
                 : 'bg-dark-800/40 text-dark-300 border border-dark-600/30 hover:bg-dark-700/50 hover:text-dark-200'
             }`}
           >
-            <Paperclip size={16} />
-            <span>Pièces jointes {formAttachments.length > 0 && `(${formAttachments.length})`}</span>
+            <Paperclip size={16} className="shrink-0" />
+            <span className="truncate">Pièces jointes {formAttachments.length > 0 && `(${formAttachments.length})`}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowDelegateModal(true)}
+            className={`flex-1 min-w-[100px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
+              assignedTo
+                ? 'bg-accent-green/15 text-accent-green border border-accent-green/30' 
+                : 'bg-dark-800/40 text-dark-300 border border-dark-600/30 hover:bg-dark-700/50 hover:text-dark-200'
+            }`}
+          >
+            <UserPlus size={16} className="shrink-0" />
+            <span className="truncate">
+              {assignedContactName ? assignedContactName : 'Déléguer'}
+            </span>
           </button>
         </div>
 
@@ -965,6 +972,101 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           objective={{ id: tempId, attachments: formAttachments }}
           onUpdate={(updates) => setFormAttachments(updates.attachments)}
         />
+      )}
+
+      {/* Delegate Modal */}
+      {showDelegateModal && (
+        <Modal
+          isOpen={true}
+          onClose={() => setShowDelegateModal(false)}
+          title="Déléguer à un contact"
+          maxWidth="max-w-md"
+          closeOnOutsideClick={true}
+          centerTitle={true}
+        >
+          <div className="flex flex-col gap-2 py-1">
+            {/* Tâche personnelle (Non assigné) */}
+            <button
+              type="button"
+              onClick={() => {
+                setAssignedTo('');
+                setShowDelegateModal(false);
+              }}
+              className={`flex items-center justify-between p-3 rounded-xl transition-all text-left border ${
+                !assignedTo
+                  ? 'bg-accent-cyan/15 border-accent-cyan/40 text-accent-cyan'
+                  : 'bg-dark-800/40 border-dark-600/30 text-dark-200 hover:bg-dark-700/50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-dark-700/70 border border-dark-600/50 flex items-center justify-center text-sm font-bold text-dark-300">
+                  👤
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-dark-100">Tâche personnelle</p>
+                  <p className="text-xs text-dark-400">Non assigné à un contact</p>
+                </div>
+              </div>
+              {!assignedTo && <Check size={18} className="text-accent-cyan shrink-0" />}
+            </button>
+
+            {delegatableContacts.length > 0 && (
+              <div className="mt-2 mb-1 px-1">
+                <p className="text-xs font-bold text-dark-400 uppercase tracking-wider">
+                  Contacts ({delegatableContacts.length})
+                </p>
+              </div>
+            )}
+
+            {delegatableContacts.map((c) => {
+              const displayName = (state.profiles && state.profiles[c.contact_user_id]?.display_name)
+                || (state.profiles && state.profiles[c.contact_user_id]?.email)
+                || c.contact_name
+                || c.contact_email
+                || 'Contact';
+              const email = (state.profiles && state.profiles[c.contact_user_id]?.email) || c.contact_email || '';
+              const isSelected = assignedTo === c.contact_user_id;
+
+              return (
+                <button
+                  key={c.contact_user_id}
+                  type="button"
+                  onClick={() => {
+                    setAssignedTo(c.contact_user_id);
+                    setShowDelegateModal(false);
+                  }}
+                  className={`flex items-center justify-between p-3 rounded-xl transition-all text-left border ${
+                    isSelected
+                      ? 'bg-accent-cyan/15 border-accent-cyan/40 text-accent-cyan'
+                      : 'bg-dark-800/40 border-dark-600/30 text-dark-200 hover:bg-dark-700/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-accent-cyan/10 border border-accent-cyan/20 flex items-center justify-center text-xs font-bold text-accent-cyan uppercase">
+                      {displayName.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-dark-100">{displayName}</p>
+                      {email && email !== displayName && (
+                        <p className="text-xs text-dark-400 truncate max-w-[220px]">{email}</p>
+                      )}
+                    </div>
+                  </div>
+                  {isSelected && <Check size={18} className="text-accent-cyan shrink-0" />}
+                </button>
+              );
+            })}
+
+            {delegatableContacts.length === 0 && (
+              <div className="text-center py-4 px-2">
+                <p className="text-sm text-dark-300 mb-1">Aucun contact disponible</p>
+                <p className="text-xs text-dark-500">
+                  Ajoutez des contacts depuis la section Contacts pour pouvoir leur assigner des tâches.
+                </p>
+              </div>
+            )}
+          </div>
+        </Modal>
       )}
     </>
   );
