@@ -380,8 +380,8 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
         title={editObjective ? 'Modifier l\'objectif' : 'Nouvel objectif'}
         closeOnOutsideClick={false}
         centerTitle={true}
-        headerPadding="12px 16px 10px 16px"
-        bodyPadding="6px 16px 14px 16px"
+        headerPadding="10px 16px 4px 16px"
+        bodyPadding="2px 16px 14px 16px"
       >
       <form 
         onSubmit={handleSubmit} 
@@ -407,7 +407,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
         <div className="flex gap-4 items-end">
           {/* Target quantity */}
           <div className="w-24">
-            <label className="block text-sm font-medium text-dark-200 mb-2 truncate">
+            <label className="block text-center text-sm font-medium text-dark-200 mb-2 truncate">
               Cible
             </label>
             <input
@@ -422,7 +422,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
 
           {/* Priority */}
           <div className="w-24">
-            <label className="block text-sm font-medium text-dark-200 mb-2 truncate">
+            <label className="block text-center text-sm font-medium text-dark-200 mb-2 truncate">
               Priorité
             </label>
             <select
@@ -430,6 +430,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
               onChange={(e) => setPriority(e.target.value)}
               className="w-full text-center bg-dark-700/50 border border-dark-600/50 rounded-xl py-2.5 text-sm font-bold focus:outline-none focus:border-accent-cyan/50 transition-colors"
               style={{
+                textAlignLast: 'center',
                 color: priority === 'P1' ? 'var(--color-accent-red, #ef4444)' :
                        priority === 'P2' ? 'var(--color-accent-violet, #8b5cf6)' :
                        'var(--color-accent-cyan, #06b6d4)'
