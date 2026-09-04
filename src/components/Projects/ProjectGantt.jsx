@@ -364,16 +364,16 @@ export default function ProjectGantt({
           </button>
 
           {/* Zoom scale selector */}
-          <div className="flex items-center bg-dark-900/60 rounded-full border border-dark-600/40 p-0.5">
+          <div className="flex items-center gap-1.5 bg-dark-900/90 rounded-full border border-dark-600/60 p-1 shadow-sm">
             {Object.keys(ZOOM_CONFIGS).map((lvl) => (
               <button
                 key={lvl}
                 type="button"
                 onClick={() => setZoomLevel(lvl)}
-                className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
                   zoomLevel === lvl
-                    ? 'bg-accent-cyan text-dark-950 shadow-sm'
-                    : 'text-dark-400 hover:text-dark-200'
+                    ? 'bg-accent-cyan text-slate-950 shadow-sm'
+                    : 'text-dark-300 hover:text-dark-100 hover:bg-dark-700/60'
                 }`}
               >
                 {ZOOM_CONFIGS[lvl].label}
