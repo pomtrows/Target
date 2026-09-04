@@ -68,8 +68,8 @@ export default function ProjectKanban({
             >
               {/* Column Header */}
               <div 
-                className={`flex items-center justify-between rounded-xl border mb-3 sm:mb-3.5 -ml-1 sm:-ml-1.5 ${col.headerBg}`}
-                style={{ padding: '6px 10px' }}
+                className={`flex items-center justify-between rounded-xl border ${col.headerBg}`}
+                style={{ padding: '6px 10px', marginLeft: '-6px', marginBottom: '18px' }}
               >
                 <div className="flex items-center gap-2">
                   <ColIcon size={15} className={col.headerColor} />
@@ -91,9 +91,10 @@ export default function ProjectKanban({
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`flex-1 flex flex-col gap-2 rounded-xl p-0.5 ml-1 sm:ml-1.5 transition-colors ${
+                    className={`flex-1 flex flex-col gap-2 rounded-xl p-0.5 transition-colors ${
                       snapshot.isDraggingOver ? 'bg-dark-800/40 border-2 border-dashed border-accent-cyan/40' : ''
                     }`}
+                    style={{ marginLeft: '8px', marginRight: '2px' }}
                   >
                     {colProjects.length === 0 ? (
                       <div 
