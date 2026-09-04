@@ -55,7 +55,7 @@ export default function ProjectKanban({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 md:gap-3.5 items-start">
         {COLUMNS.map((col) => {
           const colProjects = projects.filter(p => p.status === col.id);
           const ColIcon = col.icon;
@@ -63,12 +63,12 @@ export default function ProjectKanban({
           return (
             <div 
               key={col.id} 
-              className="flex flex-col bg-dark-900/40 border border-dark-700/50 rounded-2xl min-h-[450px]"
+              className="flex flex-col bg-dark-900/40 border border-dark-700/50 rounded-2xl min-h-[95px] md:min-h-[450px]"
               style={{ padding: '8px' }}
             >
               {/* Column Header */}
               <div 
-                className={`flex items-center justify-between rounded-xl border mb-2.5 ${col.headerBg}`}
+                className={`flex items-center justify-between rounded-xl border mb-1.5 md:mb-2.5 ${col.headerBg}`}
                 style={{ padding: '6px 10px' }}
               >
                 <div className="flex items-center gap-2">
@@ -97,8 +97,8 @@ export default function ProjectKanban({
                   >
                     {colProjects.length === 0 ? (
                       <div 
-                        className="flex-1 flex items-center justify-center text-center text-xs text-dark-400 border border-dashed border-dark-800 rounded-xl"
-                        style={{ padding: '14px 10px' }}
+                        className="h-[55px] md:h-auto md:flex-1 flex items-center justify-center text-center text-xs text-dark-400 border border-dashed border-dark-700/60 rounded-xl"
+                        style={{ padding: '8px 10px' }}
                       >
                         Glissez un projet ici
                       </div>
