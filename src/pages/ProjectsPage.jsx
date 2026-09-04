@@ -554,13 +554,10 @@ export default function ProjectsPage() {
 
         {/* Détails & Barre multi-segments */}
         <div className="flex-1 min-w-0 flex flex-col justify-center gap-1.5">
-          <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center text-xs">
             <span className="font-bold text-dark-100 flex items-center gap-1.5">
               <span>Projets</span>
               <span className="text-dark-400 font-normal">({totalProjects})</span>
-            </span>
-            <span className="font-semibold text-accent-green text-[11px]">
-              {completionRate}% terminé{stats.termines > 1 ? 's' : ''}
             </span>
           </div>
 
