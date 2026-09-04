@@ -553,3 +553,21 @@ body.modal-open .mobile-sidebar-toggle {
   display: none !important;
 }
 
+/* ===== Date inputs centering ===== */
+input[type="date"].text-center {
+  text-align: center;
+}
+
+input[type="date"].text-center::-webkit-date-and-time-value {
+  text-align: center;
+}
+
+input[type="date"].text-center::-webkit-datetime-edit {
+  text-align: center;
+  justify-content: center;
+}
+
+input[type="date"].text-center::-webkit-datetime-edit-fields-wrapper {
+  margin: 0 auto;
+}
+

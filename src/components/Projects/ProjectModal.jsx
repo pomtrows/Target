@@ -328,7 +328,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors h-[34px] px-2"
+              className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors h-[34px] px-2 text-center"
+              style={{ textAlign: 'center' }}
             />
           </div>
 
@@ -342,7 +343,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors h-[34px] px-2"
+              className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors h-[34px] px-2 text-center"
+              style={{ textAlign: 'center' }}
             />
           </div>
         </div>
