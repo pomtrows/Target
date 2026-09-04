@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FolderKanban, Plus, Search, Filter, LayoutGrid, Columns, 
+  FolderKanban, Plus, Search, Filter, LayoutGrid, Columns, CalendarRange,
   CheckCircle2, Clock, AlertTriangle, Circle, Eye, EyeOff,
   Database, Copy, Check, Info, X
 } from 'lucide-react';
@@ -10,6 +10,7 @@ import { useProjects } from '../contexts/ProjectsContext';
 import { useTarget } from '../contexts/TargetContext';
 import ProjectCard from '../components/Projects/ProjectCard';
 import ProjectKanban from '../components/Projects/ProjectKanban';
+import ProjectGantt from '../components/Projects/ProjectGantt';
 import ProjectModal from '../components/Projects/ProjectModal';
 import ProjectDetailModal from '../components/Projects/ProjectDetailModal';
 import Modal from '../components/Shared/Modal';
@@ -648,7 +649,7 @@ export default function ProjectsPage() {
           )}
         </div>
 
-        {/* View Switcher: Kanban vs Grid */}
+        {/* View Switcher: Kanban vs Grid vs Gantt */}
         <div 
           className="flex items-center gap-1 self-end lg:self-auto bg-dark-800/90 rounded-full border border-dark-600/40 p-1"
         >
@@ -674,6 +675,18 @@ export default function ProjectsPage() {
           >
             <LayoutGrid size={13} />
             <span>Grille</span>
+          </button>
+          <button
+            onClick={() => handleViewModeChange('gantt')}
+            className={`flex items-center gap-1.5 rounded-full text-xs font-bold transition-all cursor-pointer px-3 py-1 ${
+              viewMode === 'gantt'
+                ? 'bg-accent-cyan text-dark-950 shadow-md shadow-accent-cyan/20'
+                : 'text-dark-400 hover:text-dark-200 hover:bg-dark-700/50'
+            }`}
+            style={{ padding: '4px 8px' }}
+          >
+            <CalendarRange size={13} />
+            <span>Gantt</span>
           </button>
         </div>
       </div>
@@ -723,6 +736,12 @@ export default function ProjectsPage() {
         </div>
       ) : viewMode === 'kanban' ? (
         <ProjectKanban
+          projects={filteredProjects}
+          onEdit={handleOpenEdit}
+          onOpenDetails={handleOpenDetails}
+        />
+      ) : viewMode === 'gantt' ? (
+        <ProjectGantt
           projects={filteredProjects}
           onEdit={handleOpenEdit}
           onOpenDetails={handleOpenDetails}
