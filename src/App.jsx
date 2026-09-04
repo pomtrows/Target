@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { lazy, Suspense, useEffect } from 'react';
 import { TargetProvider } from './contexts/TargetContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -57,6 +57,8 @@ function NotificationScheduler() {
 
 function AppContent() {
   const { user } = useAuth();
+  const location = useLocation();
+  const isProjectsPage = location.pathname.startsWith('/projects');
 
   if (!user) {
     return <AuthScreen />;
@@ -73,11 +75,19 @@ function AppContent() {
               <InstallPrompt />
 
               {/* Main content - offset for sidebar */}
-              <main data-main style={{ paddingLeft: '12px', paddingRight: '12px', paddingTop: '20px' }} className="flex-1 h-full overflow-hidden flex flex-col py-6 md:py-8">
+              <main 
+                data-main 
+                style={{ 
+                  paddingLeft: '12px', 
+                  paddingRight: '12px', 
+                  paddingTop: isProjectsPage ? '8px' : '20px' 
+                }} 
+                className={`flex-1 h-full overflow-hidden flex flex-col ${isProjectsPage ? 'py-1 md:py-2' : 'py-6 md:py-8'}`}
+              >
                 {/* Spacer for mobile menu to prevent overlap */}
                 <div className="flex-none h-12 w-full md:hidden"></div>
                 
-                <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col overflow-y-auto custom-scrollbar h-full px-2">
+                <div className={`${isProjectsPage ? 'w-full max-w-none 2xl:max-w-[2400px] mx-auto px-1 md:px-3' : 'max-w-7xl mx-auto w-full px-2'} flex-1 flex flex-col overflow-y-auto custom-scrollbar h-full`}>
                   <Suspense fallback={<PageLoader />}>
                     <Routes>
                       <Route path="/" element={<DashboardPage />} />

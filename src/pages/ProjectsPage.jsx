@@ -230,7 +230,7 @@ export default function ProjectsPage() {
   const activeDetailProject = detailProject ? (projects.find(p => p.id === detailProject.id) || null) : null;
 
   return (
-    <div className="flex-1 flex flex-col gap-6 pb-28 md:pb-32">
+    <div className={`flex-1 flex flex-col ${viewMode === 'gantt' ? 'gap-3 pb-6 md:pb-6' : 'gap-6 pb-28 md:pb-32'}`}>
       {/* View Switcher: Kanban / Grille / Gantt (Style exact écran Objectifs, aligné avec le menu mobile) */}
       <div className="fixed top-[12px] left-1/2 -translate-x-1/2 z-[80] md:static md:translate-x-0 md:flex md:justify-center md:mb-1">
         <div 

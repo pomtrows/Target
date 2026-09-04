@@ -303,7 +303,7 @@ export default function ProjectGantt({
   const totalTimelineWidth = weeks.length * colWidth;
 
   return (
-    <div className="flex flex-col gap-3 bg-dark-800/80 border border-dark-600/40 rounded-3xl overflow-hidden shadow-xl">
+    <div className="flex-1 flex flex-col bg-dark-800/80 border border-dark-600/40 rounded-3xl overflow-hidden shadow-xl min-h-[500px] lg:min-h-[580px] xl:min-h-[calc(100vh-270px)]">
       {/* 1. TOP TOOLBAR CONTROLS */}
       <div 
         className="flex flex-wrap items-center justify-between gap-3 border-b border-dark-600/40 bg-dark-800"
@@ -384,7 +384,7 @@ export default function ProjectGantt({
       </div>
 
       {/* 2. GANTT MAIN SPLIT TABLE & TIMELINE CANVAS */}
-      <div className="relative flex flex-1 min-h-[420px] max-h-[70vh] overflow-hidden">
+      <div className="relative flex flex-1 min-h-[400px] lg:min-h-[480px] overflow-hidden">
         {/* SCROLLABLE WRAPPER (Horizontal + Vertical) */}
         <div 
           ref={scrollContainerRef}
@@ -690,8 +690,8 @@ export default function ProjectGantt({
 
       {/* 3. BOTTOM LEGEND */}
       <div 
-        className="flex flex-wrap items-center justify-between gap-3 border-t border-dark-600/40 bg-dark-800 text-xs text-dark-300"
-        style={{ padding: '8px 14px' }}
+        className="flex flex-wrap items-center justify-between gap-3 border-t border-dark-600/40 bg-dark-800 text-xs text-dark-300 pr-20 md:pr-24"
+        style={{ padding: '8px 14px', paddingRight: '80px' }}
       >
         <div className="flex flex-wrap items-center gap-4 text-[11px]">
           <span className="font-semibold text-dark-400">Légende des barres :</span>
