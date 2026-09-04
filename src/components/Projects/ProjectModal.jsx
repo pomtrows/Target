@@ -317,33 +317,33 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
         </div>
 
         {/* Dates Début et Fin */}
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3.5">
           {/* Start Date */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-dark-300 uppercase tracking-wider flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-dark-300 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
               <Calendar size={13} className="text-dark-400" />
-              Date de début
+              Début
             </label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors h-[34px] px-2 text-center"
+              className="flex-1 min-w-0 bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors h-[34px] px-2 text-center"
               style={{ textAlign: 'center' }}
             />
           </div>
 
           {/* End Date */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-dark-300 uppercase tracking-wider flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-dark-300 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
               <Calendar size={13} className="text-dark-400" />
-              Date de fin
+              Fin
             </label>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors h-[34px] px-2 text-center"
+              className="flex-1 min-w-0 bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors h-[34px] px-2 text-center"
               style={{ textAlign: 'center' }}
             />
           </div>
