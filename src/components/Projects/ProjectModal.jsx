@@ -204,33 +204,33 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           />
         </div>
 
-        {/* Category & Priority */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          {/* Category */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-dark-300 uppercase tracking-wider">
-              Catégorie <span className="text-accent-red">*</span>
-            </label>
-            <select
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer"
-              style={{ padding: '6px 10px' }}
-            >
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id} className="bg-dark-800 text-dark-100">
-                  {cat.icon} {cat.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Category */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-bold text-dark-300 uppercase tracking-wider">
+            Catégorie <span className="text-accent-red">*</span>
+          </label>
+          <select
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer"
+            style={{ padding: '6px 10px' }}
+          >
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id} className="bg-dark-800 text-dark-100">
+                {cat.icon} {cat.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
+        {/* Priority & Status sur la même ligne */}
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5">
           {/* Priority */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-dark-300 uppercase tracking-wider">
               Priorité <span className="text-accent-red">*</span>
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1 sm:gap-1.5">
               {[
                 { val: 1, label: 'P1', color: 'text-accent-red border-accent-red/40 bg-accent-red/10' },
                 { val: 2, label: 'P2', color: 'text-accent-violet border-accent-violet/40 bg-accent-violet/10' },
@@ -240,22 +240,18 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                   type="button"
                   key={p.val}
                   onClick={() => setPriority(p.val)}
-                  className={`text-center rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                  className={`text-center rounded-xl text-xs font-bold border transition-all cursor-pointer h-[34px] flex items-center justify-center ${
                     priority === p.val 
                       ? `${p.color} ring-1 ring-current shadow-sm` 
                       : 'border-dark-600/40 text-dark-400 hover:text-dark-200 hover:bg-dark-700/40'
                   }`}
-                  style={{ padding: '5px 8px' }}
                 >
                   {p.label}
                 </button>
               ))}
             </div>
           </div>
-        </div>
 
-        {/* Status & Dates */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
           {/* Status */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-dark-300 uppercase tracking-wider">
@@ -264,15 +260,17 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer"
-              style={{ padding: '6px 10px' }}
+              className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer h-[34px] px-2"
             >
               <option value="0-Non lancé" className="bg-dark-800 text-dark-200">⚪ 0-Non lancé</option>
               <option value="1-En cours" className="bg-dark-800 text-accent-cyan">🔵 1-En cours</option>
               <option value="2-Terminé" className="bg-dark-800 text-accent-green">🟢 2-Terminé</option>
             </select>
           </div>
+        </div>
 
+        {/* Dates Début et Fin */}
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5">
           {/* Start Date */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-dark-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -283,8 +281,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors"
-              style={{ padding: '6px 10px' }}
+              className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors h-[34px] px-2"
             />
           </div>
 
@@ -298,8 +295,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors"
-              style={{ padding: '6px 10px' }}
+              className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors h-[34px] px-2"
             />
           </div>
         </div>
