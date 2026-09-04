@@ -246,19 +246,13 @@ export default function ProjectCard({
           </div>
         </div>
 
-        {/* Project Name & Description */}
-        <div className="flex flex-col gap-1.5 cursor-pointer" onClick={() => onOpenDetails?.(project)}>
+        {/* Project Name */}
+        <div className="flex flex-col cursor-pointer" onClick={() => onOpenDetails?.(project)}>
           <div className="flex items-start justify-between gap-2">
             <h3 className="text-base font-bold text-dark-100 leading-snug group-hover:text-accent-cyan transition-colors">
               {project.name}
             </h3>
           </div>
-
-          {project.description && (
-            <p className="text-xs text-dark-400 line-clamp-2 leading-relaxed">
-              {project.description}
-            </p>
-          )}
         </div>
 
         {/* Dates and Alerts */}
