@@ -447,8 +447,9 @@ export default function ProjectDetailModal({
                                   <span 
                                     className="text-[10px] font-bold rounded bg-accent-green/20 text-accent-green border border-accent-green/30 flex-shrink-0"
                                     style={{ padding: '1px 5px' }}
+                                    title="Objectif réalisé"
                                   >
-                                    ✓ Réalisé
+                                    ✓
                                   </span>
                                 )}
                               </div>
