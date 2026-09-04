@@ -505,55 +505,44 @@ export default function ProjectDetailModal({
                           }`}
                           style={{ padding: '6px 10px' }}
                         >
-                          <div className="flex items-center gap-2.5">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleObjective(obj)}
-                              className={`rounded-xl flex items-center justify-center font-bold transition-all cursor-pointer ${
-                                isDone 
-                                   ? 'bg-accent-green/20 text-accent-green border border-accent-green/40 hover:bg-accent-green/30 shadow-sm shadow-accent-green/10' 
-                                   : 'bg-dark-700 text-dark-400 hover:bg-dark-600 hover:text-dark-200 border border-dark-600/50'
-                              }`}
-                              style={{ width: '26px', height: '26px', minWidth: '26px', minHeight: '26px', padding: '3px' }}
-                              title={isDone ? "Cliquer pour marquer comme non validé" : "Cliquer pour marquer comme validé"}
-                            >
-                              {isDone ? <Check size={14} strokeWidth={3} /> : <span className="text-xs">⏳</span>}
-                            </button>
-
-                            <div className="flex flex-col">
-                              <span className={`font-semibold text-xs ${isDone ? 'text-dark-300 line-through' : 'text-dark-100'}`}>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex flex-col min-w-0">
+                              <span className={`font-semibold text-xs truncate ${isDone ? 'text-dark-300 line-through' : 'text-dark-100'}`}>
                                 {obj.title}
                               </span>
                               <div className="flex items-center gap-1.5 text-[10px] text-dark-400 mt-0.5">
                                 {objCat && (
                                   <span 
-                                    className="rounded flex items-center gap-1"
+                                    className="rounded flex items-center gap-1 shrink-0"
                                     style={{ color: objCat.color, backgroundColor: `${objCat.color}15`, padding: '1px 5px' }}
                                   >
                                     {objCat.icon} {objCat.label}
                                   </span>
                                 )}
                                 <span>•</span>
-                                <span>Cible : {obj.target || 1}x</span>
+                                <span className="shrink-0">Cible : {obj.target || 1}x</span>
                                 {isDone && (
                                   <>
                                     <span>•</span>
-                                    <span className="text-accent-green font-semibold">Validé</span>
+                                    <span className="text-accent-green font-semibold shrink-0">Validé</span>
                                   </>
                                 )}
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2.5">
-                            <span 
-                              className={`rounded-md text-[10px] font-bold ${
-                                isDone ? 'bg-accent-green/15 text-accent-green border border-accent-green/30' : 'bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/20'
+                          <div className="flex items-center gap-2.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleObjective(obj)}
+                              className={`rounded-md text-[10px] font-bold cursor-pointer transition-all ${
+                                isDone ? 'bg-accent-green/15 text-accent-green border border-accent-green/30 hover:bg-accent-green/25' : 'bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/20 hover:bg-accent-cyan/25'
                               }`}
                               style={{ padding: '2px 6px' }}
+                              title={isDone ? "Cliquer pour marquer comme non validé" : "Cliquer pour marquer comme validé"}
                             >
                               {Math.round(prog * 100)}%
-                            </span>
+                            </button>
 
                             <button
                               onClick={() => handleRemoveObjectiveFromProject(obj.id)}
