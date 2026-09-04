@@ -152,8 +152,8 @@ export default function ProjectCard({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="group relative bg-dark-800/90 hover:bg-dark-800 border border-dark-600/40 hover:border-dark-500/60 rounded-2xl transition-all duration-200 shadow-lg flex flex-col justify-between gap-4"
-        style={{ padding: '18px 20px' }}
+        className="group relative bg-dark-800/90 hover:bg-dark-800 border border-dark-600/40 hover:border-dark-500/60 rounded-2xl transition-all duration-200 shadow-lg flex flex-col justify-between gap-3"
+        style={{ padding: '10px 12px' }}
       >
         {/* Top bar: Category & Priority & Menu */}
         <div className="flex items-center justify-between gap-2">
@@ -164,7 +164,7 @@ export default function ProjectCard({
               backgroundColor: `${category.color}15`, 
               color: category.color,
               border: `1px solid ${category.color}35`,
-              padding: '4px 10px'
+              padding: '2px 6px'
             }}
           >
             <span>{category.icon}</span>
@@ -175,7 +175,7 @@ export default function ProjectCard({
           <div className="flex items-center gap-2">
             <span 
               className={`text-[11px] font-bold rounded-md border flex items-center gap-1.5 ${priorityConfig.badgeBg}`}
-              style={{ padding: '4px 10px' }}
+              style={{ padding: '2px 6px' }}
             >
               <span className={`w-1.5 h-1.5 rounded-full ${priorityConfig.dot}`} />
               {priorityConfig.label}
@@ -189,7 +189,7 @@ export default function ProjectCard({
                   setShowMenu(!showMenu);
                 }}
                 className="rounded-lg text-dark-400 hover:text-dark-100 hover:bg-dark-700/60 transition-colors"
-                style={{ padding: '6px' }}
+                style={{ padding: '3px 4px' }}
                 title="Options"
               >
                 <MoreVertical size={16} />
@@ -263,7 +263,7 @@ export default function ProjectCard({
         {/* Dates and Alerts */}
         <div 
           className="flex flex-wrap items-center justify-between gap-2 text-xs text-dark-400 border-t border-dark-700/40"
-          style={{ paddingTop: '10px', paddingBottom: '2px' }}
+          style={{ paddingTop: '6px', paddingBottom: '2px' }}
         >
           <div className="flex items-center gap-1.5">
             <Calendar size={13} className="text-dark-400" />
@@ -281,7 +281,7 @@ export default function ProjectCard({
                   ? 'bg-accent-red/20 text-accent-red border border-accent-red/30' 
                   : 'bg-accent-orange/20 text-accent-orange border border-accent-orange/30'
               }`}
-              style={{ padding: '3px 8px' }}
+              style={{ padding: '2px 5px' }}
             >
               <dateAlert.icon size={12} />
               {dateAlert.text}
@@ -291,8 +291,8 @@ export default function ProjectCard({
 
         {/* Objectives Progress Bar */}
         <div 
-          className="flex flex-col gap-2 bg-dark-900/50 rounded-xl border border-dark-700/30"
-          style={{ padding: '10px 14px' }}
+          className="flex flex-col gap-1.5 bg-dark-900/50 rounded-xl border border-dark-700/30"
+          style={{ padding: '6px 8px' }}
         >
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1.5 text-dark-300 font-medium">
@@ -326,7 +326,7 @@ export default function ProjectCard({
         {/* Bottom Actions: Status selector & Badges (Attachments, Notes) */}
         <div 
           className="flex items-center justify-between gap-2 border-t border-dark-700/40"
-          style={{ paddingTop: '12px' }}
+          style={{ paddingTop: '6px' }}
         >
           {/* Status Quick Dropdown */}
           <select
@@ -334,7 +334,7 @@ export default function ProjectCard({
             onChange={(e) => changeProjectStatus(project.id, e.target.value)}
             onClick={(e) => e.stopPropagation()}
             className={`text-xs font-bold rounded-lg border cursor-pointer transition-all outline-none ${statusConfig.bg} ${statusConfig.color}`}
-            style={{ padding: '6px 12px' }}
+            style={{ padding: '3px 6px' }}
           >
             <option value="0-Non lancé" className="bg-dark-800 text-dark-200">⚪ 0-Non lancé</option>
             <option value="1-En cours" className="bg-dark-800 text-accent-cyan">🔵 1-En cours</option>
@@ -354,7 +354,7 @@ export default function ProjectCard({
                   ? 'bg-accent-cyan/15 border-accent-cyan/40 text-accent-cyan'
                   : 'bg-dark-700/40 border-dark-600/30 text-dark-400 hover:text-dark-200'
               }`}
-              style={{ padding: '7px 10px' }}
+              style={{ padding: '3px 6px' }}
               title={attachmentsCount > 0 ? `${attachmentsCount} pièce(s) jointe(s)` : 'Ajouter une pièce jointe'}
             >
               <Paperclip size={14} />
@@ -369,7 +369,7 @@ export default function ProjectCard({
                   ? 'bg-accent-violet/20 border-accent-violet/40 text-accent-violet'
                   : 'bg-dark-700/40 border-dark-600/30 text-dark-400 hover:text-dark-200'
               }`}
-              style={{ padding: '7px 10px' }}
+              style={{ padding: '3px 6px' }}
               title={hasNotes ? 'Voir les notes du projet' : 'Rédiger une note'}
             >
               <FileText size={14} />
@@ -380,7 +380,7 @@ export default function ProjectCard({
             <button
               onClick={() => onOpenDetails?.(project)}
               className="rounded-lg bg-dark-700/40 border border-dark-600/30 text-dark-300 hover:text-accent-cyan hover:border-accent-cyan/40 transition-all ml-1 cursor-pointer"
-              style={{ padding: '7px 9px' }}
+              style={{ padding: '3px 5px' }}
               title="Ouvrir la fiche complète"
             >
               <ChevronRight size={15} />

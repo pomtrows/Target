@@ -176,25 +176,25 @@ export default function ProjectDetailModal({
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        headerPadding="20px 24px"
-        bodyPadding="20px 24px"
+        headerPadding="12px 16px"
+        bodyPadding="14px 18px"
         title={
           <div className="flex items-center gap-3">
-            <span className="rounded-xl bg-accent-cyan/15 text-accent-cyan flex items-center justify-center" style={{ padding: '8px' }}>
-              <FolderKanban size={20} />
+            <span className="rounded-xl bg-accent-cyan/15 text-accent-cyan flex items-center justify-center" style={{ padding: '5px' }}>
+              <FolderKanban size={18} />
             </span>
             <div className="flex flex-col">
               <span className="text-base font-bold text-dark-100">{project.name}</span>
               <div className="flex items-center gap-2 mt-0.5">
                 <span 
                   className="text-[11px] font-semibold rounded-md flex items-center gap-1"
-                  style={{ backgroundColor: `${category.color}20`, color: category.color, padding: '3px 8px' }}
+                  style={{ backgroundColor: `${category.color}20`, color: category.color, padding: '2px 6px' }}
                 >
                   {category.icon} {category.label}
                 </span>
                 <span 
                   className={`text-[10px] font-bold rounded-md border ${priorityConfig.color}`}
-                  style={{ padding: '3px 8px' }}
+                  style={{ padding: '2px 6px' }}
                 >
                   {priorityConfig.label}
                 </span>
@@ -204,11 +204,11 @@ export default function ProjectDetailModal({
         }
         maxWidth="max-w-4xl"
       >
-        <div className="flex flex-col gap-6 text-dark-200 min-h-[500px]">
+        <div className="flex flex-col gap-4 text-dark-200 min-h-[450px]">
           {/* Header Controls: Status selector, Dates, Edit button */}
           <div 
             className="flex flex-wrap items-center justify-between gap-3 bg-dark-900/60 border border-dark-600/30 rounded-2xl"
-            style={{ padding: '14px 18px' }}
+            style={{ padding: '7px 10px' }}
           >
             {/* Status changer */}
             <div className="flex items-center gap-2.5">
@@ -217,7 +217,7 @@ export default function ProjectDetailModal({
                 value={project.status}
                 onChange={(e) => changeProjectStatus(project.id, e.target.value)}
                 className={`text-xs font-bold rounded-xl border cursor-pointer transition-all outline-none ${statusConfig.color}`}
-                style={{ padding: '8px 14px' }}
+                style={{ padding: '4px 8px' }}
               >
                 <option value="0-Non lancé" className="bg-dark-800 text-dark-200">⚪ 0-Non lancé</option>
                 <option value="1-En cours" className="bg-dark-800 text-accent-cyan">🔵 1-En cours</option>
@@ -243,7 +243,7 @@ export default function ProjectDetailModal({
                       ? 'bg-accent-red/20 text-accent-red border border-accent-red/30' 
                       : 'bg-accent-orange/20 text-accent-orange border border-accent-orange/30'
                   }`}
-                  style={{ padding: '3px 8px' }}
+                  style={{ padding: '2px 5px' }}
                 >
                   {dateAlert.text}
                 </span>
@@ -254,7 +254,7 @@ export default function ProjectDetailModal({
             <button
               onClick={() => onEdit?.(project)}
               className="flex items-center gap-1.5 rounded-xl bg-dark-700/60 hover:bg-dark-700 text-dark-200 hover:text-dark-100 text-xs font-semibold border border-dark-600/40 transition-colors cursor-pointer"
-              style={{ padding: '8px 16px' }}
+              style={{ padding: '4px 10px' }}
             >
               <Edit2 size={13} className="text-accent-violet" />
               Modifier
@@ -265,12 +265,12 @@ export default function ProjectDetailModal({
           <div className="flex border-b border-dark-700/60 gap-2">
             <button
               onClick={() => handleTabChange('overview')}
-              className={`flex items-center gap-2 pb-3 text-sm font-semibold transition-all relative cursor-pointer ${
+              className={`flex items-center gap-2 pb-2 text-sm font-semibold transition-all relative cursor-pointer ${
                 activeTab === 'overview' ? 'text-accent-cyan font-bold' : 'text-dark-400 hover:text-dark-200'
               }`}
-              style={{ padding: '10px 14px' }}
+              style={{ padding: '6px 10px' }}
             >
-              <Target size={16} />
+              <Target size={15} />
               <span>Aperçu & Objectifs ({linkedObjectives.length})</span>
               {activeTab === 'overview' && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-cyan rounded-full" />
@@ -279,12 +279,12 @@ export default function ProjectDetailModal({
 
             <button
               onClick={() => handleTabChange('notes')}
-              className={`flex items-center gap-2 pb-3 text-sm font-semibold transition-all relative cursor-pointer ${
+              className={`flex items-center gap-2 pb-2 text-sm font-semibold transition-all relative cursor-pointer ${
                 activeTab === 'notes' ? 'text-accent-violet font-bold' : 'text-dark-400 hover:text-dark-200'
               }`}
-              style={{ padding: '10px 14px' }}
+              style={{ padding: '6px 10px' }}
             >
-              <FileText size={16} />
+              <FileText size={15} />
               <span>Notes de projet</span>
               {activeTab === 'notes' && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-violet rounded-full" />
@@ -293,12 +293,12 @@ export default function ProjectDetailModal({
 
             <button
               onClick={() => handleTabChange('attachments')}
-              className={`flex items-center gap-2 pb-3 text-sm font-semibold transition-all relative cursor-pointer ${
+              className={`flex items-center gap-2 pb-2 text-sm font-semibold transition-all relative cursor-pointer ${
                 activeTab === 'attachments' ? 'text-accent-orange font-bold' : 'text-dark-400 hover:text-dark-200'
               }`}
-              style={{ padding: '10px 14px' }}
+              style={{ padding: '6px 10px' }}
             >
-              <Paperclip size={16} />
+              <Paperclip size={15} />
               <span>Pièces jointes ({attachments.length})</span>
               {activeTab === 'attachments' && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-orange rounded-full" />
@@ -308,20 +308,20 @@ export default function ProjectDetailModal({
 
           {/* TAB 1: OVERVIEW & OBJECTIVES */}
           {activeTab === 'overview' && (
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
               {/* Description */}
               {project.description ? (
                 <div 
                   className="bg-dark-900/40 rounded-2xl border border-dark-600/30 text-sm text-dark-200 leading-relaxed whitespace-pre-wrap"
-                  style={{ padding: '16px 20px' }}
+                  style={{ padding: '8px 12px' }}
                 >
-                  <h4 className="text-xs font-bold text-dark-400 uppercase tracking-wider mb-2">Description</h4>
+                  <h4 className="text-xs font-bold text-dark-400 uppercase tracking-wider mb-1.5">Description</h4>
                   {project.description}
                 </div>
               ) : (
                 <div 
                   className="bg-dark-900/30 rounded-xl border border-dashed border-dark-700 text-xs text-dark-400 italic"
-                  style={{ padding: '14px 18px' }}
+                  style={{ padding: '7px 10px' }}
                 >
                   Aucune description renseignée pour ce projet.
                 </div>
@@ -329,8 +329,8 @@ export default function ProjectDetailModal({
 
               {/* Progress Summary */}
               <div 
-                className="flex flex-col gap-2.5 bg-gradient-to-br from-dark-850 to-dark-900 rounded-2xl border border-dark-600/40"
-                style={{ padding: '16px 20px' }}
+                className="flex flex-col gap-2 bg-gradient-to-br from-dark-850 to-dark-900 rounded-2xl border border-dark-600/40"
+                style={{ padding: '8px 12px' }}
               >
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-dark-200">
@@ -365,7 +365,7 @@ export default function ProjectDetailModal({
                     type="button"
                     onClick={() => setShowAddObjectives(!showAddObjectives)}
                     className="flex items-center gap-1.5 text-xs font-bold text-accent-cyan hover:underline cursor-pointer"
-                    style={{ padding: '6px 12px' }}
+                    style={{ padding: '3px 6px' }}
                   >
                     <Plus size={14} />
                     {showAddObjectives ? 'Masquer la sélection' : 'Associer des objectifs'}
@@ -375,14 +375,14 @@ export default function ProjectDetailModal({
                 {/* Inline Objectives Selector (when expanded) */}
                 {showAddObjectives && (
                   <div 
-                    className="bg-dark-900/80 border border-dark-600/40 rounded-2xl flex flex-col gap-2.5 animate-fade-in"
-                    style={{ padding: '16px 20px' }}
+                    className="bg-dark-900/80 border border-dark-600/40 rounded-2xl flex flex-col gap-2 animate-fade-in"
+                    style={{ padding: '8px 12px' }}
                   >
                     <span className="text-xs font-semibold text-dark-200">Sélectionnez les objectifs à rattacher :</span>
                     {availableObjectives.length === 0 ? (
                       <p className="text-xs text-dark-400 italic">Tous vos objectifs sont déjà associés à ce projet.</p>
                     ) : (
-                      <div className="max-h-48 overflow-y-auto custom-scrollbar flex flex-col gap-2 mt-1">
+                      <div className="max-h-48 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-1">
                         {availableObjectives.map(obj => {
                           const isObjDone = getObjectiveProjectProgress(obj, targetState.progress) >= 1;
                           return (
@@ -390,14 +390,14 @@ export default function ProjectDetailModal({
                               key={obj.id}
                               onClick={() => handleAddObjectiveToProject(obj.id)}
                               className="flex items-center justify-between rounded-xl bg-dark-800/80 hover:bg-dark-700 border border-dark-600/30 text-xs cursor-pointer transition-all"
-                              style={{ padding: '10px 16px' }}
+                              style={{ padding: '5px 8px' }}
                             >
-                              <div className="flex items-center gap-2.5 truncate">
+                              <div className="flex items-center gap-2 truncate">
                                 <span className="text-dark-200 font-medium truncate">{obj.title}</span>
                                 {isObjDone && (
                                   <span 
                                     className="text-[10px] font-bold rounded bg-accent-green/20 text-accent-green border border-accent-green/30 flex-shrink-0"
-                                    style={{ padding: '2px 8px' }}
+                                    style={{ padding: '1px 5px' }}
                                   >
                                     ✓ Réalisé
                                   </span>
@@ -406,7 +406,7 @@ export default function ProjectDetailModal({
                               <button
                                 type="button"
                                 className="rounded bg-accent-cyan/20 text-accent-cyan text-[11px] font-bold flex-shrink-0 ml-2 cursor-pointer"
-                                style={{ padding: '6px 14px' }}
+                                style={{ padding: '3px 8px' }}
                               >
                                 + Associer
                               </button>
@@ -422,20 +422,20 @@ export default function ProjectDetailModal({
                 {linkedObjectives.length === 0 ? (
                   <div 
                     className="text-center bg-dark-900/20 border border-dashed border-dark-700/50 rounded-2xl flex flex-col items-center gap-2"
-                    style={{ padding: '32px 20px' }}
+                    style={{ padding: '16px 12px' }}
                   >
-                    <Target size={28} className="text-dark-500" />
+                    <Target size={24} className="text-dark-500" />
                     <span className="text-xs text-dark-400">Aucun objectif n'est encore affecté à ce projet.</span>
                     <button
                       onClick={() => setShowAddObjectives(true)}
                       className="text-xs font-bold text-accent-cyan underline mt-1 cursor-pointer"
-                      style={{ padding: '4px 8px' }}
+                      style={{ padding: '2px 6px' }}
                     >
                       Associer des objectifs maintenant
                     </button>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2.5">
+                  <div className="flex flex-col gap-2">
                     {linkedObjectives.map((obj) => {
                       const prog = getObjectiveProjectProgress(obj, targetState.progress);
                       const isDone = prog >= 1;
@@ -449,32 +449,32 @@ export default function ProjectDetailModal({
                               ? 'bg-dark-800/40 border-dark-700/50' 
                               : 'bg-dark-800/80 border-dark-600/30 hover:border-dark-500/50'
                           }`}
-                          style={{ padding: '12px 18px' }}
+                          style={{ padding: '6px 10px' }}
                         >
-                          <div className="flex items-center gap-3.5">
+                          <div className="flex items-center gap-2.5">
                             <button
                               type="button"
                               onClick={() => handleToggleObjective(obj)}
                               className={`rounded-xl flex items-center justify-center font-bold transition-all cursor-pointer ${
                                 isDone 
-                                  ? 'bg-accent-green/20 text-accent-green border border-accent-green/40 hover:bg-accent-green/30 shadow-sm shadow-accent-green/10' 
-                                  : 'bg-dark-700 text-dark-400 hover:bg-dark-600 hover:text-dark-200 border border-dark-600/50'
+                                   ? 'bg-accent-green/20 text-accent-green border border-accent-green/40 hover:bg-accent-green/30 shadow-sm shadow-accent-green/10' 
+                                   : 'bg-dark-700 text-dark-400 hover:bg-dark-600 hover:text-dark-200 border border-dark-600/50'
                               }`}
-                              style={{ width: '32px', height: '32px', minWidth: '32px', minHeight: '32px', padding: '6px' }}
+                              style={{ width: '26px', height: '26px', minWidth: '26px', minHeight: '26px', padding: '3px' }}
                               title={isDone ? "Cliquer pour marquer comme non validé" : "Cliquer pour marquer comme validé"}
                             >
-                              {isDone ? <Check size={16} strokeWidth={3} /> : <span className="text-xs">⏳</span>}
+                              {isDone ? <Check size={14} strokeWidth={3} /> : <span className="text-xs">⏳</span>}
                             </button>
 
                             <div className="flex flex-col">
-                              <span className={`font-semibold text-sm ${isDone ? 'text-dark-300 line-through' : 'text-dark-100'}`}>
+                              <span className={`font-semibold text-xs ${isDone ? 'text-dark-300 line-through' : 'text-dark-100'}`}>
                                 {obj.title}
                               </span>
-                              <div className="flex items-center gap-2 text-[11px] text-dark-400 mt-1">
+                              <div className="flex items-center gap-1.5 text-[10px] text-dark-400 mt-0.5">
                                 {objCat && (
                                   <span 
                                     className="rounded flex items-center gap-1"
-                                    style={{ color: objCat.color, backgroundColor: `${objCat.color}15`, padding: '2px 6px' }}
+                                    style={{ color: objCat.color, backgroundColor: `${objCat.color}15`, padding: '1px 5px' }}
                                   >
                                     {objCat.icon} {objCat.label}
                                   </span>
@@ -491,12 +491,12 @@ export default function ProjectDetailModal({
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-3.5">
+                          <div className="flex items-center gap-2.5">
                             <span 
-                              className={`rounded-md text-[11px] font-bold ${
+                              className={`rounded-md text-[10px] font-bold ${
                                 isDone ? 'bg-accent-green/15 text-accent-green border border-accent-green/30' : 'bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/20'
                               }`}
-                              style={{ padding: '4px 10px' }}
+                              style={{ padding: '2px 6px' }}
                             >
                               {Math.round(prog * 100)}%
                             </span>
@@ -504,10 +504,10 @@ export default function ProjectDetailModal({
                             <button
                               onClick={() => handleRemoveObjectiveFromProject(obj.id)}
                               className="rounded text-dark-500 hover:text-accent-red hover:bg-accent-red/10 transition-colors cursor-pointer"
-                              style={{ padding: '6px' }}
+                              style={{ padding: '3px' }}
                               title="Détacher du projet"
                             >
-                              <X size={15} />
+                              <X size={14} />
                             </button>
                           </div>
                         </div>
@@ -537,7 +537,7 @@ export default function ProjectDetailModal({
 
           {/* TAB 3: ATTACHMENTS */}
           {activeTab === 'attachments' && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-dark-300 font-semibold">
                   Fichiers et pièces jointes rattachés ({attachments.length})
@@ -545,10 +545,10 @@ export default function ProjectDetailModal({
                 <button
                   type="button"
                   onClick={() => setShowAttachmentsManager(true)}
-                  className="rounded-xl bg-accent-cyan text-dark-950 text-xs font-bold hover:bg-accent-cyan/90 transition-all flex items-center gap-2 cursor-pointer"
-                  style={{ padding: '8px 16px' }}
+                  className="rounded-xl bg-accent-cyan text-dark-950 text-xs font-bold hover:bg-accent-cyan/90 transition-all flex items-center gap-1.5 cursor-pointer"
+                  style={{ padding: '4px 10px' }}
                 >
-                  <Paperclip size={14} />
+                  <Paperclip size={13} />
                   Gérer les fichiers
                 </button>
               </div>
@@ -556,28 +556,28 @@ export default function ProjectDetailModal({
               {attachments.length === 0 ? (
                 <div 
                   className="text-center bg-dark-900/30 border border-dashed border-dark-700 rounded-2xl flex flex-col items-center gap-2"
-                  style={{ padding: '36px 20px' }}
+                  style={{ padding: '18px 12px' }}
                 >
-                  <Paperclip size={28} className="text-dark-500" />
+                  <Paperclip size={24} className="text-dark-500" />
                   <span className="text-xs text-dark-400">Aucune pièce jointe pour ce projet.</span>
                   <button
                     onClick={() => setShowAttachmentsManager(true)}
                     className="text-xs font-bold text-accent-cyan underline mt-1 cursor-pointer"
-                    style={{ padding: '4px 8px' }}
+                    style={{ padding: '2px 6px' }}
                   >
                     Téléverser un document ou une image
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {attachments.map((file) => (
                     <div
                       key={file.id}
                       className="flex items-center justify-between rounded-xl bg-dark-800/80 border border-dark-600/30 hover:border-dark-500/50 text-xs"
-                      style={{ padding: '12px 16px' }}
+                      style={{ padding: '6px 10px' }}
                     >
-                      <div className="flex items-center gap-2.5 truncate">
-                        <Paperclip size={15} className="text-accent-cyan flex-shrink-0" />
+                      <div className="flex items-center gap-2 truncate">
+                        <Paperclip size={14} className="text-accent-cyan flex-shrink-0" />
                         <span className="truncate font-medium text-dark-200">{file.name}</span>
                       </div>
                       <a
@@ -585,7 +585,7 @@ export default function ProjectDetailModal({
                         target="_blank"
                         rel="noreferrer"
                         className="rounded bg-dark-700 hover:bg-dark-600 text-dark-200 text-[11px] font-medium flex items-center gap-1 flex-shrink-0"
-                        style={{ padding: '6px 12px' }}
+                        style={{ padding: '3px 6px' }}
                       >
                         <ExternalLink size={12} />
                         Voir

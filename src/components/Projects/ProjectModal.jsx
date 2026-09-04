@@ -107,15 +107,15 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
       isOpen={isOpen}
       onClose={onClose}
       title={projectToEdit ? 'Modifier le projet' : 'Nouveau projet 📁'}
-      headerPadding="20px 24px"
-      bodyPadding="20px 24px"
+      headerPadding="12px 16px"
+      bodyPadding="14px 18px"
       maxWidth="max-w-2xl"
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5 text-dark-200">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3.5 text-dark-200">
         {error && (
           <div 
             className="flex items-center gap-2 bg-accent-red/10 border border-accent-red/30 rounded-xl text-accent-red text-xs font-semibold"
-            style={{ padding: '12px 16px' }}
+            style={{ padding: '6px 10px' }}
           >
             <AlertCircle size={16} />
             <span>{error}</span>
@@ -123,7 +123,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
         )}
 
         {/* Name */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5">
           <label className="text-xs font-bold text-dark-300 uppercase tracking-wider">
             Nom du projet <span className="text-accent-red">*</span>
           </label>
@@ -133,16 +133,16 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
             onChange={(e) => setName(e.target.value)}
             placeholder="Ex: Rénovation cuisine, Lancement produit..."
             className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-sm text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-colors font-medium"
-            style={{ padding: '12px 16px' }}
+            style={{ padding: '6px 10px' }}
             required
             autoFocus
           />
         </div>
 
         {/* Category & Priority */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           {/* Category */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-dark-300 uppercase tracking-wider">
               Catégorie <span className="text-accent-red">*</span>
             </label>
@@ -150,7 +150,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer"
-              style={{ padding: '12px 16px' }}
+              style={{ padding: '6px 10px' }}
             >
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id} className="bg-dark-800 text-dark-100">
@@ -161,11 +161,11 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           </div>
 
           {/* Priority */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-dark-300 uppercase tracking-wider">
               Priorité <span className="text-accent-red">*</span>
             </label>
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-3 gap-2">
               {[
                 { val: 1, label: '1 - Haute', color: 'text-accent-red border-accent-red/40 bg-accent-red/10' },
                 { val: 2, label: '2 - Moyenne', color: 'text-accent-orange border-accent-orange/40 bg-accent-orange/10' },
@@ -180,7 +180,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                       ? `${p.color} ring-1 ring-current shadow-sm` 
                       : 'border-dark-600/40 text-dark-400 hover:text-dark-200 hover:bg-dark-700/40'
                   }`}
-                  style={{ padding: '10px 12px' }}
+                  style={{ padding: '5px 8px' }}
                 >
                   {p.label}
                 </button>
@@ -190,9 +190,9 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
         </div>
 
         {/* Status & Dates */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
           {/* Status */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-dark-300 uppercase tracking-wider">
               Statut <span className="text-accent-red">*</span>
             </label>
@@ -200,7 +200,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
               value={status}
               onChange={(e) => setStatus(e.target.value)}
               className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer"
-              style={{ padding: '12px 16px' }}
+              style={{ padding: '6px 10px' }}
             >
               <option value="0-Non lancé" className="bg-dark-800 text-dark-200">⚪ 0-Non lancé</option>
               <option value="1-En cours" className="bg-dark-800 text-accent-cyan">🔵 1-En cours</option>
@@ -209,7 +209,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           </div>
 
           {/* Start Date */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-dark-300 uppercase tracking-wider flex items-center gap-1.5">
               <Calendar size={13} className="text-dark-400" />
               Date de début
@@ -219,12 +219,12 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors"
-              style={{ padding: '12px 16px' }}
+              style={{ padding: '6px 10px' }}
             />
           </div>
 
           {/* End Date */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-dark-300 uppercase tracking-wider flex items-center gap-1.5">
               <Calendar size={13} className="text-dark-400" />
               Date de fin
@@ -234,13 +234,13 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors"
-              style={{ padding: '12px 16px' }}
+              style={{ padding: '6px 10px' }}
             />
           </div>
         </div>
 
         {/* Description */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5">
           <label className="text-xs font-bold text-dark-300 uppercase tracking-wider">
             Description
           </label>
@@ -250,14 +250,14 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
             rows={3}
             placeholder="Détaillez les grandes étapes, les enjeux et les livrables de ce projet..."
             className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-sm text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-colors resize-none leading-relaxed"
-            style={{ padding: '12px 16px', minHeight: '90px' }}
+            style={{ padding: '6px 10px', minHeight: '65px' }}
           />
         </div>
 
         {/* Linked Objectives Selection */}
         <div 
-          className="flex flex-col gap-2.5 bg-dark-900/40 rounded-2xl border border-dark-600/30"
-          style={{ padding: '16px 20px' }}
+          className="flex flex-col gap-2 bg-dark-900/40 rounded-2xl border border-dark-600/30"
+          style={{ padding: '8px 12px' }}
         >
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-dark-200 uppercase tracking-wider flex items-center gap-1.5">
@@ -279,25 +279,24 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
             Cochez les objectifs existants qui participent à la réalisation de ce projet.
           </p>
 
-          {/* Search inside objectives */}
           {allObjectives.length > 5 && (
-            <div className="relative mt-2">
-              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
+            <div className="relative mt-1">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
               <input
                 type="text"
                 value={objectiveSearch}
                 onChange={(e) => setObjectiveSearch(e.target.value)}
                 placeholder="Filtrer les objectifs..."
                 className="w-full bg-dark-800/80 border border-dark-600/40 rounded-xl text-xs text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan"
-                style={{ padding: '10px 14px 10px 38px' }}
+                style={{ padding: '6px 10px 6px 28px' }}
               />
             </div>
           )}
 
           {/* Scrollable Objectives List */}
-          <div className="max-h-48 overflow-y-auto custom-scrollbar flex flex-col gap-2 mt-2 pr-1">
+          <div className="max-h-44 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-1.5 pr-1">
             {filteredObjectives.length === 0 ? (
-              <div className="text-center py-6 text-xs text-dark-400">
+              <div className="text-center py-3 text-xs text-dark-400">
                 Aucun objectif trouvé.
               </div>
             ) : (
@@ -315,24 +314,24 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                         ? 'bg-accent-cyan/15 border-accent-cyan/50 text-dark-100 font-semibold'
                         : 'bg-dark-800/50 border-dark-600/30 text-dark-300 hover:bg-dark-700/40 hover:text-dark-100'
                     }`}
-                    style={{ padding: '10px 16px' }}
+                    style={{ padding: '6px 10px' }}
                   >
-                    <div className="flex items-center gap-3 truncate">
+                    <div className="flex items-center gap-2.5 truncate">
                       <div 
                         className={`rounded flex items-center justify-center border transition-all flex-shrink-0 ${
                           isSelected 
                             ? 'bg-accent-cyan border-accent-cyan text-dark-950 font-black' 
                             : 'border-dark-500 bg-dark-700/60'
                         }`}
-                        style={{ width: '18px', height: '18px' }}
+                        style={{ width: '16px', height: '16px' }}
                       >
-                        {isSelected && <Check size={12} strokeWidth={3} />}
+                        {isSelected && <Check size={11} strokeWidth={3} />}
                       </div>
                       <span className="truncate">{obj.title}</span>
                       {isDone && (
                         <span 
                           className="text-[10px] font-bold rounded bg-accent-green/20 text-accent-green border border-accent-green/30 flex-shrink-0"
-                          style={{ padding: '2px 8px' }}
+                          style={{ padding: '1px 5px' }}
                         >
                           ✓ Réalisé
                         </span>
@@ -342,7 +341,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                     {objCat && (
                       <span 
                         className="flex-shrink-0 text-[10px] rounded font-medium flex items-center gap-1.5 ml-2"
-                        style={{ padding: '4px 10px', backgroundColor: `${objCat.color}20`, color: objCat.color }}
+                        style={{ padding: '2px 6px', backgroundColor: `${objCat.color}20`, color: objCat.color }}
                       >
                         {objCat.icon} {objCat.label}
                       </span>
@@ -355,12 +354,12 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
         </div>
 
         {/* Buttons */}
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-dark-600/30">
+        <div className="flex items-center justify-end gap-2.5 pt-2.5 border-t border-dark-600/30">
           <button
             type="button"
             onClick={onClose}
             className="rounded-xl text-xs font-semibold text-dark-300 hover:text-dark-100 hover:bg-dark-700/50 transition-colors cursor-pointer"
-            style={{ padding: '12px 22px' }}
+            style={{ padding: '6px 14px' }}
           >
             Annuler
           </button>
@@ -368,7 +367,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
             type="submit"
             disabled={isSubmitting}
             className="rounded-xl text-xs font-bold bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 transition-all shadow-md shadow-accent-cyan/20 active:scale-95 disabled:opacity-50 cursor-pointer"
-            style={{ padding: '12px 28px' }}
+            style={{ padding: '6px 18px' }}
           >
             {isSubmitting 
               ? 'Enregistrement...' 

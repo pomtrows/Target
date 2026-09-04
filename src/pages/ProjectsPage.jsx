@@ -172,9 +172,9 @@ export default function ProjectsPage() {
         <button
           onClick={handleOpenCreate}
           className="self-start sm:self-auto flex items-center gap-2 rounded-xl bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 font-bold text-xs transition-all shadow-lg shadow-accent-cyan/20 active:scale-95 cursor-pointer"
-          style={{ padding: '10px 20px' }}
+          style={{ padding: '6px 12px' }}
         >
-          <Plus size={16} strokeWidth={2.5} />
+          <Plus size={15} strokeWidth={2.5} />
           <span>Nouveau projet</span>
         </button>
       </div>
@@ -183,11 +183,11 @@ export default function ProjectsPage() {
       {isLocalFallback && (
         <div 
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-accent-cyan/10 to-accent-violet/10 border border-accent-cyan/30 rounded-2xl text-xs"
-          style={{ padding: '14px 18px' }}
+          style={{ padding: '7px 10px' }}
         >
           <div className="flex items-center gap-2.5 text-dark-200">
-            <span className="p-2 rounded-lg bg-accent-cyan/20 text-accent-cyan flex-shrink-0">
-              <Database size={16} />
+            <span className="p-1.5 rounded-lg bg-accent-cyan/20 text-accent-cyan flex-shrink-0">
+              <Database size={15} />
             </span>
             <span>
               <strong className="text-dark-100">Mode de secours local immédiat actif</strong> : Vos projets sont enregistrés sur cet appareil et 100% opérationnels sans attendre.
@@ -197,7 +197,7 @@ export default function ProjectsPage() {
             type="button"
             onClick={() => setShowSqlModal(true)}
             className="self-start sm:self-auto rounded-xl bg-accent-cyan text-dark-950 font-bold hover:bg-accent-cyan/90 transition-all cursor-pointer whitespace-nowrap shadow-sm text-xs"
-            style={{ padding: '8px 16px' }}
+            style={{ padding: '4px 10px' }}
           >
             Activer le Cloud (SQL)
           </button>
@@ -207,68 +207,68 @@ export default function ProjectsPage() {
       {/* KPI Stats Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {/* Total */}
-        <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col gap-1.5" style={{ padding: '14px 18px' }}>
+        <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col gap-1" style={{ padding: '8px 10px' }}>
           <span className="text-[11px] font-semibold text-dark-400 uppercase tracking-wider">Total</span>
-          <span className="text-2xl font-black text-dark-100">{stats.total}</span>
+          <span className="text-xl font-black text-dark-100">{stats.total}</span>
         </div>
 
         {/* Non lancés */}
-        <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col gap-1.5" style={{ padding: '14px 18px' }}>
+        <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col gap-1" style={{ padding: '8px 10px' }}>
           <span className="text-[11px] font-semibold text-dark-400 uppercase tracking-wider flex items-center gap-1.5">
             <Circle size={11} /> Non lancés
           </span>
-          <span className="text-2xl font-black text-dark-300">{stats.nonLances}</span>
+          <span className="text-xl font-black text-dark-300">{stats.nonLances}</span>
         </div>
 
         {/* En cours */}
-        <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col gap-1.5" style={{ padding: '14px 18px' }}>
+        <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col gap-1" style={{ padding: '8px 10px' }}>
           <span className="text-[11px] font-semibold text-accent-cyan uppercase tracking-wider flex items-center gap-1.5">
             <Clock size={11} /> En cours
           </span>
-          <span className="text-2xl font-black text-accent-cyan">{stats.enCours}</span>
+          <span className="text-xl font-black text-accent-cyan">{stats.enCours}</span>
         </div>
 
         {/* Terminés */}
-        <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col gap-1.5" style={{ padding: '14px 18px' }}>
+        <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col gap-1" style={{ padding: '8px 10px' }}>
           <span className="text-[11px] font-semibold text-accent-green uppercase tracking-wider flex items-center gap-1.5">
             <CheckCircle2 size={11} /> Terminés
           </span>
-          <span className="text-2xl font-black text-accent-green">{stats.termines}</span>
+          <span className="text-xl font-black text-accent-green">{stats.termines}</span>
         </div>
 
         {/* En retard */}
         <div 
-          className={`rounded-2xl flex flex-col gap-1.5 col-span-2 sm:col-span-1 border ${
+          className={`rounded-2xl flex flex-col gap-1 col-span-2 sm:col-span-1 border ${
             stats.enRetard > 0 
               ? 'bg-accent-red/10 border-accent-red/30 text-accent-red' 
               : 'bg-dark-800/60 border-dark-600/30 text-dark-400'
           }`}
-          style={{ padding: '14px 18px' }}
+          style={{ padding: '8px 10px' }}
         >
           <span className="text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5">
             <AlertTriangle size={11} /> En retard
           </span>
-          <span className="text-2xl font-black">{stats.enRetard}</span>
+          <span className="text-xl font-black">{stats.enRetard}</span>
         </div>
       </div>
 
       {/* Filter & View Bar */}
       <div 
         className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-dark-850/80 border border-dark-600/40 rounded-2xl"
-        style={{ padding: '14px 18px' }}
+        style={{ padding: '8px 10px' }}
       >
         {/* Search & Filters */}
-        <div className="flex flex-wrap items-center gap-3 flex-1">
+        <div className="flex flex-wrap items-center gap-2.5 flex-1">
           {/* Search */}
-          <div className="relative flex-1 min-w-[200px] max-w-xs">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
+          <div className="relative flex-1 min-w-[180px] max-w-xs">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Rechercher un projet..."
               className="w-full bg-dark-800/90 border border-dark-600/40 rounded-xl text-xs text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-colors"
-              style={{ padding: '10px 14px 10px 38px' }}
+              style={{ padding: '6px 10px 6px 30px' }}
             />
           </div>
 
@@ -277,7 +277,7 @@ export default function ProjectsPage() {
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="bg-dark-800/90 border border-dark-600/40 rounded-xl text-xs text-dark-200 focus:outline-none focus:border-accent-cyan cursor-pointer"
-            style={{ padding: '10px 14px' }}
+            style={{ padding: '6px 8px' }}
           >
             <option value="all">🏷️ Toutes catégories</option>
             {categories.map(c => (
@@ -292,7 +292,7 @@ export default function ProjectsPage() {
             value={selectedPriority}
             onChange={(e) => setSelectedPriority(e.target.value)}
             className="bg-dark-800/90 border border-dark-600/40 rounded-xl text-xs text-dark-200 focus:outline-none focus:border-accent-cyan cursor-pointer"
-            style={{ padding: '10px 14px' }}
+            style={{ padding: '6px 8px' }}
           >
             <option value="all">⚡ Toutes priorités</option>
             <option value="1">🔴 1 - Haute</option>
@@ -306,7 +306,7 @@ export default function ProjectsPage() {
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
               className="bg-dark-800/90 border border-dark-600/40 rounded-xl text-xs text-dark-200 focus:outline-none focus:border-accent-cyan cursor-pointer"
-              style={{ padding: '10px 14px' }}
+              style={{ padding: '6px 8px' }}
             >
               <option value="all">📌 Tous statuts</option>
               <option value="0-Non lancé">⚪ 0-Non lancé</option>
@@ -318,22 +318,22 @@ export default function ProjectsPage() {
           {/* Hide completed toggle */}
           <button
             onClick={() => setHideCompleted(!hideCompleted)}
-            className={`flex items-center gap-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
               hideCompleted 
                 ? 'bg-accent-cyan/15 border-accent-cyan/40 text-accent-cyan' 
                 : 'bg-dark-800/80 border-dark-600/40 text-dark-400 hover:text-dark-200'
             }`}
-            style={{ padding: '10px 14px' }}
+            style={{ padding: '6px 10px' }}
           >
-            {hideCompleted ? <EyeOff size={14} /> : <Eye size={14} />}
+            {hideCompleted ? <EyeOff size={13} /> : <Eye size={13} />}
             <span>{hideCompleted ? 'Terminés masqués' : 'Masquer terminés'}</span>
           </button>
         </div>
 
         {/* View Switcher: Kanban vs Grid */}
         <div 
-          className="flex items-center gap-1.5 self-end lg:self-auto bg-dark-800/90 rounded-xl border border-dark-600/40"
-          style={{ padding: '4px' }}
+          className="flex items-center gap-1 self-end lg:self-auto bg-dark-800/90 rounded-xl border border-dark-600/40"
+          style={{ padding: '2px' }}
         >
           <button
             onClick={() => handleViewModeChange('kanban')}
@@ -342,9 +342,9 @@ export default function ProjectsPage() {
                 ? 'bg-accent-cyan text-dark-950 shadow-md shadow-accent-cyan/20'
                 : 'text-dark-400 hover:text-dark-200 hover:bg-dark-700/50'
             }`}
-            style={{ padding: '8px 14px' }}
+            style={{ padding: '4px 8px' }}
           >
-            <Columns size={14} />
+            <Columns size={13} />
             <span>Kanban</span>
           </button>
           <button
@@ -354,9 +354,9 @@ export default function ProjectsPage() {
                 ? 'bg-accent-cyan text-dark-950 shadow-md shadow-accent-cyan/20'
                 : 'text-dark-400 hover:text-dark-200 hover:bg-dark-700/50'
             }`}
-            style={{ padding: '8px 14px' }}
+            style={{ padding: '4px 8px' }}
           >
-            <LayoutGrid size={14} />
+            <LayoutGrid size={13} />
             <span>Grille</span>
           </button>
         </div>

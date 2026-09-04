@@ -55,7 +55,7 @@ export default function ProjectKanban({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 items-start">
         {COLUMNS.map((col) => {
           const colProjects = projects.filter(p => p.status === col.id);
           const ColIcon = col.icon;
@@ -64,22 +64,22 @@ export default function ProjectKanban({
             <div 
               key={col.id} 
               className="flex flex-col bg-dark-900/40 border border-dark-700/50 rounded-2xl min-h-[450px]"
-              style={{ padding: '16px' }}
+              style={{ padding: '8px' }}
             >
               {/* Column Header */}
               <div 
-                className={`flex items-center justify-between rounded-xl border mb-3 ${col.headerBg}`}
-                style={{ padding: '12px 16px' }}
+                className={`flex items-center justify-between rounded-xl border mb-2.5 ${col.headerBg}`}
+                style={{ padding: '6px 10px' }}
               >
                 <div className="flex items-center gap-2">
-                  <ColIcon size={16} className={col.headerColor} />
+                  <ColIcon size={15} className={col.headerColor} />
                   <h3 className={`text-sm font-bold ${col.headerColor}`}>
                     {col.title}
                   </h3>
                 </div>
                 <span 
                   className={`text-xs font-black rounded-full ${col.countBg}`}
-                  style={{ padding: '4px 10px' }}
+                  style={{ padding: '2px 6px' }}
                 >
                   {colProjects.length}
                 </span>
@@ -91,14 +91,14 @@ export default function ProjectKanban({
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`flex-1 flex flex-col gap-3 rounded-xl p-1 transition-colors ${
+                    className={`flex-1 flex flex-col gap-2 rounded-xl p-0.5 transition-colors ${
                       snapshot.isDraggingOver ? 'bg-dark-800/40 border-2 border-dashed border-accent-cyan/40' : ''
                     }`}
                   >
                     {colProjects.length === 0 ? (
                       <div 
                         className="flex-1 flex items-center justify-center text-center text-xs text-dark-400 border border-dashed border-dark-800 rounded-xl"
-                        style={{ padding: '28px 16px' }}
+                        style={{ padding: '14px 10px' }}
                       >
                         Glissez un projet ici
                       </div>
