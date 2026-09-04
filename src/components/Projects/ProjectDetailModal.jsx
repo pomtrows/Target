@@ -383,12 +383,14 @@ export default function ProjectDetailModal({
               >
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-dark-200">
-                    Progression globale du projet :
-                    <strong className="text-accent-cyan ml-1.5 text-sm">{progressPercent}%</strong>
+                    Progression
                   </span>
-                  <span className="text-dark-400">
-                    {completedCount} sur {linkedObjectives.length} objectif(s) réalisé(s)
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <strong className="text-accent-cyan font-bold text-sm">{progressPercent}%</strong>
+                    <span className="text-dark-400 font-medium">
+                      ({completedCount}/{linkedObjectives.length})
+                    </span>
+                  </div>
                 </div>
                 <div className="w-full bg-dark-700 h-2.5 rounded-full overflow-hidden">
                   <div
