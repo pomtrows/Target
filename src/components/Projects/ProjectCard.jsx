@@ -63,10 +63,13 @@ export default function ProjectCard({
 
   // Priority metadata
   const priorityConfig = {
-    1: { label: '1 - Haute', badgeBg: 'bg-accent-red/15 text-accent-red border-accent-red/30', dot: 'bg-accent-red' },
-    2: { label: '2 - Moyenne', badgeBg: 'bg-accent-orange/15 text-accent-orange border-accent-orange/30', dot: 'bg-accent-orange' },
-    3: { label: '3 - Basse', badgeBg: 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/30', dot: 'bg-accent-cyan' },
-  }[project.priority] || { label: '2 - Moyenne', badgeBg: 'bg-accent-orange/15 text-accent-orange border-accent-orange/30', dot: 'bg-accent-orange' };
+    1: { label: 'P1', badgeBg: 'bg-accent-red/15 text-accent-red border-accent-red/30', dot: 'bg-accent-red' },
+    2: { label: 'P2', badgeBg: 'bg-accent-violet/15 text-accent-violet border-accent-violet/30', dot: 'bg-accent-violet' },
+    3: { label: 'P3', badgeBg: 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/30', dot: 'bg-accent-cyan' },
+    'P1': { label: 'P1', badgeBg: 'bg-accent-red/15 text-accent-red border-accent-red/30', dot: 'bg-accent-red' },
+    'P2': { label: 'P2', badgeBg: 'bg-accent-violet/15 text-accent-violet border-accent-violet/30', dot: 'bg-accent-violet' },
+    'P3': { label: 'P3', badgeBg: 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/30', dot: 'bg-accent-cyan' }
+  }[project.priority] || { label: 'P2', badgeBg: 'bg-accent-violet/15 text-accent-violet border-accent-violet/30', dot: 'bg-accent-violet' };
 
   // Status metadata
   const statusConfig = {

@@ -38,7 +38,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
       const cat = projectToEdit.categoryId || projectToEdit.category_id || 'autre';
       setCategoryId(cat);
       setDescription(projectToEdit.description || '');
-      setPriority(Number(projectToEdit.priority) || 2);
+      const prio = projectToEdit.priority === 'P1' ? 1 : projectToEdit.priority === 'P2' ? 2 : projectToEdit.priority === 'P3' ? 3 : (Number(projectToEdit.priority) || 2);
+      setPriority(prio);
       setStatus(projectToEdit.status || '0-Non lancé');
       setStartDate(projectToEdit.startDate || projectToEdit.start_date || '');
       setEndDate(projectToEdit.endDate || projectToEdit.end_date || '');
@@ -233,9 +234,9 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { val: 1, label: '1 - Haute', color: 'text-accent-red border-accent-red/40 bg-accent-red/10' },
-                { val: 2, label: '2 - Moyenne', color: 'text-accent-orange border-accent-orange/40 bg-accent-orange/10' },
-                { val: 3, label: '3 - Basse', color: 'text-accent-cyan border-accent-cyan/40 bg-accent-cyan/10' }
+                { val: 1, label: 'P1', color: 'text-accent-red border-accent-red/40 bg-accent-red/10' },
+                { val: 2, label: 'P2', color: 'text-accent-violet border-accent-violet/40 bg-accent-violet/10' },
+                { val: 3, label: 'P3', color: 'text-accent-cyan border-accent-cyan/40 bg-accent-cyan/10' }
               ].map(p => (
                 <button
                   type="button"
@@ -591,7 +592,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                             <span 
                               className={`text-[9px] font-black rounded border ${
                                 obj.priority === 'P1' ? 'text-accent-red border-accent-red/30 bg-accent-red/10' :
-                                obj.priority === 'P2' ? 'text-accent-orange border-accent-orange/30 bg-accent-orange/10' :
+                                obj.priority === 'P2' ? 'text-accent-violet border-accent-violet/30 bg-accent-violet/10' :
                                 'text-accent-cyan border-accent-cyan/30 bg-accent-cyan/10'
                               }`}
                               style={{ padding: '1px 4px' }}
@@ -657,7 +658,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                           <span 
                             className={`text-[9px] font-black rounded border ${
                               obj.priority === 'P1' ? 'text-accent-red border-accent-red/30 bg-accent-red/10' :
-                              obj.priority === 'P2' ? 'text-accent-orange border-accent-orange/30 bg-accent-orange/10' :
+                              obj.priority === 'P2' ? 'text-accent-violet border-accent-violet/30 bg-accent-violet/10' :
                               'text-accent-cyan border-accent-cyan/30 bg-accent-cyan/10'
                             }`}
                             style={{ padding: '1px 4px' }}

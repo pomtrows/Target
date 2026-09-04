@@ -101,10 +101,13 @@ export default function ProjectDetailModal({
 
   // Priority config
   const priorityConfig = {
-    1: { label: '1 - Haute', color: 'bg-accent-red/20 text-accent-red border-accent-red/30' },
-    2: { label: '2 - Moyenne', color: 'bg-accent-orange/20 text-accent-orange border-accent-orange/30' },
-    3: { label: '3 - Basse', color: 'bg-accent-cyan/20 text-accent-cyan border-accent-cyan/30' }
-  }[project.priority] || { label: '2 - Moyenne', color: 'bg-accent-orange/20 text-accent-orange border-accent-orange/30' };
+    1: { label: 'P1', color: 'bg-accent-red/20 text-accent-red border-accent-red/30' },
+    2: { label: 'P2', color: 'bg-accent-violet/20 text-accent-violet border-accent-violet/30' },
+    3: { label: 'P3', color: 'bg-accent-cyan/20 text-accent-cyan border-accent-cyan/30' },
+    'P1': { label: 'P1', color: 'bg-accent-red/20 text-accent-red border-accent-red/30' },
+    'P2': { label: 'P2', color: 'bg-accent-violet/20 text-accent-violet border-accent-violet/30' },
+    'P3': { label: 'P3', color: 'bg-accent-cyan/20 text-accent-cyan border-accent-cyan/30' }
+  }[project.priority] || { label: 'P2', color: 'bg-accent-violet/20 text-accent-violet border-accent-violet/30' };
 
   // Status config
   const statusConfig = {

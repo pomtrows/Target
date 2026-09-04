@@ -132,7 +132,8 @@ export default function ProjectsPage() {
 
       // Priority filter
       if (selectedPriority !== 'all') {
-        if (Number(p.priority) !== Number(selectedPriority)) return false;
+        const pVal = p.priority === 'P1' ? 1 : p.priority === 'P2' ? 2 : p.priority === 'P3' ? 3 : Number(p.priority);
+        if (pVal !== Number(selectedPriority)) return false;
       }
 
       // Status filter
@@ -417,9 +418,9 @@ export default function ProjectsPage() {
             style={{ padding: '6px 8px' }}
           >
             <option value="all">⚡ Toutes priorités</option>
-            <option value="1">🔴 1 - Haute</option>
-            <option value="2">🟠 2 - Moyenne</option>
-            <option value="3">🔵 3 - Basse</option>
+            <option value="1">🔴 P1</option>
+            <option value="2">🟣 P2</option>
+            <option value="3">🔵 P3</option>
           </select>
 
           {/* Status Dropdown (relevant for grid view) */}
