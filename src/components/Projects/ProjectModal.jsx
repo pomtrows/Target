@@ -400,10 +400,10 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                 Objectifs
               </span>
               <span 
-                className="text-[11px] font-bold rounded-full bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30"
-                style={{ padding: '1px 8px' }}
+                className="text-[11px] font-bold rounded-full bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30 min-w-[20px] text-center"
+                style={{ padding: '1px 7px' }}
               >
-                {selectedObjectiveIds.length} attribué{selectedObjectiveIds.length > 1 ? 's' : ''}
+                {selectedObjectiveIds.length}
               </span>
             </div>
 
