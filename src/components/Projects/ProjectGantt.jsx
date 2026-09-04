@@ -393,11 +393,11 @@ export default function ProjectGantt({
           {/* A. LEFT FROZEN COLUMN: PROJECTS & OBJECTIVES TREE */}
           <div 
             className="sticky left-0 z-30 flex flex-col bg-dark-800 border-r border-dark-600/60 flex-shrink-0 shadow-lg"
-            style={{ width: '280px', minWidth: '280px' }}
+            style={{ width: '310px', minWidth: '310px' }}
           >
             {/* Header placeholder matching height of timeline header */}
             <div 
-              className="h-[65px] border-b border-dark-600/60 bg-dark-800 flex items-center justify-between px-3 text-xs font-bold text-dark-300 uppercase tracking-wider"
+              className="h-[65px] border-b border-dark-600/60 bg-dark-800 flex items-center justify-between pl-3.5 pr-6 text-xs font-bold text-dark-300 uppercase tracking-wider"
             >
               <span>Projets & Objectifs</span>
               <span className="text-[10px] text-dark-400 font-normal">Arborescence</span>
@@ -416,7 +416,7 @@ export default function ProjectGantt({
                   <React.Fragment key={project.id}>
                     {/* Project Row Header in Tree */}
                     <div 
-                      className="group flex items-center justify-between gap-1.5 px-3 py-2.5 hover:bg-dark-700/40 transition-colors h-[48px]"
+                      className="group flex items-center justify-between gap-2 pl-3.5 pr-6 hover:bg-dark-700/40 transition-colors h-[48px]"
                     >
                       <div className="flex items-center gap-1.5 min-w-0 flex-1">
                         {/* Expand Button */}
@@ -487,7 +487,7 @@ export default function ProjectGantt({
                       return (
                         <div 
                           key={obj.id}
-                          className="flex items-center justify-between gap-1.5 pl-8 pr-3 py-1.5 bg-dark-900/40 hover:bg-dark-700/30 transition-colors h-[38px] border-t border-dark-700/20"
+                          className="flex items-center justify-between gap-2 pl-8 pr-6 py-1.5 bg-dark-900/40 hover:bg-dark-700/30 transition-colors h-[38px] border-t border-dark-700/20"
                         >
                           <div className="flex items-center gap-1.5 min-w-0 flex-1">
                             <span className="text-dark-500 text-xs">└</span>
