@@ -177,6 +177,54 @@ export default function ProjectsPage() {
 
   return (
     <div className="flex-1 flex flex-col gap-6 pb-28 md:pb-32">
+      {/* View Switcher: Kanban / Grille / Gantt (Style exact écran Objectifs, aligné avec le menu mobile) */}
+      <div className="fixed top-[12px] left-1/2 -translate-x-1/2 z-[80] md:static md:translate-x-0 md:flex md:justify-center md:mb-1">
+        <div 
+          className="flex items-center gap-0.5 bg-dark-800/95 rounded-full border border-dark-600/30 backdrop-blur-md flex-shrink-0 shadow-sm"
+          style={{ padding: '3px 4px' }}
+        >
+          <button
+            type="button"
+            onClick={() => handleViewModeChange('kanban')}
+            className={`flex items-center gap-1 rounded-full text-[11px] font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
+              viewMode === 'kanban'
+                ? 'bg-accent-cyan/15 text-accent-cyan'
+                : 'text-dark-400 hover:text-dark-200'
+            }`}
+            style={{ padding: '3px 8px' }}
+          >
+            <Columns size={12} />
+            <span>Kanban</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleViewModeChange('grid')}
+            className={`flex items-center gap-1 rounded-full text-[11px] font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
+              viewMode === 'grid'
+                ? 'bg-accent-cyan/15 text-accent-cyan'
+                : 'text-dark-400 hover:text-dark-200'
+            }`}
+            style={{ padding: '3px 8px' }}
+          >
+            <LayoutGrid size={12} />
+            <span>Grille</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleViewModeChange('gantt')}
+            className={`flex items-center gap-1 rounded-full text-[11px] font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
+              viewMode === 'gantt'
+                ? 'bg-accent-cyan/15 text-accent-cyan'
+                : 'text-dark-400 hover:text-dark-200'
+            }`}
+            style={{ padding: '3px 8px' }}
+          >
+            <CalendarRange size={12} />
+            <span>Gantt</span>
+          </button>
+        </div>
+      </div>
+
       {/* Top Header */}
       <div className="flex items-center justify-center">
         <div className="flex items-center justify-center gap-3">
@@ -461,13 +509,11 @@ export default function ProjectsPage() {
         </button>
       </div>
 
-      {/* Filter & View Bar */}
+      {/* Filter Bar */}
       <div 
-        className="flex flex-wrap items-center justify-between gap-3 bg-dark-800/80 border border-dark-600/40 rounded-2xl"
+        className="flex flex-wrap items-center gap-2 bg-dark-800/80 border border-dark-600/40 rounded-2xl"
         style={{ padding: '8px 12px' }}
       >
-        {/* Search & Filters */}
-        <div className="flex flex-wrap items-center gap-2">
           {/* Recherche */}
           {isSearchOpen ? (
             <div className="flex items-center gap-2 bg-dark-800/90 border border-accent-cyan/40 rounded-full px-3 py-1 shadow-sm">
@@ -647,48 +693,6 @@ export default function ProjectsPage() {
               <span>Réinitialiser</span>
             </button>
           )}
-        </div>
-
-        {/* View Switcher: Kanban vs Grid vs Gantt */}
-        <div 
-          className="flex items-center gap-1 self-end lg:self-auto bg-dark-800/90 rounded-full border border-dark-600/40 p-1"
-        >
-          <button
-            onClick={() => handleViewModeChange('kanban')}
-            className={`flex items-center gap-1.5 rounded-full text-xs font-bold transition-all cursor-pointer px-3 py-1 ${
-              viewMode === 'kanban'
-                ? 'bg-accent-cyan text-dark-950 shadow-md shadow-accent-cyan/20'
-                : 'text-dark-400 hover:text-dark-200 hover:bg-dark-700/50'
-            }`}
-          >
-            <Columns size={13} />
-            <span>Kanban</span>
-          </button>
-          <button
-            onClick={() => handleViewModeChange('grid')}
-            className={`flex items-center gap-1.5 rounded-full text-xs font-bold transition-all cursor-pointer px-3 py-1 ${
-              viewMode === 'grid'
-                ? 'bg-accent-cyan text-dark-950 shadow-md shadow-accent-cyan/20'
-                : 'text-dark-400 hover:text-dark-200 hover:bg-dark-700/50'
-            }`}
-            style={{ padding: '4px 8px' }}
-          >
-            <LayoutGrid size={13} />
-            <span>Grille</span>
-          </button>
-          <button
-            onClick={() => handleViewModeChange('gantt')}
-            className={`flex items-center gap-1.5 rounded-full text-xs font-bold transition-all cursor-pointer px-3 py-1 ${
-              viewMode === 'gantt'
-                ? 'bg-accent-cyan text-dark-950 shadow-md shadow-accent-cyan/20'
-                : 'text-dark-400 hover:text-dark-200 hover:bg-dark-700/50'
-            }`}
-            style={{ padding: '4px 8px' }}
-          >
-            <CalendarRange size={13} />
-            <span>Gantt</span>
-          </button>
-        </div>
       </div>
 
       {/* Main Content View */}
