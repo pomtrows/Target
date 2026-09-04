@@ -1,3 +1,4 @@
+import { useState, useEffect, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Circle, Clock, CheckCircle2 } from 'lucide-react';
 import ProjectCard from './ProjectCard';
@@ -36,6 +37,26 @@ export default function ProjectKanban({
   onOpenDetails 
 }) {
   const { changeProjectStatus } = useProjects();
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const orderedColumns = useMemo(() => {
+    if (isMobile) {
+      return [
+        COLUMNS.find(c => c.id === '1-En cours'),
+        COLUMNS.find(c => c.id === '0-Non lancé'),
+        COLUMNS.find(c => c.id === '2-Terminé')
+      ].filter(Boolean);
+    }
+    return COLUMNS;
+  }, [isMobile]);
 
   const handleDragEnd = (result) => {
     const { destination, source, draggableId } = result;
@@ -56,7 +77,7 @@ export default function ProjectKanban({
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 md:gap-3.5 items-start">
-        {COLUMNS.map((col) => {
+        {orderedColumns.map((col) => {
           const colProjects = projects.filter(p => p.status === col.id);
           const ColIcon = col.icon;
 
