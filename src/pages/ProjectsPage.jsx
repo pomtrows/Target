@@ -607,7 +607,7 @@ export default function ProjectsPage() {
       {/* Mobile Filter Bar (< sm) */}
       <div 
         className="sm:hidden flex flex-wrap items-center gap-2 bg-dark-800/80 border border-dark-600/40 rounded-2xl"
-        style={{ padding: '8px 12px' }}
+        style={{ padding: '8px 12px', marginBottom: '-10px' }}
       >
         {renderFilterControls(true)}
       </div>
@@ -615,7 +615,7 @@ export default function ProjectsPage() {
       {/* Unified Counters & Filters Bar - Desktop (>= sm) */}
       <div 
         className="hidden sm:flex flex-wrap items-center gap-2.5 bg-dark-800/80 border border-dark-600/40 rounded-2xl"
-        style={{ padding: '6px 12px' }}
+        style={{ padding: '6px 12px', marginBottom: '-4px' }}
       >
         {/* Tightened Counters */}
         <div className="flex items-center gap-1.5 flex-wrap">
