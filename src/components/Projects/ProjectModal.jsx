@@ -367,11 +367,11 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
 
         {/* Section Objectifs avec 2 boutons : Créer et Attribuer */}
         <div 
-          className="flex flex-col gap-3 bg-dark-900/50 rounded-2xl border border-dark-600/40"
-          style={{ padding: '10px 14px' }}
+          className="flex flex-col gap-2.5 bg-dark-900/50 rounded-2xl border border-dark-600/40"
+          style={{ padding: '8px 6px' }}
         >
           {/* Header de la section avec les 2 boutons Créer et Attribuer */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2 border-b border-dark-700/50">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-dark-700/50 px-1">
             <div className="flex items-center gap-2">
               <Target size={16} className="text-accent-cyan" />
               <span className="text-xs font-bold text-dark-200 uppercase tracking-wider">
@@ -421,7 +421,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           {objectiveMode === 'create' && (
             <div 
               className="flex flex-col gap-2.5 bg-dark-800/90 rounded-xl border border-accent-cyan/30"
-              style={{ padding: '10px 12px' }}
+              style={{ padding: '8px 6px' }}
             >
               {inlineObjFeedback && (
                 <div 
@@ -544,7 +544,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           {objectiveMode === 'assign' && (
             <div 
               className="flex flex-col gap-2 bg-dark-800/90 rounded-xl border border-dark-600/40"
-              style={{ padding: '10px 12px' }}
+              style={{ padding: '8px 6px' }}
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-dark-200 flex items-center gap-1.5">
@@ -582,12 +582,12 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                   onChange={(e) => setObjectiveSearch(e.target.value)}
                   placeholder="Rechercher un objectif par mot-clé..."
                   className="w-full bg-dark-900 border border-dark-600/50 rounded-xl text-xs text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan"
-                  style={{ padding: '6px 10px 6px 28px' }}
+                  style={{ padding: '6px 8px 6px 28px' }}
                 />
               </div>
 
               {/* Liste d'objectifs filtrés */}
-              <div className="max-h-44 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-0.5 pr-1">
+              <div className="max-h-44 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-0.5 pr-0.5">
                 {filteredObjectives.length === 0 ? (
                   <div className="text-center py-3 text-xs text-dark-400">
                     Aucun objectif trouvé.
@@ -607,9 +607,9 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                             ? 'bg-accent-cyan/15 border-accent-cyan/50 text-dark-100 font-semibold'
                             : 'bg-dark-900/60 border-dark-600/30 text-dark-300 hover:bg-dark-700/50 hover:text-dark-100'
                         }`}
-                        style={{ padding: '6px 10px' }}
+                        style={{ padding: '5px 6px' }}
                       >
-                        <div className="flex items-center gap-2.5 truncate">
+                        <div className="flex items-center gap-1.5 min-w-0 truncate">
                           <div 
                             className={`rounded flex items-center justify-center border transition-all flex-shrink-0 ${
                               isSelected 
@@ -624,14 +624,14 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                           {isDone && (
                             <span 
                               className="text-[10px] font-bold rounded bg-accent-green/20 text-accent-green border border-accent-green/30 flex-shrink-0"
-                              style={{ padding: '1px 5px' }}
+                              style={{ padding: '1px 4px' }}
                             >
                               ✓ Réalisé
                             </span>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                        <div className="flex items-center gap-1 flex-shrink-0 ml-1.5">
                           {obj.priority && (
                             <span 
                               className={`text-[9px] font-black rounded border ${
@@ -647,7 +647,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                           {objCat && (
                             <span 
                               className="text-[10px] rounded font-medium flex items-center gap-1"
-                              style={{ padding: '2px 6px', backgroundColor: `${objCat.color}20`, color: objCat.color }}
+                              style={{ padding: '1px 5px', backgroundColor: `${objCat.color}20`, color: objCat.color }}
                             >
                               {objCat.icon} {objCat.label}
                             </span>
@@ -663,7 +663,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
 
           {/* LISTE DES OBJECTIFS RATTACHÉS AU PROJET */}
           {selectedObjectiveIds.length > 0 && (
-            <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+            <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-0.5">
                 {selectedObjectiveIds.map((objId) => {
                   const obj = allObjectives.find(o => o.id === objId);
                   if (!obj) return null;
@@ -674,22 +674,22 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                     <div
                       key={obj.id}
                       className="flex items-center justify-between rounded-xl bg-dark-800/70 border border-dark-600/40 text-xs text-dark-200 transition-all hover:border-dark-500"
-                      style={{ padding: '6px 10px' }}
+                      style={{ padding: '5px 6px' }}
                     >
-                      <div className="flex items-center gap-2 truncate">
+                      <div className="flex items-center gap-1.5 min-w-0 truncate">
                         <Target size={13} className="text-accent-cyan flex-shrink-0" />
                         <span className="truncate font-medium text-dark-100">{obj.title}</span>
                         {isDone && (
                           <span 
                             className="text-[10px] font-bold rounded bg-accent-green/20 text-accent-green border border-accent-green/30 flex-shrink-0"
-                            style={{ padding: '1px 5px' }}
+                            style={{ padding: '1px 4px' }}
                           >
                             ✓ Réalisé
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                      <div className="flex items-center gap-1 flex-shrink-0 ml-1.5">
                         {obj.priority && (
                           <span 
                             className={`text-[9px] font-black rounded border ${
@@ -705,7 +705,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                         {objCat && (
                           <span 
                             className="text-[10px] rounded font-medium flex items-center gap-1"
-                            style={{ padding: '2px 6px', backgroundColor: `${objCat.color}20`, color: objCat.color }}
+                            style={{ padding: '1px 5px', backgroundColor: `${objCat.color}20`, color: objCat.color }}
                           >
                             {objCat.icon} {objCat.label}
                           </span>
@@ -732,8 +732,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                     </div>
                   );
                 })}
-              </div>
-            )}
+            </div>
+          )}
         </div>
 
         {/* Buttons */}
