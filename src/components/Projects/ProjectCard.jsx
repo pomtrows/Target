@@ -114,10 +114,17 @@ export default function ProjectCard({
   const handleOpenNotes = async (e) => {
     e?.stopPropagation();
     let folder = notesState.folders.find(f => f.name === 'Projets');
-    let folderId = folder ? folder.id : null;
+    let folderId = folder?.id;
 
     if (!folderId) {
-      folderId = await createFolder('Projets');
+      try {
+        const newFolder = await createFolder('Projets');
+        folderId = newFolder?.id;
+      } catch (err) {
+        console.error('Error creating Projets folder:', err);
+        alert('Impossible de créer le dossier pour les notes des projets.');
+        return;
+      }
       if (!folderId) {
         alert('Impossible de créer le dossier pour les notes des projets.');
         return;
@@ -125,10 +132,15 @@ export default function ProjectCard({
     }
 
     let note = notesState.notes.find(n => n.folder_id === folderId && n.title === project.id);
-    let noteId = note ? note.id : null;
+    let noteId = note?.id;
 
     if (!noteId) {
-      noteId = await createNote(folderId, project.id, `<h1>Notes : ${project.name}</h1><p></p>`);
+      try {
+        const newNote = await createNote(project.id, folderId);
+        noteId = newNote?.id;
+      } catch (err) {
+        console.error('Error creating note:', err);
+      }
       if (!noteId) {
         alert('Impossible de créer la note du projet.');
         return;
@@ -415,7 +427,6 @@ export default function ProjectCard({
           <div className="h-[75vh] flex flex-col p-1">
             <NoteEditor 
               noteId={projectNoteId} 
-              onClose={() => setShowNotesModal(false)} 
             />
           </div>
         </Modal>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNotes } from '../../contexts/NotesContext';
 import { useTarget } from '../../contexts/TargetContext';
+import { useProjects } from '../../contexts/ProjectsContext';
 import { 
   Loader2, Check, CloudOff,
   Bold, Italic, Underline, Strikethrough,
@@ -191,6 +192,8 @@ export default function NoteEditor({ noteId }) {
   const note = state.notes.find(n => n.id === noteId);
   const folder = state.folders.find(f => f.id === note?.folder_id);
   const isObjectiveNote = folder?.name === 'Objectifs';
+  const isProjectNote = folder?.name === 'Projets';
+  const isSpecialNote = isObjectiveNote || isProjectNote;
   const [title, setTitle] = useState('');
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
@@ -343,10 +346,19 @@ export default function NoteEditor({ noteId }) {
   };
 
   const { state: targetState } = useTarget();
+  let projects = [];
+  try {
+    const projectsContext = useProjects();
+    projects = projectsContext?.projects || [];
+  } catch {}
+
   const linkedObjective = isObjectiveNote && targetState?.objectives 
     ? targetState.objectives.find(o => o.id === note?.title) 
     : null;
-  const exportTitle = linkedObjective ? linkedObjective.title : (title || 'Sans titre');
+  const linkedProject = isProjectNote && projects 
+    ? projects.find(p => p.id === note?.title)
+    : null;
+  const exportTitle = linkedObjective ? linkedObjective.title : linkedProject ? linkedProject.name : (title || 'Sans titre');
 
   const handleExport = useCallback(async () => {
     if (!note) return;
@@ -756,7 +768,7 @@ export default function NoteEditor({ noteId }) {
       <div className="flex-1 overflow-y-auto pl-12 pr-4 py-6 md:p-12 custom-scrollbar overflow-x-hidden">
         <div className="max-w-3xl mx-auto space-y-6">
           {/* Title */}
-          {!isObjectiveNote && (
+          {!isSpecialNote && (
             <>
               <input
                 type="text"

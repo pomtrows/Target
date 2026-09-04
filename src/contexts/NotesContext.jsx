@@ -237,14 +237,14 @@ export function NotesProvider({ children }) {
     }
   };
 
-  const createNote = async (title, folderId = null) => {
+  const createNote = async (title, folderId = null, content = '') => {
     const noteId = generateUUID();
     const newNote = { 
       id: noteId, 
       title, 
       folder_id: folderId, 
       user_id: user.id, 
-      content: '', 
+      content: content || '', 
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -259,7 +259,14 @@ export function NotesProvider({ children }) {
     try {
       const { data, error } = await supabase
         .from('notes')
-        .insert({ id: noteId, title, folder_id: folderId, user_id: user.id, profile: currentProfile })
+        .insert({ 
+          id: noteId, 
+          title, 
+          folder_id: folderId, 
+          user_id: user.id, 
+          profile: currentProfile,
+          content: content || ''
+        })
         .select()
         .single();
       if (error) throw error;

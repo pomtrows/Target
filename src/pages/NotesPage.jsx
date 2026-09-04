@@ -28,7 +28,7 @@ export default function NotesPage() {
 
   const isRegularNote = (note) => {
     const folder = state.folders.find(f => f.id === note.folder_id);
-    return folder?.name !== 'Objectifs';
+    return folder?.name !== 'Objectifs' && folder?.name !== 'Projets';
   };
 
   const getFolderPath = (folderId) => {
@@ -64,9 +64,9 @@ export default function NotesPage() {
   const renderMoveModal = () => {
     if (!movingNoteId) return null;
 
-    // Folders visible at current navigation level (excluding Objectifs)
+    // Folders visible at current navigation level (excluding Objectifs and Projets)
     const visibleFolders = state.folders.filter(
-      f => f.parent_id === moveModalFolderId && f.name !== 'Objectifs'
+      f => f.parent_id === moveModalFolderId && f.name !== 'Objectifs' && f.name !== 'Projets'
     );
 
     // Breadcrumb path inside the modal
@@ -147,7 +147,7 @@ export default function NotesPage() {
 
             {/* Sub-folders: radio to select, chevron to navigate */}
             {visibleFolders.map(folder => {
-              const hasChildren = state.folders.some(f => f.parent_id === folder.id && f.name !== 'Objectifs');
+              const hasChildren = state.folders.some(f => f.parent_id === folder.id && f.name !== 'Objectifs' && f.name !== 'Projets');
               return (
                 <div
                   key={folder.id}
@@ -249,7 +249,7 @@ export default function NotesPage() {
 
   const currentFolders = currentFolderId === 'all-notes'
     ? []
-    : state.folders.filter(f => f.parent_id === currentFolderId && f.name !== 'Objectifs');
+    : state.folders.filter(f => f.parent_id === currentFolderId && f.name !== 'Objectifs' && f.name !== 'Projets');
 
   const currentNotes = currentFolderId === 'all-notes'
     ? state.notes.filter(n => isRegularNote(n) && matchesSearch(n))

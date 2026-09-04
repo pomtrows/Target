@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Target, FileText, Paperclip, Calendar, AlertTriangle, 
   CheckCircle2, Clock, Plus, ExternalLink, Trash2, Edit2, 
-  Check, X, FolderKanban
+  Check, X, FolderKanban, Loader2
 } from 'lucide-react';
 import { format, parseISO, differenceInCalendarDays, startOfDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -127,31 +127,63 @@ export default function ProjectDetailModal({
     } catch {}
   }
 
+  // Reset state when project or modal changes
+  useEffect(() => {
+    setActiveTab('overview');
+    setProjectNoteId(null);
+  }, [project?.id, isOpen]);
+
   // Ensure note exists for NoteEditor tab
-  const getOrCreateProjectNote = async () => {
+  const getOrCreateProjectNote = useCallback(async () => {
     let folder = notesState.folders.find(f => f.name === 'Projets');
-    let folderId = folder ? folder.id : null;
+    let folderId = folder?.id;
 
     if (!folderId) {
-      folderId = await createFolder('Projets');
+      try {
+        const newFolder = await createFolder('Projets');
+        folderId = newFolder?.id;
+      } catch (err) {
+        console.error('Error creating Projets folder:', err);
+        return null;
+      }
       if (!folderId) return null;
     }
 
     let note = notesState.notes.find(n => n.folder_id === folderId && n.title === project.id);
     if (!note) {
-      const noteId = await createNote(folderId, project.id, `<h1>Notes du projet : ${project.name}</h1><p></p>`);
-      return noteId;
+      try {
+        const newNote = await createNote(project.id, folderId);
+        return newNote?.id;
+      } catch (err) {
+        console.error('Error creating project note:', err);
+        return null;
+      }
     }
     return note.id;
-  };
+  }, [notesState.folders, notesState.notes, project?.id, createFolder, createNote]);
 
   const handleTabChange = async (tab) => {
     setActiveTab(tab);
     if (tab === 'notes' && !projectNoteId) {
       const nId = await getOrCreateProjectNote();
-      setProjectNoteId(nId);
+      if (nId) {
+        setProjectNoteId(nId);
+      }
     }
   };
+
+  useEffect(() => {
+    if (isOpen && activeTab === 'notes' && !projectNoteId) {
+      let isMounted = true;
+      (async () => {
+        const nId = await getOrCreateProjectNote();
+        if (isMounted && nId) {
+          setProjectNoteId(nId);
+        }
+      })();
+      return () => { isMounted = false; };
+    }
+  }, [isOpen, activeTab, projectNoteId, getOrCreateProjectNote]);
 
   const handleAddObjectiveToProject = (objId) => {
     const current = project.objectiveIds || [];
@@ -525,11 +557,11 @@ export default function ProjectDetailModal({
               {projectNoteId ? (
                 <NoteEditor 
                   noteId={projectNoteId} 
-                  onClose={onClose} 
                 />
               ) : (
-                <div className="flex-1 flex items-center justify-center text-xs text-dark-400">
-                  Chargement des notes du projet...
+                <div className="flex-1 flex flex-col items-center justify-center text-xs text-dark-400 gap-2.5">
+                  <Loader2 size={20} className="animate-spin text-accent-cyan" />
+                  <span>Chargement des notes du projet...</span>
                 </div>
               )}
             </div>
