@@ -285,8 +285,9 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
             <select
               value={priority}
               onChange={(e) => setPriority(Number(e.target.value))}
-              className="flex-1 min-w-0 bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm font-bold focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer h-[34px] px-2 text-center"
+              className="w-16 shrink-0 bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm font-bold focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer h-[34px] px-2 text-center"
               style={{
+                textAlignLast: 'center',
                 color: Number(priority) === 1 ? 'var(--color-accent-red, #ef4444)' :
                        Number(priority) === 2 ? 'var(--color-accent-violet, #8b5cf6)' :
                        'var(--color-accent-cyan, #06b6d4)'
