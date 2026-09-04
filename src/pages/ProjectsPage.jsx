@@ -207,30 +207,30 @@ export default function ProjectsPage() {
       {/* KPI Stats Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {/* Total */}
-        <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col gap-1" style={{ padding: '8px 10px' }}>
+        <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col items-center justify-center text-center gap-1" style={{ padding: '8px 10px' }}>
           <span className="text-[11px] font-semibold text-dark-400 uppercase tracking-wider">Total</span>
           <span className="text-xl font-black text-dark-100">{stats.total}</span>
         </div>
 
         {/* Non lancés */}
-        <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col gap-1" style={{ padding: '8px 10px' }}>
-          <span className="text-[11px] font-semibold text-dark-400 uppercase tracking-wider flex items-center gap-1.5">
+        <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col items-center justify-center text-center gap-1" style={{ padding: '8px 10px' }}>
+          <span className="text-[11px] font-semibold text-dark-400 uppercase tracking-wider flex items-center justify-center gap-1.5">
             <Circle size={11} /> Non lancés
           </span>
           <span className="text-xl font-black text-dark-300">{stats.nonLances}</span>
         </div>
 
         {/* En cours */}
-        <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col gap-1" style={{ padding: '8px 10px' }}>
-          <span className="text-[11px] font-semibold text-accent-cyan uppercase tracking-wider flex items-center gap-1.5">
+        <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col items-center justify-center text-center gap-1" style={{ padding: '8px 10px' }}>
+          <span className="text-[11px] font-semibold text-accent-cyan uppercase tracking-wider flex items-center justify-center gap-1.5">
             <Clock size={11} /> En cours
           </span>
           <span className="text-xl font-black text-accent-cyan">{stats.enCours}</span>
         </div>
 
         {/* Terminés */}
-        <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col gap-1" style={{ padding: '8px 10px' }}>
-          <span className="text-[11px] font-semibold text-accent-green uppercase tracking-wider flex items-center gap-1.5">
+        <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col items-center justify-center text-center gap-1" style={{ padding: '8px 10px' }}>
+          <span className="text-[11px] font-semibold text-accent-green uppercase tracking-wider flex items-center justify-center gap-1.5">
             <CheckCircle2 size={11} /> Terminés
           </span>
           <span className="text-xl font-black text-accent-green">{stats.termines}</span>
@@ -238,14 +238,14 @@ export default function ProjectsPage() {
 
         {/* En retard */}
         <div 
-          className={`rounded-2xl flex flex-col gap-1 col-span-2 sm:col-span-1 border ${
+          className={`rounded-2xl flex flex-col items-center justify-center text-center gap-1 col-span-2 sm:col-span-1 border ${
             stats.enRetard > 0 
               ? 'bg-accent-red/10 border-accent-red/30 text-accent-red' 
               : 'bg-dark-800/60 border-dark-600/30 text-dark-400'
           }`}
           style={{ padding: '8px 10px' }}
         >
-          <span className="text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5">
             <AlertTriangle size={11} /> En retard
           </span>
           <span className="text-xl font-black">{stats.enRetard}</span>
