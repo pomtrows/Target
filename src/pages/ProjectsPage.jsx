@@ -374,24 +374,6 @@ export default function ProjectsPage() {
           )}
         </div>
 
-        {/* Bouton Réinitialiser si des filtres sont actifs */}
-        {(searchQuery || selectedCategory !== 'all' || selectedPriority !== 'all' || selectedStatus !== 'all') && (
-          <button
-            type="button"
-            onClick={() => {
-              setSearchQuery('');
-              setIsSearchOpen(false);
-              setSelectedCategory('all');
-              setSelectedPriority('all');
-              setSelectedStatus('all');
-            }}
-            className="flex items-center gap-1 rounded-full text-xs font-medium text-dark-400 hover:text-accent-red transition-colors cursor-pointer px-2 py-1"
-            title="Réinitialiser tous les filtres"
-          >
-            <X size={13} />
-            <span>Réinitialiser</span>
-          </button>
-        )}
       </>
     );
   };
