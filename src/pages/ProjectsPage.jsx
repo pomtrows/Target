@@ -101,6 +101,15 @@ export default function ProjectsPage() {
     };
   }, [projects, today]);
 
+  // Calculs pour le graphique compact mobile
+  const totalProjects = stats.total || 0;
+  const completionRate = totalProjects > 0 ? Math.round((stats.termines / totalProjects) * 100) : 0;
+  const donutRadius = 15;
+  const donutCircumference = 2 * Math.PI * donutRadius;
+  const terminesDash = totalProjects > 0 ? (stats.termines / totalProjects) * donutCircumference : 0;
+  const enCoursDash = totalProjects > 0 ? (stats.enCours / totalProjects) * donutCircumference : 0;
+  const nonLancesDash = totalProjects > 0 ? (stats.nonLances / totalProjects) * donutCircumference : 0;
+
   // Filtered projects
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
@@ -199,8 +208,126 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      {/* KPI Stats Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      {/* KPI Mobile Summary Chart (< sm) */}
+      <div 
+        className="sm:hidden bg-dark-800/60 border border-dark-600/30 rounded-2xl flex items-center gap-3.5 shadow-sm"
+        style={{ padding: '10px 14px' }}
+      >
+        {/* Donut SVG */}
+        <div className="relative flex-shrink-0 w-12 h-12 flex items-center justify-center">
+          <svg width="48" height="48" viewBox="0 0 40 40" className="-rotate-90">
+            <circle
+              cx="20"
+              cy="20"
+              r={donutRadius}
+              fill="none"
+              stroke="rgba(51, 65, 85, 0.4)"
+              strokeWidth="4"
+            />
+            {terminesDash > 0 && (
+              <circle
+                cx="20"
+                cy="20"
+                r={donutRadius}
+                fill="none"
+                stroke="#22c55e"
+                strokeWidth="4"
+                strokeDasharray={`${terminesDash} ${donutCircumference}`}
+                strokeDashoffset={0}
+              />
+            )}
+            {enCoursDash > 0 && (
+              <circle
+                cx="20"
+                cy="20"
+                r={donutRadius}
+                fill="none"
+                stroke="#06b6d4"
+                strokeWidth="4"
+                strokeDasharray={`${enCoursDash} ${donutCircumference}`}
+                strokeDashoffset={-terminesDash}
+              />
+            )}
+            {nonLancesDash > 0 && (
+              <circle
+                cx="20"
+                cy="20"
+                r={donutRadius}
+                fill="none"
+                stroke="#64748b"
+                strokeWidth="4"
+                strokeDasharray={`${nonLancesDash} ${donutCircumference}`}
+                strokeDashoffset={-(terminesDash + enCoursDash)}
+              />
+            )}
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span className="text-[11px] font-black text-dark-100 leading-none">
+              {completionRate}%
+            </span>
+          </div>
+        </div>
+
+        {/* Détails & Barre multi-segments */}
+        <div className="flex-1 min-w-0 flex flex-col justify-center gap-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-dark-100 flex items-center gap-1.5">
+              <span>Projets</span>
+              <span className="text-dark-400 font-normal">({totalProjects})</span>
+            </span>
+            <span className="font-semibold text-accent-green text-[11px]">
+              {completionRate}% terminé{stats.termines > 1 ? 's' : ''}
+            </span>
+          </div>
+
+          {/* Barre multi-segments */}
+          <div className="w-full h-2 rounded-full bg-dark-700/60 flex overflow-hidden">
+            {stats.termines > 0 && (
+              <div
+                style={{ width: `${(stats.termines / totalProjects) * 100}%` }}
+                className="h-full bg-accent-green transition-all duration-500"
+              />
+            )}
+            {stats.enCours > 0 && (
+              <div
+                style={{ width: `${(stats.enCours / totalProjects) * 100}%` }}
+                className="h-full bg-accent-cyan transition-all duration-500"
+              />
+            )}
+            {stats.nonLances > 0 && (
+              <div
+                style={{ width: `${(stats.nonLances / totalProjects) * 100}%` }}
+                className="h-full bg-dark-400/60 transition-all duration-500"
+              />
+            )}
+          </div>
+
+          {/* Mini-légende avec compteurs */}
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-dark-300">
+            <span className="inline-flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-dark-400"></span>
+              <span>{stats.nonLances} non lancé{stats.nonLances > 1 ? 's' : ''}</span>
+            </span>
+            <span className="inline-flex items-center gap-1 text-accent-cyan">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-cyan"></span>
+              <span>{stats.enCours} en cours</span>
+            </span>
+            <span className="inline-flex items-center gap-1 text-accent-green">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-green"></span>
+              <span>{stats.termines} terminé{stats.termines > 1 ? 's' : ''}</span>
+            </span>
+            {stats.enRetard > 0 && (
+              <span className="inline-flex items-center gap-1 text-accent-red font-semibold">
+                <AlertTriangle size={11} />
+                <span>{stats.enRetard} en retard</span>
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Stats Bar - Desktop (>= sm) */}
+      <div className="hidden sm:grid sm:grid-cols-5 gap-3">
         {/* Total */}
         <div className="bg-dark-800/60 border border-dark-600/30 rounded-2xl flex flex-col items-center justify-center text-center gap-1" style={{ padding: '8px 10px' }}>
           <span className="text-[11px] font-semibold text-dark-400 uppercase tracking-wider">Total</span>
