@@ -152,17 +152,19 @@ export default function ProjectCard({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="group relative bg-dark-800/90 hover:bg-dark-800 border border-dark-600/40 hover:border-dark-500/60 rounded-2xl p-4 sm:p-5 transition-all duration-200 shadow-lg flex flex-col justify-between gap-4"
+        className="group relative bg-dark-800/90 hover:bg-dark-800 border border-dark-600/40 hover:border-dark-500/60 rounded-2xl transition-all duration-200 shadow-lg flex flex-col justify-between gap-4"
+        style={{ padding: '18px 20px' }}
       >
         {/* Top bar: Category & Priority & Menu */}
         <div className="flex items-center justify-between gap-2">
           {/* Category */}
           <div 
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold"
+            className="flex items-center gap-1.5 rounded-lg text-xs font-semibold"
             style={{ 
               backgroundColor: `${category.color}15`, 
               color: category.color,
-              border: `1px solid ${category.color}35`
+              border: `1px solid ${category.color}35`,
+              padding: '4px 10px'
             }}
           >
             <span>{category.icon}</span>
@@ -171,7 +173,10 @@ export default function ProjectCard({
 
           {/* Priority & Quick Menu */}
           <div className="flex items-center gap-2">
-            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1.5 ${priorityConfig.badgeBg}`}>
+            <span 
+              className={`text-[11px] font-bold rounded-md border flex items-center gap-1.5 ${priorityConfig.badgeBg}`}
+              style={{ padding: '4px 10px' }}
+            >
               <span className={`w-1.5 h-1.5 rounded-full ${priorityConfig.dot}`} />
               {priorityConfig.label}
             </span>
@@ -183,7 +188,8 @@ export default function ProjectCard({
                   e.stopPropagation();
                   setShowMenu(!showMenu);
                 }}
-                className="p-1 rounded-lg text-dark-400 hover:text-dark-100 hover:bg-dark-700/60 transition-colors"
+                className="rounded-lg text-dark-400 hover:text-dark-100 hover:bg-dark-700/60 transition-colors"
+                style={{ padding: '6px' }}
                 title="Options"
               >
                 <MoreVertical size={16} />
@@ -205,7 +211,7 @@ export default function ProjectCard({
                         setShowMenu(false);
                         onOpenDetails?.(project);
                       }}
-                      className="flex items-center gap-2.5 px-3.5 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors"
+                      className="flex items-center gap-2.5 px-3.5 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors cursor-pointer"
                     >
                       <ExternalLink size={14} className="text-accent-cyan" />
                       Fiche détaillée
@@ -216,7 +222,7 @@ export default function ProjectCard({
                         setShowMenu(false);
                         onEdit?.(project);
                       }}
-                      className="flex items-center gap-2.5 px-3.5 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors"
+                      className="flex items-center gap-2.5 px-3.5 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors cursor-pointer"
                     >
                       <Edit2 size={14} className="text-accent-violet" />
                       Modifier
@@ -227,7 +233,7 @@ export default function ProjectCard({
                         setShowMenu(false);
                         setShowDeleteConfirm(true);
                       }}
-                      className="flex items-center gap-2.5 px-3.5 py-2 text-accent-red hover:bg-accent-red/10 text-left transition-colors"
+                      className="flex items-center gap-2.5 px-3.5 py-2 text-accent-red hover:bg-accent-red/10 text-left transition-colors cursor-pointer"
                     >
                       <Trash2 size={14} />
                       Supprimer
@@ -255,7 +261,10 @@ export default function ProjectCard({
         </div>
 
         {/* Dates and Alerts */}
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-dark-400 pt-1 border-t border-dark-700/40">
+        <div 
+          className="flex flex-wrap items-center justify-between gap-2 text-xs text-dark-400 border-t border-dark-700/40"
+          style={{ paddingTop: '10px', paddingBottom: '2px' }}
+        >
           <div className="flex items-center gap-1.5">
             <Calendar size={13} className="text-dark-400" />
             <span>
@@ -266,11 +275,14 @@ export default function ProjectCard({
           </div>
 
           {dateAlert && (
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold ${
-              dateAlert.type === 'danger' 
-                ? 'bg-accent-red/20 text-accent-red border border-accent-red/30' 
-                : 'bg-accent-orange/20 text-accent-orange border border-accent-orange/30'
-            }`}>
+            <span 
+              className={`inline-flex items-center gap-1.5 rounded-md text-[11px] font-bold ${
+                dateAlert.type === 'danger' 
+                  ? 'bg-accent-red/20 text-accent-red border border-accent-red/30' 
+                  : 'bg-accent-orange/20 text-accent-orange border border-accent-orange/30'
+              }`}
+              style={{ padding: '3px 8px' }}
+            >
               <dateAlert.icon size={12} />
               {dateAlert.text}
             </span>
@@ -278,7 +290,10 @@ export default function ProjectCard({
         </div>
 
         {/* Objectives Progress Bar */}
-        <div className="flex flex-col gap-1.5 bg-dark-900/50 p-2.5 rounded-xl border border-dark-700/30">
+        <div 
+          className="flex flex-col gap-2 bg-dark-900/50 rounded-xl border border-dark-700/30"
+          style={{ padding: '10px 14px' }}
+        >
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1.5 text-dark-300 font-medium">
               <Target size={13} className="text-accent-cyan" />
@@ -309,13 +324,17 @@ export default function ProjectCard({
         </div>
 
         {/* Bottom Actions: Status selector & Badges (Attachments, Notes) */}
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-dark-700/40">
+        <div 
+          className="flex items-center justify-between gap-2 border-t border-dark-700/40"
+          style={{ paddingTop: '12px' }}
+        >
           {/* Status Quick Dropdown */}
           <select
             value={project.status}
             onChange={(e) => changeProjectStatus(project.id, e.target.value)}
             onClick={(e) => e.stopPropagation()}
-            className={`text-xs font-bold py-1 px-2.5 rounded-lg border cursor-pointer transition-all outline-none ${statusConfig.bg} ${statusConfig.color}`}
+            className={`text-xs font-bold rounded-lg border cursor-pointer transition-all outline-none ${statusConfig.bg} ${statusConfig.color}`}
+            style={{ padding: '6px 12px' }}
           >
             <option value="0-Non lancé" className="bg-dark-800 text-dark-200">⚪ 0-Non lancé</option>
             <option value="1-En cours" className="bg-dark-800 text-accent-cyan">🔵 1-En cours</option>
@@ -323,18 +342,19 @@ export default function ProjectCard({
           </select>
 
           {/* Attachments & Notes buttons */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             {/* Attachments button */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setShowAttachmentsModal(true);
               }}
-              className={`p-1.5 rounded-lg border transition-all flex items-center gap-1 text-xs ${
+              className={`rounded-lg border transition-all flex items-center gap-1.5 text-xs cursor-pointer ${
                 attachmentsCount > 0
                   ? 'bg-accent-cyan/15 border-accent-cyan/40 text-accent-cyan'
                   : 'bg-dark-700/40 border-dark-600/30 text-dark-400 hover:text-dark-200'
               }`}
+              style={{ padding: '7px 10px' }}
               title={attachmentsCount > 0 ? `${attachmentsCount} pièce(s) jointe(s)` : 'Ajouter une pièce jointe'}
             >
               <Paperclip size={14} />
@@ -344,11 +364,12 @@ export default function ProjectCard({
             {/* Notes button */}
             <button
               onClick={handleOpenNotes}
-              className={`p-1.5 rounded-lg border transition-all flex items-center gap-1 text-xs ${
+              className={`rounded-lg border transition-all flex items-center gap-1.5 text-xs cursor-pointer ${
                 hasNotes
                   ? 'bg-accent-violet/20 border-accent-violet/40 text-accent-violet'
                   : 'bg-dark-700/40 border-dark-600/30 text-dark-400 hover:text-dark-200'
               }`}
+              style={{ padding: '7px 10px' }}
               title={hasNotes ? 'Voir les notes du projet' : 'Rédiger une note'}
             >
               <FileText size={14} />
@@ -358,7 +379,8 @@ export default function ProjectCard({
             {/* Details trigger */}
             <button
               onClick={() => onOpenDetails?.(project)}
-              className="p-1.5 rounded-lg bg-dark-700/40 border border-dark-600/30 text-dark-300 hover:text-accent-cyan hover:border-accent-cyan/40 transition-all ml-1"
+              className="rounded-lg bg-dark-700/40 border border-dark-600/30 text-dark-300 hover:text-accent-cyan hover:border-accent-cyan/40 transition-all ml-1 cursor-pointer"
+              style={{ padding: '7px 9px' }}
               title="Ouvrir la fiche complète"
             >
               <ChevronRight size={15} />

@@ -176,21 +176,26 @@ export default function ProjectDetailModal({
       <Modal
         isOpen={isOpen}
         onClose={onClose}
+        headerPadding="20px 24px"
+        bodyPadding="20px 24px"
         title={
           <div className="flex items-center gap-3">
-            <span className="p-2 rounded-xl bg-accent-cyan/15 text-accent-cyan">
+            <span className="rounded-xl bg-accent-cyan/15 text-accent-cyan flex items-center justify-center" style={{ padding: '8px' }}>
               <FolderKanban size={20} />
             </span>
             <div className="flex flex-col">
               <span className="text-base font-bold text-dark-100">{project.name}</span>
               <div className="flex items-center gap-2 mt-0.5">
                 <span 
-                  className="text-[11px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1"
-                  style={{ backgroundColor: `${category.color}20`, color: category.color }}
+                  className="text-[11px] font-semibold rounded-md flex items-center gap-1"
+                  style={{ backgroundColor: `${category.color}20`, color: category.color, padding: '3px 8px' }}
                 >
                   {category.icon} {category.label}
                 </span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${priorityConfig.color}`}>
+                <span 
+                  className={`text-[10px] font-bold rounded-md border ${priorityConfig.color}`}
+                  style={{ padding: '3px 8px' }}
+                >
                   {priorityConfig.label}
                 </span>
               </div>
@@ -199,16 +204,20 @@ export default function ProjectDetailModal({
         }
         maxWidth="max-w-4xl"
       >
-        <div className="flex flex-col gap-5 text-dark-200 min-h-[500px]">
+        <div className="flex flex-col gap-6 text-dark-200 min-h-[500px]">
           {/* Header Controls: Status selector, Dates, Edit button */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-dark-900/60 border border-dark-600/30 rounded-2xl">
+          <div 
+            className="flex flex-wrap items-center justify-between gap-3 bg-dark-900/60 border border-dark-600/30 rounded-2xl"
+            style={{ padding: '14px 18px' }}
+          >
             {/* Status changer */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <span className="text-xs text-dark-400 font-semibold">Statut :</span>
               <select
                 value={project.status}
                 onChange={(e) => changeProjectStatus(project.id, e.target.value)}
-                className={`text-xs font-bold py-1.5 px-3 rounded-xl border cursor-pointer transition-all outline-none ${statusConfig.color}`}
+                className={`text-xs font-bold rounded-xl border cursor-pointer transition-all outline-none ${statusConfig.color}`}
+                style={{ padding: '8px 14px' }}
               >
                 <option value="0-Non lancé" className="bg-dark-800 text-dark-200">⚪ 0-Non lancé</option>
                 <option value="1-En cours" className="bg-dark-800 text-accent-cyan">🔵 1-En cours</option>
@@ -228,11 +237,14 @@ export default function ProjectDetailModal({
               </div>
 
               {dateAlert && (
-                <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
-                  dateAlert.danger 
-                    ? 'bg-accent-red/20 text-accent-red border border-accent-red/30' 
-                    : 'bg-accent-orange/20 text-accent-orange border border-accent-orange/30'
-                }`}>
+                <span 
+                  className={`rounded-md text-[11px] font-bold ${
+                    dateAlert.danger 
+                      ? 'bg-accent-red/20 text-accent-red border border-accent-red/30' 
+                      : 'bg-accent-orange/20 text-accent-orange border border-accent-orange/30'
+                  }`}
+                  style={{ padding: '3px 8px' }}
+                >
                   {dateAlert.text}
                 </span>
               )}
@@ -241,7 +253,8 @@ export default function ProjectDetailModal({
             {/* Edit button */}
             <button
               onClick={() => onEdit?.(project)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-700/60 hover:bg-dark-700 text-dark-200 hover:text-dark-100 text-xs font-semibold border border-dark-600/40 transition-colors"
+              className="flex items-center gap-1.5 rounded-xl bg-dark-700/60 hover:bg-dark-700 text-dark-200 hover:text-dark-100 text-xs font-semibold border border-dark-600/40 transition-colors cursor-pointer"
+              style={{ padding: '8px 16px' }}
             >
               <Edit2 size={13} className="text-accent-violet" />
               Modifier
@@ -249,15 +262,16 @@ export default function ProjectDetailModal({
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex border-b border-dark-700/60 gap-4">
+          <div className="flex border-b border-dark-700/60 gap-2">
             <button
               onClick={() => handleTabChange('overview')}
-              className={`flex items-center gap-2 pb-3 px-1 text-sm font-semibold transition-all relative ${
-                activeTab === 'overview' ? 'text-accent-cyan' : 'text-dark-400 hover:text-dark-200'
+              className={`flex items-center gap-2 pb-3 text-sm font-semibold transition-all relative cursor-pointer ${
+                activeTab === 'overview' ? 'text-accent-cyan font-bold' : 'text-dark-400 hover:text-dark-200'
               }`}
+              style={{ padding: '10px 14px' }}
             >
               <Target size={16} />
-              Aperçu & Objectifs ({linkedObjectives.length})
+              <span>Aperçu & Objectifs ({linkedObjectives.length})</span>
               {activeTab === 'overview' && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-cyan rounded-full" />
               )}
@@ -265,12 +279,13 @@ export default function ProjectDetailModal({
 
             <button
               onClick={() => handleTabChange('notes')}
-              className={`flex items-center gap-2 pb-3 px-1 text-sm font-semibold transition-all relative ${
-                activeTab === 'notes' ? 'text-accent-violet' : 'text-dark-400 hover:text-dark-200'
+              className={`flex items-center gap-2 pb-3 text-sm font-semibold transition-all relative cursor-pointer ${
+                activeTab === 'notes' ? 'text-accent-violet font-bold' : 'text-dark-400 hover:text-dark-200'
               }`}
+              style={{ padding: '10px 14px' }}
             >
               <FileText size={16} />
-              Notes de projet
+              <span>Notes de projet</span>
               {activeTab === 'notes' && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-violet rounded-full" />
               )}
@@ -278,12 +293,13 @@ export default function ProjectDetailModal({
 
             <button
               onClick={() => handleTabChange('attachments')}
-              className={`flex items-center gap-2 pb-3 px-1 text-sm font-semibold transition-all relative ${
-                activeTab === 'attachments' ? 'text-accent-orange' : 'text-dark-400 hover:text-dark-200'
+              className={`flex items-center gap-2 pb-3 text-sm font-semibold transition-all relative cursor-pointer ${
+                activeTab === 'attachments' ? 'text-accent-orange font-bold' : 'text-dark-400 hover:text-dark-200'
               }`}
+              style={{ padding: '10px 14px' }}
             >
               <Paperclip size={16} />
-              Pièces jointes ({attachments.length})
+              <span>Pièces jointes ({attachments.length})</span>
               {activeTab === 'attachments' && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-orange rounded-full" />
               )}
@@ -295,18 +311,27 @@ export default function ProjectDetailModal({
             <div className="flex flex-col gap-6">
               {/* Description */}
               {project.description ? (
-                <div className="bg-dark-900/40 p-4 rounded-2xl border border-dark-600/30 text-sm text-dark-200 leading-relaxed whitespace-pre-wrap">
-                  <h4 className="text-xs font-bold text-dark-400 uppercase tracking-wider mb-1.5">Description</h4>
+                <div 
+                  className="bg-dark-900/40 rounded-2xl border border-dark-600/30 text-sm text-dark-200 leading-relaxed whitespace-pre-wrap"
+                  style={{ padding: '16px 20px' }}
+                >
+                  <h4 className="text-xs font-bold text-dark-400 uppercase tracking-wider mb-2">Description</h4>
                   {project.description}
                 </div>
               ) : (
-                <div className="bg-dark-900/30 p-3 rounded-xl border border-dashed border-dark-700 text-xs text-dark-400 italic">
+                <div 
+                  className="bg-dark-900/30 rounded-xl border border-dashed border-dark-700 text-xs text-dark-400 italic"
+                  style={{ padding: '14px 18px' }}
+                >
                   Aucune description renseignée pour ce projet.
                 </div>
               )}
 
               {/* Progress Summary */}
-              <div className="flex flex-col gap-2 bg-gradient-to-br from-dark-850 to-dark-900 p-4 rounded-2xl border border-dark-600/40">
+              <div 
+                className="flex flex-col gap-2.5 bg-gradient-to-br from-dark-850 to-dark-900 rounded-2xl border border-dark-600/40"
+                style={{ padding: '16px 20px' }}
+              >
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-dark-200">
                     Progression globale du projet :
@@ -339,7 +364,8 @@ export default function ProjectDetailModal({
                   <button
                     type="button"
                     onClick={() => setShowAddObjectives(!showAddObjectives)}
-                    className="flex items-center gap-1.5 text-xs font-bold text-accent-cyan hover:underline"
+                    className="flex items-center gap-1.5 text-xs font-bold text-accent-cyan hover:underline cursor-pointer"
+                    style={{ padding: '6px 12px' }}
                   >
                     <Plus size={14} />
                     {showAddObjectives ? 'Masquer la sélection' : 'Associer des objectifs'}
@@ -348,31 +374,39 @@ export default function ProjectDetailModal({
 
                 {/* Inline Objectives Selector (when expanded) */}
                 {showAddObjectives && (
-                  <div className="p-4 bg-dark-900/80 border border-dark-600/40 rounded-2xl flex flex-col gap-2 animate-fade-in">
+                  <div 
+                    className="bg-dark-900/80 border border-dark-600/40 rounded-2xl flex flex-col gap-2.5 animate-fade-in"
+                    style={{ padding: '16px 20px' }}
+                  >
                     <span className="text-xs font-semibold text-dark-200">Sélectionnez les objectifs à rattacher :</span>
                     {availableObjectives.length === 0 ? (
                       <p className="text-xs text-dark-400 italic">Tous vos objectifs sont déjà associés à ce projet.</p>
                     ) : (
-                      <div className="max-h-40 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-1">
+                      <div className="max-h-48 overflow-y-auto custom-scrollbar flex flex-col gap-2 mt-1">
                         {availableObjectives.map(obj => {
                           const isObjDone = getObjectiveProjectProgress(obj, targetState.progress) >= 1;
                           return (
                             <div
                               key={obj.id}
                               onClick={() => handleAddObjectiveToProject(obj.id)}
-                              className="flex items-center justify-between p-2 rounded-xl bg-dark-800/80 hover:bg-dark-700 border border-dark-600/30 text-xs cursor-pointer transition-all"
+                              className="flex items-center justify-between rounded-xl bg-dark-800/80 hover:bg-dark-700 border border-dark-600/30 text-xs cursor-pointer transition-all"
+                              style={{ padding: '10px 16px' }}
                             >
-                              <div className="flex items-center gap-2 truncate">
+                              <div className="flex items-center gap-2.5 truncate">
                                 <span className="text-dark-200 font-medium truncate">{obj.title}</span>
                                 {isObjDone && (
-                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-accent-green/20 text-accent-green border border-accent-green/30 flex-shrink-0">
+                                  <span 
+                                    className="text-[10px] font-bold rounded bg-accent-green/20 text-accent-green border border-accent-green/30 flex-shrink-0"
+                                    style={{ padding: '2px 8px' }}
+                                  >
                                     ✓ Réalisé
                                   </span>
                                 )}
                               </div>
                               <button
                                 type="button"
-                                className="px-2 py-0.5 rounded bg-accent-cyan/20 text-accent-cyan text-[11px] font-bold flex-shrink-0 ml-2"
+                                className="rounded bg-accent-cyan/20 text-accent-cyan text-[11px] font-bold flex-shrink-0 ml-2 cursor-pointer"
+                                style={{ padding: '6px 14px' }}
                               >
                                 + Associer
                               </button>
@@ -386,18 +420,22 @@ export default function ProjectDetailModal({
 
                 {/* Linked Objectives items */}
                 {linkedObjectives.length === 0 ? (
-                  <div className="text-center py-8 bg-dark-900/20 border border-dashed border-dark-700/50 rounded-2xl flex flex-col items-center gap-2">
+                  <div 
+                    className="text-center bg-dark-900/20 border border-dashed border-dark-700/50 rounded-2xl flex flex-col items-center gap-2"
+                    style={{ padding: '32px 20px' }}
+                  >
                     <Target size={28} className="text-dark-500" />
                     <span className="text-xs text-dark-400">Aucun objectif n'est encore affecté à ce projet.</span>
                     <button
                       onClick={() => setShowAddObjectives(true)}
-                      className="text-xs font-bold text-accent-cyan underline mt-1"
+                      className="text-xs font-bold text-accent-cyan underline mt-1 cursor-pointer"
+                      style={{ padding: '4px 8px' }}
                     >
                       Associer des objectifs maintenant
                     </button>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2.5">
                     {linkedObjectives.map((obj) => {
                       const prog = getObjectiveProjectProgress(obj, targetState.progress);
                       const isDone = prog >= 1;
@@ -406,59 +444,70 @@ export default function ProjectDetailModal({
                       return (
                         <div
                           key={obj.id}
-                          className={`flex items-center justify-between p-3 rounded-xl border transition-all text-xs ${
+                          className={`flex items-center justify-between rounded-xl border transition-all text-xs ${
                             isDone 
                               ? 'bg-dark-800/40 border-dark-700/50' 
                               : 'bg-dark-800/80 border-dark-600/30 hover:border-dark-500/50'
                           }`}
+                          style={{ padding: '12px 18px' }}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3.5">
                             <button
                               type="button"
                               onClick={() => handleToggleObjective(obj)}
-                              className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold transition-all cursor-pointer ${
+                              className={`rounded-xl flex items-center justify-center font-bold transition-all cursor-pointer ${
                                 isDone 
                                   ? 'bg-accent-green/20 text-accent-green border border-accent-green/40 hover:bg-accent-green/30 shadow-sm shadow-accent-green/10' 
                                   : 'bg-dark-700 text-dark-400 hover:bg-dark-600 hover:text-dark-200 border border-dark-600/50'
                               }`}
+                              style={{ width: '32px', height: '32px', minWidth: '32px', minHeight: '32px', padding: '6px' }}
                               title={isDone ? "Cliquer pour marquer comme non validé" : "Cliquer pour marquer comme validé"}
                             >
-                              {isDone ? <Check size={15} strokeWidth={3} /> : <span className="text-xs">⏳</span>}
+                              {isDone ? <Check size={16} strokeWidth={3} /> : <span className="text-xs">⏳</span>}
                             </button>
 
                             <div className="flex flex-col">
                               <span className={`font-semibold text-sm ${isDone ? 'text-dark-300 line-through' : 'text-dark-100'}`}>
                                 {obj.title}
                               </span>
-                              <div className="flex items-center gap-2 text-[11px] text-dark-400 mt-0.5">
+                              <div className="flex items-center gap-2 text-[11px] text-dark-400 mt-1">
                                 {objCat && (
-                                  <span style={{ color: objCat.color }}>{objCat.icon} {objCat.label}</span>
+                                  <span 
+                                    className="rounded flex items-center gap-1"
+                                    style={{ color: objCat.color, backgroundColor: `${objCat.color}15`, padding: '2px 6px' }}
+                                  >
+                                    {objCat.icon} {objCat.label}
+                                  </span>
                                 )}
                                 <span>•</span>
                                 <span>Cible : {obj.target || 1}x</span>
                                 {isDone && (
                                   <>
                                     <span>•</span>
-                                    <span className="text-accent-green font-medium">Validé</span>
+                                    <span className="text-accent-green font-semibold">Validé</span>
                                   </>
                                 )}
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-3">
-                            <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold ${
-                              isDone ? 'bg-accent-green/15 text-accent-green border border-accent-green/30' : 'bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/20'
-                            }`}>
+                          <div className="flex items-center gap-3.5">
+                            <span 
+                              className={`rounded-md text-[11px] font-bold ${
+                                isDone ? 'bg-accent-green/15 text-accent-green border border-accent-green/30' : 'bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/20'
+                              }`}
+                              style={{ padding: '4px 10px' }}
+                            >
                               {Math.round(prog * 100)}%
                             </span>
 
                             <button
                               onClick={() => handleRemoveObjectiveFromProject(obj.id)}
-                              className="p-1 rounded text-dark-500 hover:text-accent-red hover:bg-accent-red/10 transition-colors cursor-pointer"
+                              className="rounded text-dark-500 hover:text-accent-red hover:bg-accent-red/10 transition-colors cursor-pointer"
+                              style={{ padding: '6px' }}
                               title="Détacher du projet"
                             >
-                              <X size={14} />
+                              <X size={15} />
                             </button>
                           </div>
                         </div>
@@ -496,7 +545,8 @@ export default function ProjectDetailModal({
                 <button
                   type="button"
                   onClick={() => setShowAttachmentsManager(true)}
-                  className="px-3 py-1.5 rounded-xl bg-accent-cyan text-dark-950 text-xs font-bold hover:bg-accent-cyan/90 transition-all flex items-center gap-1.5"
+                  className="rounded-xl bg-accent-cyan text-dark-950 text-xs font-bold hover:bg-accent-cyan/90 transition-all flex items-center gap-2 cursor-pointer"
+                  style={{ padding: '8px 16px' }}
                 >
                   <Paperclip size={14} />
                   Gérer les fichiers
@@ -504,22 +554,27 @@ export default function ProjectDetailModal({
               </div>
 
               {attachments.length === 0 ? (
-                <div className="text-center py-10 bg-dark-900/30 border border-dashed border-dark-700 rounded-2xl flex flex-col items-center gap-2">
+                <div 
+                  className="text-center bg-dark-900/30 border border-dashed border-dark-700 rounded-2xl flex flex-col items-center gap-2"
+                  style={{ padding: '36px 20px' }}
+                >
                   <Paperclip size={28} className="text-dark-500" />
                   <span className="text-xs text-dark-400">Aucune pièce jointe pour ce projet.</span>
                   <button
                     onClick={() => setShowAttachmentsManager(true)}
-                    className="text-xs font-bold text-accent-cyan underline mt-1"
+                    className="text-xs font-bold text-accent-cyan underline mt-1 cursor-pointer"
+                    style={{ padding: '4px 8px' }}
                   >
                     Téléverser un document ou une image
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {attachments.map((file) => (
                     <div
                       key={file.id}
-                      className="flex items-center justify-between p-3 rounded-xl bg-dark-800/80 border border-dark-600/30 hover:border-dark-500/50 text-xs"
+                      className="flex items-center justify-between rounded-xl bg-dark-800/80 border border-dark-600/30 hover:border-dark-500/50 text-xs"
+                      style={{ padding: '12px 16px' }}
                     >
                       <div className="flex items-center gap-2.5 truncate">
                         <Paperclip size={15} className="text-accent-cyan flex-shrink-0" />
@@ -529,7 +584,8 @@ export default function ProjectDetailModal({
                         href={file.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-2 py-1 rounded bg-dark-700 hover:bg-dark-600 text-dark-200 text-[11px] font-medium flex items-center gap-1 flex-shrink-0"
+                        className="rounded bg-dark-700 hover:bg-dark-600 text-dark-200 text-[11px] font-medium flex items-center gap-1 flex-shrink-0"
+                        style={{ padding: '6px 12px' }}
                       >
                         <ExternalLink size={12} />
                         Voir

@@ -63,17 +63,24 @@ export default function ProjectKanban({
           return (
             <div 
               key={col.id} 
-              className="flex flex-col bg-dark-900/40 border border-dark-700/50 rounded-2xl p-3 min-h-[450px]"
+              className="flex flex-col bg-dark-900/40 border border-dark-700/50 rounded-2xl min-h-[450px]"
+              style={{ padding: '16px' }}
             >
               {/* Column Header */}
-              <div className={`flex items-center justify-between p-3 rounded-xl border mb-3 ${col.headerBg}`}>
+              <div 
+                className={`flex items-center justify-between rounded-xl border mb-3 ${col.headerBg}`}
+                style={{ padding: '12px 16px' }}
+              >
                 <div className="flex items-center gap-2">
                   <ColIcon size={16} className={col.headerColor} />
                   <h3 className={`text-sm font-bold ${col.headerColor}`}>
                     {col.title}
                   </h3>
                 </div>
-                <span className={`text-xs font-black px-2.5 py-0.5 rounded-full ${col.countBg}`}>
+                <span 
+                  className={`text-xs font-black rounded-full ${col.countBg}`}
+                  style={{ padding: '4px 10px' }}
+                >
                   {colProjects.length}
                 </span>
               </div>
@@ -89,7 +96,10 @@ export default function ProjectKanban({
                     }`}
                   >
                     {colProjects.length === 0 ? (
-                      <div className="flex-1 flex items-center justify-center p-6 text-center text-xs text-dark-400 border border-dashed border-dark-800 rounded-xl">
+                      <div 
+                        className="flex-1 flex items-center justify-center text-center text-xs text-dark-400 border border-dashed border-dark-800 rounded-xl"
+                        style={{ padding: '28px 16px' }}
+                      >
                         Glissez un projet ici
                       </div>
                     ) : (
