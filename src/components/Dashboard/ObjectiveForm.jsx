@@ -48,13 +48,21 @@ const TIME_SLOTS = (() => {
   return slots;
 })();
 
-export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObjective = null }) {
+export default function ObjectiveForm({ 
+  isOpen, 
+  onClose, 
+  weekId = null, 
+  editObjective = null,
+  onObjectiveCreated = null,
+  defaultProjectId = '',
+  zIndex = 220
+}) {
   const { state, dispatch } = useTarget();
   const { user } = useAuth();
   const { sessions } = useSport();
   const { state: notesState, createFolder, createNote } = useNotes();
   const { projects, updateProject } = useProjects();
-  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState(defaultProjectId || '');
 
   const delegatableContacts = useMemo(() => {
     if (!state.contacts) return [];
@@ -380,6 +388,10 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
       }
     });
 
+    if (onObjectiveCreated) {
+      onObjectiveCreated(savedObjId);
+    }
+
     onClose();
     // Reset
     setTempId(`obj-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`);
@@ -413,6 +425,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
         title={editObjective ? 'Modifier l\'objectif' : 'Nouvel objectif'}
         closeOnOutsideClick={false}
         centerTitle={true}
+        zIndex={zIndex}
         headerPadding="10px 16px 4px 16px"
         bodyPadding="2px 16px 14px 16px"
         className="h-[90dvh] sm:h-auto"
@@ -807,6 +820,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
         title="Planification de l'objectif"
         maxWidth="max-w-md"
         closeOnOutsideClick={false}
+        zIndex={zIndex + 20}
       >
         <div className="flex flex-col gap-5" style={{ marginTop: '-10px' }}>
 
@@ -989,9 +1003,10 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
       {showNotesModal && formNoteId && (
         <Modal 
           isOpen={true} 
-          onClose={() => setShowNotesModal(false)}
+          onClose={() => setShowNotesModal(false)} 
           title={`Notes: ${title || 'Nouvel objectif'}`}
           maxWidth="max-w-4xl"
+          zIndex={zIndex + 20}
         >
           <div className="h-[65vh] flex flex-col -m-5 overflow-hidden rounded-b-2xl">
             <NoteEditor 
@@ -1021,6 +1036,7 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
           maxWidth="max-w-md"
           closeOnOutsideClick={true}
           centerTitle={true}
+          zIndex={zIndex + 20}
         >
           <div className="flex flex-col gap-2 py-1">
             {/* Tâche personnelle (Non assigné) */}

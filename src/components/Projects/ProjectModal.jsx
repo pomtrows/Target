@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Target, Calendar, AlertCircle, Check, Search, Plus, X } from 'lucide-react';
+import { Target, Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useProjects } from '../../contexts/ProjectsContext';
 import { getObjectiveProjectProgress } from '../../utils/progressUtils';
+import { getCurrentWeekId } from '../../utils/weekUtils';
 import Modal from '../Shared/Modal';
+import ObjectiveForm from '../Dashboard/ObjectiveForm';
 
 export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) {
-  const { state: targetState } = useTarget();
+  const { state: targetState, dispatch } = useTarget();
   const { createProject, updateProject } = useProjects();
 
   const [name, setName] = useState('');
@@ -18,13 +20,26 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
   const [endDate, setEndDate] = useState('');
   const [selectedObjectiveIds, setSelectedObjectiveIds] = useState([]);
   const [objectiveSearch, setObjectiveSearch] = useState('');
+  const [objectiveMode, setObjectiveMode] = useState(null); // 'create' | 'assign' | null
+  const [isAdvancedObjectiveModalOpen, setIsAdvancedObjectiveModalOpen] = useState(false);
+
+  // Inline objective creation state
+  const [newObjTitle, setNewObjTitle] = useState('');
+  const [newObjCategoryId, setNewObjCategoryId] = useState('autre');
+  const [newObjPriority, setNewObjPriority] = useState('P2');
+  const [newObjTarget, setNewObjTarget] = useState(1);
+  const [newObjAssignCurrentWeek, setNewObjAssignCurrentWeek] = useState(true);
+  const [isCreatingInlineObj, setIsCreatingInlineObj] = useState(false);
+  const [inlineObjFeedback, setInlineObjFeedback] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (projectToEdit) {
       setName(projectToEdit.name || '');
-      setCategoryId(projectToEdit.categoryId || projectToEdit.category_id || 'autre');
+      const cat = projectToEdit.categoryId || projectToEdit.category_id || 'autre';
+      setCategoryId(cat);
+      setNewObjCategoryId(cat);
       setDescription(projectToEdit.description || '');
       setPriority(Number(projectToEdit.priority) || 2);
       setStatus(projectToEdit.status || '0-Non lancé');
@@ -33,7 +48,9 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
       setSelectedObjectiveIds(projectToEdit.objectiveIds || projectToEdit.objective_ids || []);
     } else {
       setName('');
-      setCategoryId(targetState.categories?.[0]?.id || 'autre');
+      const defaultCat = targetState.categories?.[0]?.id || 'autre';
+      setCategoryId(defaultCat);
+      setNewObjCategoryId(defaultCat);
       setDescription('');
       setPriority(2);
       setStatus('0-Non lancé');
@@ -41,8 +58,17 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
       setEndDate('');
       setSelectedObjectiveIds([]);
     }
+    setObjectiveMode(null);
+    setNewObjTitle('');
+    setInlineObjFeedback('');
     setError('');
   }, [projectToEdit, isOpen, targetState.categories]);
+
+  useEffect(() => {
+    if (categoryId) {
+      setNewObjCategoryId(categoryId);
+    }
+  }, [categoryId]);
 
   if (!isOpen) return null;
 
@@ -58,6 +84,42 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
     setSelectedObjectiveIds(prev => 
       prev.includes(objId) ? prev.filter(id => id !== objId) : [...prev, objId]
     );
+  };
+
+  const handleCreateInlineObjective = async (e) => {
+    if (e) e.preventDefault();
+    if (!newObjTitle.trim()) return;
+
+    setIsCreatingInlineObj(true);
+    setInlineObjFeedback('');
+    try {
+      const newId = `obj-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+      const assignments = newObjAssignCurrentWeek ? [getCurrentWeekId()] : [];
+
+      await dispatch({
+        type: 'ADD_OBJECTIVE',
+        payload: {
+          id: newId,
+          title: newObjTitle.trim(),
+          target: Math.max(1, Number(newObjTarget) || 1),
+          categoryId: newObjCategoryId || categoryId || 'autre',
+          priority: newObjPriority || 'P2',
+          assignments,
+          subObjectives: [],
+          attachments: []
+        }
+      });
+
+      setSelectedObjectiveIds(prev => [...prev, newId]);
+      setNewObjTitle('');
+      setInlineObjFeedback('✓ Objectif créé et rattaché !');
+      setTimeout(() => setInlineObjFeedback(''), 3000);
+    } catch (err) {
+      console.error('Erreur création objectif inline:', err);
+      setInlineObjFeedback('Erreur lors de la création.');
+    } finally {
+      setIsCreatingInlineObj(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -103,7 +165,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
   };
 
   return (
-    <Modal
+    <>
+      <Modal
       isOpen={isOpen}
       onClose={onClose}
       title={projectToEdit ? 'Modifier le projet' : 'Nouveau projet 📁'}
@@ -254,101 +317,406 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           />
         </div>
 
-        {/* Linked Objectives Selection */}
+        {/* Section Objectifs avec 2 boutons : Créer et Attribuer */}
         <div 
-          className="flex flex-col gap-2 bg-dark-900/40 rounded-2xl border border-dark-600/30"
-          style={{ padding: '8px 12px' }}
+          className="flex flex-col gap-3 bg-dark-900/50 rounded-2xl border border-dark-600/40"
+          style={{ padding: '10px 14px' }}
         >
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-dark-200 uppercase tracking-wider flex items-center gap-1.5">
-              <Target size={15} className="text-accent-cyan" />
-              Objectifs attribués à ce projet ({selectedObjectiveIds.length})
-            </label>
-            {selectedObjectiveIds.length > 0 && (
+          {/* Header de la section avec les 2 boutons Créer et Attribuer */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2 border-b border-dark-700/50">
+            <div className="flex items-center gap-2">
+              <Target size={16} className="text-accent-cyan" />
+              <span className="text-xs font-bold text-dark-200 uppercase tracking-wider">
+                Objectifs
+              </span>
+              <span 
+                className="text-[11px] font-bold rounded-full bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30"
+                style={{ padding: '1px 8px' }}
+              >
+                {selectedObjectiveIds.length} attribué{selectedObjectiveIds.length > 1 ? 's' : ''}
+              </span>
+            </div>
+
+            {/* Les 2 boutons d'action demandés : Créer et Attribuer */}
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setSelectedObjectiveIds([])}
-                className="text-[11px] text-dark-400 hover:text-accent-red underline transition-colors cursor-pointer"
-                style={{ padding: '2px 6px' }}
+                onClick={() => setObjectiveMode(prev => prev === 'create' ? null : 'create')}
+                className={`flex items-center gap-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                  objectiveMode === 'create'
+                    ? 'bg-accent-cyan text-dark-950 border-accent-cyan shadow-sm shadow-accent-cyan/20'
+                    : 'bg-dark-800 text-dark-200 border-dark-600/50 hover:bg-dark-700 hover:text-dark-100 hover:border-dark-500'
+                }`}
+                style={{ padding: '5px 10px' }}
               >
-                Tout désélectionner
+                <Plus size={14} strokeWidth={2.5} />
+                Créer
               </button>
-            )}
-          </div>
-          <p className="text-xs text-dark-400">
-            Cochez les objectifs existants qui participent à la réalisation de ce projet.
-          </p>
 
-          {allObjectives.length > 5 && (
-            <div className="relative mt-1">
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
-              <input
-                type="text"
-                value={objectiveSearch}
-                onChange={(e) => setObjectiveSearch(e.target.value)}
-                placeholder="Filtrer les objectifs..."
-                className="w-full bg-dark-800/80 border border-dark-600/40 rounded-xl text-xs text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan"
-                style={{ padding: '6px 10px 6px 28px' }}
-              />
+              <button
+                type="button"
+                onClick={() => setObjectiveMode(prev => prev === 'assign' ? null : 'assign')}
+                className={`flex items-center gap-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                  objectiveMode === 'assign'
+                    ? 'bg-accent-cyan text-dark-950 border-accent-cyan shadow-sm shadow-accent-cyan/20'
+                    : 'bg-dark-800 text-dark-200 border-dark-600/50 hover:bg-dark-700 hover:text-dark-100 hover:border-dark-500'
+                }`}
+                style={{ padding: '5px 10px' }}
+              >
+                <Link2 size={14} strokeWidth={2.5} />
+                Attribuer
+              </button>
+            </div>
+          </div>
+
+          {/* PANNEAU 1 : CRÉER UN OBJECTIF */}
+          {objectiveMode === 'create' && (
+            <div 
+              className="flex flex-col gap-2.5 bg-dark-800/90 rounded-xl border border-accent-cyan/30"
+              style={{ padding: '10px 12px' }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-accent-cyan flex items-center gap-1.5">
+                  <Plus size={13} />
+                  Créer un nouvel objectif pour ce projet
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setObjectiveMode(null)}
+                  className="text-dark-400 hover:text-dark-200 text-xs cursor-pointer"
+                  style={{ padding: '2px 4px' }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {inlineObjFeedback && (
+                <div 
+                  className="text-xs font-semibold text-accent-green bg-accent-green/10 border border-accent-green/30 rounded-lg flex items-center gap-1.5"
+                  style={{ padding: '4px 8px' }}
+                >
+                  <Check size={13} />
+                  <span>{inlineObjFeedback}</span>
+                </div>
+              )}
+
+              {/* Titre de l'objectif */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-bold text-dark-300 uppercase tracking-wider">
+                  Intitulé de l'objectif <span className="text-accent-red">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newObjTitle}
+                  onChange={(e) => setNewObjTitle(e.target.value)}
+                  placeholder="Ex: Rédiger le cahier des charges, Maquette Figma..."
+                  className="w-full bg-dark-900 border border-dark-600/60 rounded-xl text-xs text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan"
+                  style={{ padding: '6px 10px' }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleCreateInlineObjective();
+                    }
+                  }}
+                  autoFocus
+                />
+              </div>
+
+              {/* Paramètres : Catégorie, Priorité, Cible */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {/* Catégorie */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-dark-400 uppercase tracking-wider">
+                    Catégorie
+                  </label>
+                  <select
+                    value={newObjCategoryId}
+                    onChange={(e) => setNewObjCategoryId(e.target.value)}
+                    className="w-full bg-dark-900 border border-dark-600/60 rounded-xl text-xs text-dark-100 focus:outline-none focus:border-accent-cyan cursor-pointer"
+                    style={{ padding: '6px 10px' }}
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id} className="bg-dark-800 text-dark-100">
+                        {cat.icon} {cat.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Priorité */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-dark-400 uppercase tracking-wider">
+                    Priorité
+                  </label>
+                  <div className="grid grid-cols-3 gap-1">
+                    {[
+                      { val: 'P1', label: 'P1', color: 'text-accent-red border-accent-red/40 bg-accent-red/10' },
+                      { val: 'P2', label: 'P2', color: 'text-accent-orange border-accent-orange/40 bg-accent-orange/10' },
+                      { val: 'P3', label: 'P3', color: 'text-accent-cyan border-accent-cyan/40 bg-accent-cyan/10' }
+                    ].map(p => (
+                      <button
+                        type="button"
+                        key={p.val}
+                        onClick={() => setNewObjPriority(p.val)}
+                        className={`text-center rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          newObjPriority === p.val
+                            ? `${p.color} ring-1 ring-current`
+                            : 'border-dark-600/40 text-dark-400 hover:text-dark-200 bg-dark-900/60'
+                        }`}
+                        style={{ padding: '5px 4px' }}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cible */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-dark-400 uppercase tracking-wider">
+                    Cible
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={newObjTarget}
+                    onChange={(e) => setNewObjTarget(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full bg-dark-900 border border-dark-600/60 rounded-xl text-xs text-dark-100 focus:outline-none focus:border-accent-cyan"
+                    style={{ padding: '6px 10px' }}
+                  />
+                </div>
+              </div>
+
+              {/* Planification & boutons */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <label className="flex items-center gap-1.5 text-xs text-dark-300 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={newObjAssignCurrentWeek}
+                    onChange={(e) => setNewObjAssignCurrentWeek(e.target.checked)}
+                    className="rounded border-dark-600 text-accent-cyan focus:ring-0 cursor-pointer"
+                  />
+                  <span>Planifier pour cette semaine</span>
+                </label>
+
+                <div className="flex items-center gap-2 ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => setIsAdvancedObjectiveModalOpen(true)}
+                    className="text-[11px] text-dark-400 hover:text-accent-cyan underline transition-colors cursor-pointer flex items-center gap-1"
+                    style={{ padding: '4px 6px' }}
+                  >
+                    <Sparkles size={12} />
+                    Formulaire complet...
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!newObjTitle.trim() || isCreatingInlineObj}
+                    onClick={handleCreateInlineObjective}
+                    className="rounded-xl text-xs font-bold bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 transition-all active:scale-95 disabled:opacity-40 cursor-pointer flex items-center gap-1"
+                    style={{ padding: '5px 12px' }}
+                  >
+                    <Plus size={13} />
+                    {isCreatingInlineObj ? 'Création...' : 'Ajouter au projet'}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
-          {/* Scrollable Objectives List */}
-          <div className="max-h-44 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-1.5 pr-1">
-            {filteredObjectives.length === 0 ? (
-              <div className="text-center py-3 text-xs text-dark-400">
-                Aucun objectif trouvé.
+          {/* PANNEAU 2 : ATTRIBUER DES OBJECTIFS EXISTANTS */}
+          {objectiveMode === 'assign' && (
+            <div 
+              className="flex flex-col gap-2 bg-dark-800/90 rounded-xl border border-dark-600/40"
+              style={{ padding: '10px 12px' }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-dark-200 flex items-center gap-1.5">
+                  <Link2 size={13} className="text-accent-cyan" />
+                  Sélectionner parmi vos objectifs existants
+                </span>
+                <div className="flex items-center gap-2">
+                  {selectedObjectiveIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedObjectiveIds([])}
+                      className="text-[11px] text-dark-400 hover:text-accent-red underline transition-colors cursor-pointer"
+                      style={{ padding: '2px 4px' }}
+                    >
+                      Tout désélectionner
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setObjectiveMode(null)}
+                    className="text-dark-400 hover:text-dark-200 text-xs cursor-pointer"
+                    style={{ padding: '2px 4px' }}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Recherche */}
+              <div className="relative">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={objectiveSearch}
+                  onChange={(e) => setObjectiveSearch(e.target.value)}
+                  placeholder="Rechercher un objectif par mot-clé..."
+                  className="w-full bg-dark-900 border border-dark-600/50 rounded-xl text-xs text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan"
+                  style={{ padding: '6px 10px 6px 28px' }}
+                />
+              </div>
+
+              {/* Liste d'objectifs filtrés */}
+              <div className="max-h-44 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-0.5 pr-1">
+                {filteredObjectives.length === 0 ? (
+                  <div className="text-center py-3 text-xs text-dark-400">
+                    Aucun objectif trouvé.
+                  </div>
+                ) : (
+                  filteredObjectives.map((obj) => {
+                    const isSelected = selectedObjectiveIds.includes(obj.id);
+                    const objCat = categories.find(c => c.id === obj.categoryId);
+                    const isDone = getObjectiveProjectProgress(obj, targetState.progress) >= 1;
+
+                    return (
+                      <div
+                        key={obj.id}
+                        onClick={() => toggleObjective(obj.id)}
+                        className={`flex items-center justify-between rounded-xl border text-xs cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-accent-cyan/15 border-accent-cyan/50 text-dark-100 font-semibold'
+                            : 'bg-dark-900/60 border-dark-600/30 text-dark-300 hover:bg-dark-700/50 hover:text-dark-100'
+                        }`}
+                        style={{ padding: '6px 10px' }}
+                      >
+                        <div className="flex items-center gap-2.5 truncate">
+                          <div 
+                            className={`rounded flex items-center justify-center border transition-all flex-shrink-0 ${
+                              isSelected 
+                                ? 'bg-accent-cyan border-accent-cyan text-dark-950 font-black' 
+                                : 'border-dark-500 bg-dark-800'
+                            }`}
+                            style={{ width: '16px', height: '16px' }}
+                          >
+                            {isSelected && <Check size={11} strokeWidth={3} />}
+                          </div>
+                          <span className="truncate">{obj.title}</span>
+                          {isDone && (
+                            <span 
+                              className="text-[10px] font-bold rounded bg-accent-green/20 text-accent-green border border-accent-green/30 flex-shrink-0"
+                              style={{ padding: '1px 5px' }}
+                            >
+                              ✓ Réalisé
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                          {obj.priority && (
+                            <span 
+                              className={`text-[9px] font-black rounded border ${
+                                obj.priority === 'P1' ? 'text-accent-red border-accent-red/30 bg-accent-red/10' :
+                                obj.priority === 'P2' ? 'text-accent-orange border-accent-orange/30 bg-accent-orange/10' :
+                                'text-accent-cyan border-accent-cyan/30 bg-accent-cyan/10'
+                              }`}
+                              style={{ padding: '1px 4px' }}
+                            >
+                              {obj.priority}
+                            </span>
+                          )}
+                          {objCat && (
+                            <span 
+                              className="text-[10px] rounded font-medium flex items-center gap-1"
+                              style={{ padding: '2px 6px', backgroundColor: `${objCat.color}20`, color: objCat.color }}
+                            >
+                              {objCat.icon} {objCat.label}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* LISTE DES OBJECTIFS RATTACHÉS AU PROJET */}
+          <div className="flex flex-col gap-1.5">
+            {selectedObjectiveIds.length === 0 ? (
+              <div 
+                className="text-center rounded-xl border border-dashed border-dark-700/70 bg-dark-900/30 text-xs text-dark-400"
+                style={{ padding: '10px 10px' }}
+              >
+                Aucun objectif rattaché pour l'instant. Utilisez les boutons <strong className="text-accent-cyan font-bold">Créer</strong> ou <strong className="text-accent-cyan font-bold">Attribuer</strong> ci-dessus pour définir les objectifs de ce projet.
               </div>
             ) : (
-              filteredObjectives.map((obj) => {
-                const isSelected = selectedObjectiveIds.includes(obj.id);
-                const objCat = categories.find(c => c.id === obj.categoryId);
-                const isDone = getObjectiveProjectProgress(obj, targetState.progress) >= 1;
+              <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+                {selectedObjectiveIds.map((objId) => {
+                  const obj = allObjectives.find(o => o.id === objId);
+                  if (!obj) return null;
+                  const objCat = categories.find(c => c.id === obj.categoryId);
+                  const isDone = getObjectiveProjectProgress(obj, targetState.progress) >= 1;
 
-                return (
-                  <div
-                    key={obj.id}
-                    onClick={() => toggleObjective(obj.id)}
-                    className={`flex items-center justify-between rounded-xl border text-xs cursor-pointer transition-all ${
-                      isSelected
-                        ? 'bg-accent-cyan/15 border-accent-cyan/50 text-dark-100 font-semibold'
-                        : 'bg-dark-800/50 border-dark-600/30 text-dark-300 hover:bg-dark-700/40 hover:text-dark-100'
-                    }`}
-                    style={{ padding: '6px 10px' }}
-                  >
-                    <div className="flex items-center gap-2.5 truncate">
-                      <div 
-                        className={`rounded flex items-center justify-center border transition-all flex-shrink-0 ${
-                          isSelected 
-                            ? 'bg-accent-cyan border-accent-cyan text-dark-950 font-black' 
-                            : 'border-dark-500 bg-dark-700/60'
-                        }`}
-                        style={{ width: '16px', height: '16px' }}
-                      >
-                        {isSelected && <Check size={11} strokeWidth={3} />}
+                  return (
+                    <div
+                      key={obj.id}
+                      className="flex items-center justify-between rounded-xl bg-dark-800/70 border border-dark-600/40 text-xs text-dark-200 transition-all hover:border-dark-500"
+                      style={{ padding: '6px 10px' }}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <Target size={13} className="text-accent-cyan flex-shrink-0" />
+                        <span className="truncate font-medium text-dark-100">{obj.title}</span>
+                        {isDone && (
+                          <span 
+                            className="text-[10px] font-bold rounded bg-accent-green/20 text-accent-green border border-accent-green/30 flex-shrink-0"
+                            style={{ padding: '1px 5px' }}
+                          >
+                            ✓ Réalisé
+                          </span>
+                        )}
                       </div>
-                      <span className="truncate">{obj.title}</span>
-                      {isDone && (
-                        <span 
-                          className="text-[10px] font-bold rounded bg-accent-green/20 text-accent-green border border-accent-green/30 flex-shrink-0"
-                          style={{ padding: '1px 5px' }}
-                        >
-                          ✓ Réalisé
-                        </span>
-                      )}
-                    </div>
 
-                    {objCat && (
-                      <span 
-                        className="flex-shrink-0 text-[10px] rounded font-medium flex items-center gap-1.5 ml-2"
-                        style={{ padding: '2px 6px', backgroundColor: `${objCat.color}20`, color: objCat.color }}
-                      >
-                        {objCat.icon} {objCat.label}
-                      </span>
-                    )}
-                  </div>
-                );
-              })
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                        {obj.priority && (
+                          <span 
+                            className={`text-[9px] font-black rounded border ${
+                              obj.priority === 'P1' ? 'text-accent-red border-accent-red/30 bg-accent-red/10' :
+                              obj.priority === 'P2' ? 'text-accent-orange border-accent-orange/30 bg-accent-orange/10' :
+                              'text-accent-cyan border-accent-cyan/30 bg-accent-cyan/10'
+                            }`}
+                            style={{ padding: '1px 4px' }}
+                          >
+                            {obj.priority}
+                          </span>
+                        )}
+                        {objCat && (
+                          <span 
+                            className="text-[10px] rounded font-medium flex items-center gap-1"
+                            style={{ padding: '2px 6px', backgroundColor: `${objCat.color}20`, color: objCat.color }}
+                          >
+                            {objCat.icon} {objCat.label}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => toggleObjective(obj.id)}
+                          className="text-dark-400 hover:text-accent-red rounded-lg transition-colors cursor-pointer"
+                          style={{ padding: '3px 5px' }}
+                          title="Détacher du projet"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>
@@ -378,5 +746,20 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
         </div>
       </form>
     </Modal>
+
+    {/* Formulaire complet d'objectif si demandé */}
+    {isAdvancedObjectiveModalOpen && (
+      <ObjectiveForm
+        isOpen={isAdvancedObjectiveModalOpen}
+        onClose={() => setIsAdvancedObjectiveModalOpen(false)}
+        defaultProjectId={projectToEdit?.id || ''}
+        zIndex={250}
+        onObjectiveCreated={(newId) => {
+          setSelectedObjectiveIds(prev => prev.includes(newId) ? prev : [...prev, newId]);
+          setIsAdvancedObjectiveModalOpen(false);
+        }}
+      />
+    )}
+    </>
   );
 }
