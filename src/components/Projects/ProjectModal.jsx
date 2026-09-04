@@ -34,6 +34,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     if (projectToEdit) {
       setName(projectToEdit.name || '');
       const cat = projectToEdit.categoryId || projectToEdit.category_id || 'autre';
@@ -74,7 +76,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
     setNewObjPriority('P2');
     setInlineObjFeedback('');
     setError('');
-  }, [projectToEdit, isOpen, targetState.categories, targetState.objectives, targetState.progress]);
+  }, [projectToEdit?.id, isOpen]);
 
   if (!isOpen) return null;
 
@@ -132,13 +134,14 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           target: 1,
           categoryId: categoryId || 'autre',
           priority: newObjPriority || 'P2',
+          projectId: projectToEdit?.id || null,
           assignments,
           subObjectives: [],
           attachments: []
         }
       });
 
-      setSelectedObjectiveIds(prev => [...prev, newId]);
+      setSelectedObjectiveIds(prev => prev.includes(newId) ? prev : [...prev, newId]);
       setNewObjTitle('');
       setInlineObjFeedback('✓ Objectif créé et rattaché !');
       setTimeout(() => setInlineObjFeedback(''), 3000);
