@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Target, Calendar, AlertCircle, Check, Search, Plus, X } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useProjects } from '../../contexts/ProjectsContext';
+import { getObjectiveProjectProgress } from '../../utils/progressUtils';
 import Modal from '../Shared/Modal';
 
 export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) {
@@ -287,6 +288,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                 const isSelected = selectedObjectiveIds.includes(obj.id);
                 const objCat = categories.find(c => c.id === obj.categoryId);
 
+                const isDone = getObjectiveProjectProgress(obj, targetState.progress) >= 1;
+
                 return (
                   <div
                     key={obj.id}
@@ -306,11 +309,16 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                         {isSelected && <Check size={12} strokeWidth={3} />}
                       </div>
                       <span className="truncate">{obj.title}</span>
+                      {isDone && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-accent-green/20 text-accent-green border border-accent-green/30 flex-shrink-0">
+                          ✓ Réalisé
+                        </span>
+                      )}
                     </div>
 
                     {objCat && (
                       <span 
-                        className="flex-shrink-0 text-[10px] px-2 py-0.5 rounded font-medium flex items-center gap-1"
+                        className="flex-shrink-0 text-[10px] px-2 py-0.5 rounded font-medium flex items-center gap-1 ml-2"
                         style={{ backgroundColor: `${objCat.color}20`, color: objCat.color }}
                       >
                         {objCat.icon} {objCat.label}

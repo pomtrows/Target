@@ -10,8 +10,7 @@ import { fr } from 'date-fns/locale';
 import { useTarget } from '../../contexts/TargetContext';
 import { useNotes } from '../../contexts/NotesContext';
 import { useProjects } from '../../contexts/ProjectsContext';
-import { getObjectiveProgress } from '../../utils/progressUtils';
-import { getCurrentWeekId } from '../../utils/weekUtils';
+import { getObjectiveProjectProgress } from '../../utils/progressUtils';
 import AttachmentManager from '../Attachments/AttachmentManager';
 import NoteEditor from '../Notes/NoteEditor';
 import Modal from '../Shared/Modal';
@@ -46,16 +45,13 @@ export default function ProjectCard({
     obj => linkedObjectiveIds.has(obj.id) || obj.projectId === project.id
   );
 
-  // Calculate progress based on current week
-  const currentWeekId = getCurrentWeekId();
-  const weekProgress = targetState.progress?.[currentWeekId] || {};
-
+  // Calculate progress based on all recorded weeks for linked objectives
   let completedObjectivesCount = 0;
   let totalProgressRatio = 0;
 
   if (linkedObjectives.length > 0) {
     linkedObjectives.forEach(obj => {
-      const prog = getObjectiveProgress(obj, weekProgress);
+      const prog = getObjectiveProjectProgress(obj, targetState.progress);
       totalProgressRatio += prog;
       if (prog >= 1) completedObjectivesCount++;
     });

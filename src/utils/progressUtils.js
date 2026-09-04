@@ -167,3 +167,52 @@ export function getBacklogObjectives(objectives) {
     (obj) => !obj.assignments || obj.assignments.length === 0
   );
 }
+
+/**
+ * Calculate the maximum progress achieved for an objective across all recorded weeks.
+ * Useful for projects whose duration spans multiple weeks or when evaluating historical completion.
+ * Returns a value between 0 and 1.
+ */
+export function getObjectiveProjectProgress(objective, allProgress) {
+  if (!objective || !allProgress || typeof allProgress !== 'object') return 0;
+
+  let maxProgress = 0;
+
+  for (const weekId of Object.keys(allProgress)) {
+    const weekProgress = allProgress[weekId];
+    if (!weekProgress || typeof weekProgress !== 'object') continue;
+
+    if (weekProgress[objective.id] !== undefined) {
+      const prog = getObjectiveProgress(objective, weekProgress);
+      if (prog >= 1) return 1; // Fully completed in at least one week
+      if (prog > maxProgress) {
+        maxProgress = prog;
+      }
+    }
+  }
+
+  return maxProgress;
+}
+
+/**
+ * Get all week IDs where an objective was fully completed (progress >= 1).
+ * Sorted from most recent to oldest.
+ */
+export function getObjectiveCompletedWeeks(objective, allProgress) {
+  if (!objective || !allProgress || typeof allProgress !== 'object') return [];
+
+  const completedWeeks = [];
+  for (const weekId of Object.keys(allProgress)) {
+    const weekProgress = allProgress[weekId];
+    if (!weekProgress || typeof weekProgress !== 'object') continue;
+
+    if (weekProgress[objective.id] !== undefined) {
+      const prog = getObjectiveProgress(objective, weekProgress);
+      if (prog >= 1) {
+        completedWeeks.push(weekId);
+      }
+    }
+  }
+
+  return completedWeeks.sort().reverse();
+}

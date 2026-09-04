@@ -9,7 +9,7 @@ import { fr } from 'date-fns/locale';
 import { useTarget } from '../../contexts/TargetContext';
 import { useNotes } from '../../contexts/NotesContext';
 import { useProjects } from '../../contexts/ProjectsContext';
-import { getObjectiveProgress } from '../../utils/progressUtils';
+import { getObjectiveProgress, getObjectiveProjectProgress, getObjectiveCompletedWeeks } from '../../utils/progressUtils';
 import { getCurrentWeekId } from '../../utils/weekUtils';
 import NoteEditor from '../Notes/NoteEditor';
 import AttachmentManager from '../Attachments/AttachmentManager';
@@ -51,16 +51,15 @@ export default function ProjectDetailModal({
     obj => !linkedObjectiveIds.has(obj.id) && obj.projectId !== project.id
   );
 
-  // Calculate progress
+  // Calculate progress across all recorded history
   const currentWeekId = getCurrentWeekId();
-  const weekProgress = targetState.progress?.[currentWeekId] || {};
 
   let completedCount = 0;
   let totalProgressRatio = 0;
 
   if (linkedObjectives.length > 0) {
     linkedObjectives.forEach(obj => {
-      const prog = getObjectiveProgress(obj, weekProgress);
+      const prog = getObjectiveProjectProgress(obj, targetState.progress);
       totalProgressRatio += prog;
       if (prog >= 1) completedCount++;
     });
@@ -69,6 +68,36 @@ export default function ProjectDetailModal({
   const progressPercent = linkedObjectives.length > 0
     ? Math.round((totalProgressRatio / linkedObjectives.length) * 100)
     : 0;
+
+  const handleToggleObjective = (obj) => {
+    const isDone = getObjectiveProjectProgress(obj, targetState.progress) >= 1;
+    if (isDone) {
+      const completedWeeks = getObjectiveCompletedWeeks(obj, targetState.progress);
+      if (completedWeeks.length > 0) {
+        completedWeeks.forEach(w => {
+          targetDispatch({
+            type: 'TOGGLE_PROGRESS',
+            payload: { weekId: w, objectiveId: obj.id, value: 0 }
+          });
+        });
+      } else {
+        targetDispatch({
+          type: 'TOGGLE_PROGRESS',
+          payload: { weekId: currentWeekId, objectiveId: obj.id, value: 0 }
+        });
+      }
+    } else {
+      const targetWeek = (obj.assignments && obj.assignments.find(a => /^\d{4}-S\d{2}$/.test(a))) || currentWeekId;
+      const completeValue = obj.subObjectives?.length > 0 
+        ? (1 << obj.subObjectives.length) - 1 
+        : (Number(obj.target) > 1 ? Number(obj.target) : 1);
+
+      targetDispatch({
+        type: 'TOGGLE_PROGRESS',
+        payload: { weekId: targetWeek, objectiveId: obj.id, value: completeValue }
+      });
+    }
+  };
 
   // Priority config
   const priorityConfig = {
@@ -284,7 +313,7 @@ export default function ProjectDetailModal({
                     <strong className="text-accent-cyan ml-1.5 text-sm">{progressPercent}%</strong>
                   </span>
                   <span className="text-dark-400">
-                    {completedCount} sur {linkedObjectives.length} objectif(s) validé(s) cette semaine
+                    {completedCount} sur {linkedObjectives.length} objectif(s) réalisé(s)
                   </span>
                 </div>
                 <div className="w-full bg-dark-700 h-2.5 rounded-full overflow-hidden">
@@ -325,21 +354,31 @@ export default function ProjectDetailModal({
                       <p className="text-xs text-dark-400 italic">Tous vos objectifs sont déjà associés à ce projet.</p>
                     ) : (
                       <div className="max-h-40 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-1">
-                        {availableObjectives.map(obj => (
-                          <div
-                            key={obj.id}
-                            onClick={() => handleAddObjectiveToProject(obj.id)}
-                            className="flex items-center justify-between p-2 rounded-xl bg-dark-800/80 hover:bg-dark-700 border border-dark-600/30 text-xs cursor-pointer transition-all"
-                          >
-                            <span className="text-dark-200 font-medium">{obj.title}</span>
-                            <button
-                              type="button"
-                              className="px-2 py-0.5 rounded bg-accent-cyan/20 text-accent-cyan text-[11px] font-bold"
+                        {availableObjectives.map(obj => {
+                          const isObjDone = getObjectiveProjectProgress(obj, targetState.progress) >= 1;
+                          return (
+                            <div
+                              key={obj.id}
+                              onClick={() => handleAddObjectiveToProject(obj.id)}
+                              className="flex items-center justify-between p-2 rounded-xl bg-dark-800/80 hover:bg-dark-700 border border-dark-600/30 text-xs cursor-pointer transition-all"
                             >
-                              + Associer
-                            </button>
-                          </div>
-                        ))}
+                              <div className="flex items-center gap-2 truncate">
+                                <span className="text-dark-200 font-medium truncate">{obj.title}</span>
+                                {isObjDone && (
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-accent-green/20 text-accent-green border border-accent-green/30 flex-shrink-0">
+                                    ✓ Réalisé
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                className="px-2 py-0.5 rounded bg-accent-cyan/20 text-accent-cyan text-[11px] font-bold flex-shrink-0 ml-2"
+                              >
+                                + Associer
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -360,23 +399,32 @@ export default function ProjectDetailModal({
                 ) : (
                   <div className="flex flex-col gap-2">
                     {linkedObjectives.map((obj) => {
-                      const prog = getObjectiveProgress(obj, weekProgress);
+                      const prog = getObjectiveProjectProgress(obj, targetState.progress);
                       const isDone = prog >= 1;
                       const objCat = (targetState.categories || []).find(c => c.id === obj.categoryId);
 
                       return (
                         <div
                           key={obj.id}
-                          className="flex items-center justify-between p-3 rounded-xl bg-dark-800/60 border border-dark-600/30 hover:border-dark-500/50 transition-all text-xs"
+                          className={`flex items-center justify-between p-3 rounded-xl border transition-all text-xs ${
+                            isDone 
+                              ? 'bg-dark-800/40 border-dark-700/50' 
+                              : 'bg-dark-800/80 border-dark-600/30 hover:border-dark-500/50'
+                          }`}
                         >
                           <div className="flex items-center gap-3">
-                            <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold ${
-                              isDone 
-                                ? 'bg-accent-green/20 text-accent-green border border-accent-green/30' 
-                                : 'bg-dark-700 text-dark-400'
-                            }`}>
-                              {isDone ? <Check size={14} /> : '⏳'}
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleObjective(obj)}
+                              className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold transition-all cursor-pointer ${
+                                isDone 
+                                  ? 'bg-accent-green/20 text-accent-green border border-accent-green/40 hover:bg-accent-green/30 shadow-sm shadow-accent-green/10' 
+                                  : 'bg-dark-700 text-dark-400 hover:bg-dark-600 hover:text-dark-200 border border-dark-600/50'
+                              }`}
+                              title={isDone ? "Cliquer pour marquer comme non validé" : "Cliquer pour marquer comme validé"}
+                            >
+                              {isDone ? <Check size={15} strokeWidth={3} /> : <span className="text-xs">⏳</span>}
+                            </button>
 
                             <div className="flex flex-col">
                               <span className={`font-semibold text-sm ${isDone ? 'text-dark-300 line-through' : 'text-dark-100'}`}>
@@ -387,21 +435,27 @@ export default function ProjectDetailModal({
                                   <span style={{ color: objCat.color }}>{objCat.icon} {objCat.label}</span>
                                 )}
                                 <span>•</span>
-                                <span>Cible hebdo : {obj.target || 1}x</span>
+                                <span>Cible : {obj.target || 1}x</span>
+                                {isDone && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-accent-green font-medium">Validé</span>
+                                  </>
+                                )}
                               </div>
                             </div>
                           </div>
 
                           <div className="flex items-center gap-3">
-                            <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
-                              isDone ? 'bg-accent-green/15 text-accent-green' : 'bg-accent-cyan/15 text-accent-cyan'
+                            <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold ${
+                              isDone ? 'bg-accent-green/15 text-accent-green border border-accent-green/30' : 'bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/20'
                             }`}>
                               {Math.round(prog * 100)}%
                             </span>
 
                             <button
                               onClick={() => handleRemoveObjectiveFromProject(obj.id)}
-                              className="p-1 rounded text-dark-500 hover:text-accent-red hover:bg-accent-red/10 transition-colors"
+                              className="p-1 rounded text-dark-500 hover:text-accent-red hover:bg-accent-red/10 transition-colors cursor-pointer"
                               title="Détacher du projet"
                             >
                               <X size={14} />

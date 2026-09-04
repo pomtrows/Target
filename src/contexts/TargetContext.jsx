@@ -832,19 +832,33 @@ export function TargetProvider({ children }) {
       case 'INCREMENT_PROGRESS':
       case 'DECREMENT_PROGRESS':
       case 'TOGGLE_PROGRESS': {
-        const { weekId, objectiveId } = action.payload;
+        const { weekId, objectiveId, value: explicitValue } = action.payload;
         const weekProgress = state.progress[weekId] || {};
         const previousValue = weekProgress[objectiveId] || 0;
         let current = previousValue;
         
-        if (action.type === 'INCREMENT_PROGRESS') {
+        if (explicitValue !== undefined) {
+          current = explicitValue;
+        } else if (action.type === 'INCREMENT_PROGRESS') {
           const objective = state.objectives.find((o) => o.id === objectiveId);
           const max = objective?.target || 1;
           if (current < max) current++;
         } else if (action.type === 'DECREMENT_PROGRESS') {
           if (current > 0) current--;
         } else {
-          current = current >= 1 ? 0 : 1;
+          const objective = state.objectives.find((o) => o.id === objectiveId);
+          const isDone = objective ? getObjectiveProgress(objective, weekProgress) >= 1 : current >= 1;
+          if (isDone) {
+            current = 0;
+          } else {
+            if (objective && objective.subObjectives?.length > 0) {
+              current = (1 << objective.subObjectives.length) - 1;
+            } else if (objective && Number(objective.target) > 1) {
+              current = Number(objective.target);
+            } else {
+              current = 1;
+            }
+          }
         }
 
         dispatch({ type: action.type, payload: { ...action.payload, value: current } });
