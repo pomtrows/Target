@@ -347,9 +347,10 @@ export default function ProjectDetailModal({
                 activeTab === 'attachments' ? 'text-accent-orange font-bold' : 'text-dark-400 hover:text-dark-200'
               }`}
               style={{ padding: '6px 10px' }}
+              title={`Pièces jointes (${attachments.length})`}
+              aria-label={`Pièces jointes (${attachments.length})`}
             >
-              <Paperclip size={15} />
-              <span>Pièces jointes ({attachments.length})</span>
+              <Paperclip size={16} />
               {activeTab === 'attachments' && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-orange rounded-full" />
               )}
