@@ -170,11 +170,97 @@ export default function ProjectCard({
         className="group relative bg-dark-800/90 hover:bg-dark-800 border border-dark-600/40 hover:border-dark-500/60 rounded-2xl transition-all duration-200 shadow-lg flex flex-col justify-between gap-3"
         style={{ padding: '10px 12px' }}
       >
-        {/* Top bar: Category & Priority & Menu */}
+        {/* Top bar: Project Name & Menu */}
         <div className="flex items-center justify-between gap-2">
+          <h3 
+            onClick={() => onOpenDetails?.(project)}
+            className="text-base font-bold text-dark-100 leading-snug group-hover:text-accent-cyan transition-colors cursor-pointer truncate"
+          >
+            {project.name}
+          </h3>
+
+          {/* Menu Dropdown */}
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(!showMenu);
+              }}
+              className="rounded-lg text-dark-400 hover:text-dark-100 hover:bg-dark-700/60 transition-colors cursor-pointer"
+              style={{ padding: '3px 4px' }}
+              title="Options"
+            >
+              <MoreVertical size={16} />
+            </button>
+
+            {showMenu && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMenu(false);
+                  }} 
+                />
+                <div className="absolute right-0 top-7 w-36 bg-dark-800 border border-dark-600/70 rounded-xl shadow-2xl py-1 z-50 flex flex-col text-xs font-medium overflow-hidden">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      onEdit?.(project);
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors cursor-pointer"
+                  >
+                    <Edit2 size={14} className="text-accent-violet" />
+                    Modifier
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      setShowDeleteConfirm(true);
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 text-accent-red hover:bg-accent-red/10 text-left transition-colors cursor-pointer"
+                  >
+                    <Trash2 size={14} />
+                    Supprimer
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Row 2: Dates, Date Alert and Category */}
+        <div className="flex items-center justify-between gap-2 text-xs text-dark-400">
+          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+            <div className="flex items-center gap-1.5 text-dark-400">
+              <Calendar size={13} className="text-dark-400 flex-shrink-0" />
+              <span className="truncate">
+                {project.startDate ? format(parseISO(project.startDate), 'd MMM', { locale: fr }) : '—'}
+                {' ➔ '}
+                {project.endDate ? format(parseISO(project.endDate), 'd MMM yyyy', { locale: fr }) : '—'}
+              </span>
+            </div>
+
+            {dateAlert && (
+              <span 
+                className={`inline-flex items-center gap-1.5 rounded-md text-[11px] font-bold flex-shrink-0 ${
+                  dateAlert.type === 'danger' 
+                    ? 'bg-accent-red/20 text-accent-red border border-accent-red/30' 
+                    : 'bg-accent-orange/20 text-accent-orange border border-accent-orange/30'
+                }`}
+                style={{ padding: '1px 5px' }}
+              >
+                <dateAlert.icon size={11} />
+                {dateAlert.text}
+              </span>
+            )}
+          </div>
+
           {/* Category */}
           <div 
-            className="flex items-center gap-1.5 rounded-lg text-xs font-semibold"
+            className="flex items-center gap-1.5 rounded-lg text-xs font-semibold flex-shrink-0"
             style={{ 
               backgroundColor: `${category.color}15`, 
               color: category.color,
@@ -185,106 +271,6 @@ export default function ProjectCard({
             <span>{category.icon}</span>
             <span className="truncate max-w-[120px]">{category.label}</span>
           </div>
-
-          {/* Priority & Quick Menu */}
-          <div className="flex items-center gap-2">
-            <span 
-              className={`text-[11px] font-bold rounded-md border flex items-center gap-1.5 ${priorityConfig.badgeBg}`}
-              style={{ padding: '2px 6px' }}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${priorityConfig.dot}`} />
-              {priorityConfig.label}
-            </span>
-
-            {/* Menu Dropdown */}
-            <div className="relative">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(!showMenu);
-                }}
-                className="rounded-lg text-dark-400 hover:text-dark-100 hover:bg-dark-700/60 transition-colors"
-                style={{ padding: '3px 4px' }}
-                title="Options"
-              >
-                <MoreVertical size={16} />
-              </button>
-
-              {showMenu && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMenu(false);
-                    }} 
-                  />
-                  <div className="absolute right-0 top-7 w-36 bg-dark-800 border border-dark-600/70 rounded-xl shadow-2xl py-1 z-50 flex flex-col text-xs font-medium overflow-hidden">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowMenu(false);
-                        onEdit?.(project);
-                      }}
-                      className="flex items-center gap-2 px-3 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors cursor-pointer"
-                    >
-                      <Edit2 size={14} className="text-accent-violet" />
-                      Modifier
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowMenu(false);
-                        setShowDeleteConfirm(true);
-                      }}
-                      className="flex items-center gap-2 px-3 py-2 text-accent-red hover:bg-accent-red/10 text-left transition-colors cursor-pointer"
-                    >
-                      <Trash2 size={14} />
-                      Supprimer
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Project Name */}
-        <div className="flex flex-col cursor-pointer" onClick={() => onOpenDetails?.(project)}>
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="text-base font-bold text-dark-100 leading-snug group-hover:text-accent-cyan transition-colors">
-              {project.name}
-            </h3>
-          </div>
-        </div>
-
-        {/* Dates and Alerts */}
-        <div 
-          className="flex flex-wrap items-center justify-between gap-2 text-xs text-dark-400 border-t border-dark-700/40"
-          style={{ paddingTop: '6px', paddingBottom: '2px' }}
-        >
-          <div className="flex items-center gap-1.5">
-            <Calendar size={13} className="text-dark-400" />
-            <span>
-              {project.startDate ? format(parseISO(project.startDate), 'd MMM', { locale: fr }) : '—'}
-              {' ➔ '}
-              {project.endDate ? format(parseISO(project.endDate), 'd MMM yyyy', { locale: fr }) : '—'}
-            </span>
-          </div>
-
-          {dateAlert && (
-            <span 
-              className={`inline-flex items-center gap-1.5 rounded-md text-[11px] font-bold ${
-                dateAlert.type === 'danger' 
-                  ? 'bg-accent-red/20 text-accent-red border border-accent-red/30' 
-                  : 'bg-accent-orange/20 text-accent-orange border border-accent-orange/30'
-              }`}
-              style={{ padding: '2px 5px' }}
-            >
-              <dateAlert.icon size={12} />
-              {dateAlert.text}
-            </span>
-          )}
         </div>
 
         {/* Objectives Progress Bar */}
@@ -321,23 +307,34 @@ export default function ProjectCard({
           </div>
         </div>
 
-        {/* Bottom Actions: Status selector & Badges (Attachments, Notes) */}
+        {/* Bottom Actions: Status selector, Priority & Badges (Attachments, Notes, Details) */}
         <div 
           className="flex items-center justify-between gap-2 border-t border-dark-700/40"
           style={{ paddingTop: '6px' }}
         >
-          {/* Status Quick Dropdown */}
-          <select
-            value={project.status}
-            onChange={(e) => changeProjectStatus(project.id, e.target.value)}
-            onClick={(e) => e.stopPropagation()}
-            className={`text-xs font-bold rounded-lg border cursor-pointer transition-all outline-none ${statusConfig.bg} ${statusConfig.color}`}
-            style={{ padding: '3px 6px' }}
-          >
-            <option value="0-Non lancé" className="bg-dark-800 text-dark-200">⚪ 0-Non lancé</option>
-            <option value="1-En cours" className="bg-dark-800 text-accent-cyan">🔵 1-En cours</option>
-            <option value="2-Terminé" className="bg-dark-800 text-accent-green">🟢 2-Terminé</option>
-          </select>
+          {/* Status Quick Dropdown & Priority */}
+          <div className="flex items-center gap-2">
+            <select
+              value={project.status}
+              onChange={(e) => changeProjectStatus(project.id, e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              className={`text-xs font-bold rounded-lg border cursor-pointer transition-all outline-none ${statusConfig.bg} ${statusConfig.color}`}
+              style={{ padding: '3px 6px' }}
+            >
+              <option value="0-Non lancé" className="bg-dark-800 text-dark-200">⚪ 0-Non lancé</option>
+              <option value="1-En cours" className="bg-dark-800 text-accent-cyan">🔵 1-En cours</option>
+              <option value="2-Terminé" className="bg-dark-800 text-accent-green">🟢 2-Terminé</option>
+            </select>
+
+            {/* Priority Badge */}
+            <span 
+              className={`text-[11px] font-bold rounded-md border flex items-center gap-1.5 ${priorityConfig.badgeBg}`}
+              style={{ padding: '2px 6px' }}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${priorityConfig.dot}`} />
+              {priorityConfig.label}
+            </span>
+          </div>
 
           {/* Attachments & Notes buttons */}
           <div className="flex items-center gap-1.5">
