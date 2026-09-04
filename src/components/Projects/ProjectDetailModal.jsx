@@ -332,9 +332,10 @@ export default function ProjectDetailModal({
                 activeTab === 'notes' ? 'text-accent-violet font-bold' : 'text-dark-400 hover:text-dark-200'
               }`}
               style={{ padding: '6px 10px' }}
+              title="Notes de projet"
+              aria-label="Notes de projet"
             >
-              <FileText size={15} />
-              <span>Notes de projet</span>
+              <FileText size={16} />
               {activeTab === 'notes' && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-violet rounded-full" />
               )}
