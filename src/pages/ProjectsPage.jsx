@@ -467,18 +467,6 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      {/* Top Header (Mobile only, masqué sur PC) */}
-      <div className="flex md:hidden items-center justify-center">
-        <div className="flex items-center justify-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-accent-cyan/20 to-accent-violet/20 border border-accent-cyan/30 flex items-center justify-center text-accent-cyan shadow-md">
-            <FolderKanban size={24} />
-          </div>
-          <h1 className="text-2xl font-black tracking-tight text-dark-100">
-            Projets
-          </h1>
-        </div>
-      </div>
-
       {/* Local Fallback Notice Banner */}
       {isLocalFallback && (
         <div 
