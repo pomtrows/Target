@@ -190,17 +190,15 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
         )}
 
         {/* Name */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold text-dark-300 uppercase tracking-wider">
-            Nom du projet <span className="text-accent-red">*</span>
-          </label>
+        <div>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Ex: Rénovation cuisine, Lancement produit..."
+            placeholder="Nom du projet (ex: Rénovation cuisine, Lancement produit...)"
+            aria-label="Nom du projet"
             className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-sm text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-colors font-medium"
-            style={{ padding: '6px 10px' }}
+            style={{ padding: '7px 12px' }}
             required
             autoFocus
           />
