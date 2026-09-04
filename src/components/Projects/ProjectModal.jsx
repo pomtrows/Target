@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Target, Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles } from 'lucide-react';
+import { Target, Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles, Trash2 } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useProjects } from '../../contexts/ProjectsContext';
 import { getObjectiveProjectProgress } from '../../utils/progressUtils';
@@ -25,9 +25,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
 
   // Inline objective creation state
   const [newObjTitle, setNewObjTitle] = useState('');
-  const [newObjCategoryId, setNewObjCategoryId] = useState('autre');
   const [newObjPriority, setNewObjPriority] = useState('P2');
-  const [newObjTarget, setNewObjTarget] = useState(1);
   const [newObjAssignCurrentWeek, setNewObjAssignCurrentWeek] = useState(true);
   const [isCreatingInlineObj, setIsCreatingInlineObj] = useState(false);
   const [inlineObjFeedback, setInlineObjFeedback] = useState('');
@@ -39,7 +37,6 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
       setName(projectToEdit.name || '');
       const cat = projectToEdit.categoryId || projectToEdit.category_id || 'autre';
       setCategoryId(cat);
-      setNewObjCategoryId(cat);
       setDescription(projectToEdit.description || '');
       setPriority(Number(projectToEdit.priority) || 2);
       setStatus(projectToEdit.status || '0-Non lancé');
@@ -50,7 +47,6 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
       setName('');
       const defaultCat = targetState.categories?.[0]?.id || 'autre';
       setCategoryId(defaultCat);
-      setNewObjCategoryId(defaultCat);
       setDescription('');
       setPriority(2);
       setStatus('0-Non lancé');
@@ -60,15 +56,10 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
     }
     setObjectiveMode(null);
     setNewObjTitle('');
+    setNewObjPriority('P2');
     setInlineObjFeedback('');
     setError('');
   }, [projectToEdit, isOpen, targetState.categories]);
-
-  useEffect(() => {
-    if (categoryId) {
-      setNewObjCategoryId(categoryId);
-    }
-  }, [categoryId]);
 
   if (!isOpen) return null;
 
@@ -101,8 +92,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
         payload: {
           id: newId,
           title: newObjTitle.trim(),
-          target: Math.max(1, Number(newObjTarget) || 1),
-          categoryId: newObjCategoryId || categoryId || 'autre',
+          target: 1,
+          categoryId: categoryId || 'autre',
           priority: newObjPriority || 'P2',
           assignments,
           subObjectives: [],
@@ -119,6 +110,18 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
       setInlineObjFeedback('Erreur lors de la création.');
     } finally {
       setIsCreatingInlineObj(false);
+    }
+  };
+
+  const handleDeleteObjective = async (objId) => {
+    if (!window.confirm('Voulez-vous vraiment supprimer définitivement cet objectif ?')) {
+      return;
+    }
+    try {
+      await dispatch({ type: 'DELETE_OBJECTIVE', payload: objId });
+      setSelectedObjectiveIds(prev => prev.filter(id => id !== objId));
+    } catch (err) {
+      console.error('Erreur lors de la suppression de l\'objectif:', err);
     }
   };
 
@@ -375,36 +378,44 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
               className="flex flex-col gap-2.5 bg-dark-800/90 rounded-xl border border-accent-cyan/30"
               style={{ padding: '10px 12px' }}
             >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-accent-cyan flex items-center gap-1.5">
-                  <Plus size={13} />
-                  Créer un nouvel objectif pour ce projet
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setObjectiveMode(null)}
-                  className="text-dark-400 hover:text-dark-200 text-xs cursor-pointer"
-                  style={{ padding: '2px 4px' }}
-                >
-                  <X size={14} />
-                </button>
-              </div>
-
               {inlineObjFeedback && (
                 <div 
-                  className="text-xs font-semibold text-accent-green bg-accent-green/10 border border-accent-green/30 rounded-lg flex items-center gap-1.5"
+                  className="text-xs font-semibold text-accent-green bg-accent-green/10 border border-accent-green/30 rounded-lg flex items-center justify-between gap-1.5"
                   style={{ padding: '4px 8px' }}
                 >
-                  <Check size={13} />
-                  <span>{inlineObjFeedback}</span>
+                  <div className="flex items-center gap-1.5">
+                    <Check size={13} />
+                    <span>{inlineObjFeedback}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setObjectiveMode(null)}
+                    className="text-dark-400 hover:text-dark-200 text-xs cursor-pointer"
+                    style={{ padding: '2px 4px' }}
+                  >
+                    <X size={14} />
+                  </button>
                 </div>
               )}
 
               {/* Titre de l'objectif */}
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-bold text-dark-300 uppercase tracking-wider">
-                  Intitulé de l'objectif <span className="text-accent-red">*</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-dark-300 uppercase tracking-wider">
+                    Intitulé de l'objectif <span className="text-accent-red">*</span>
+                  </label>
+                  {!inlineObjFeedback && (
+                    <button
+                      type="button"
+                      onClick={() => setObjectiveMode(null)}
+                      className="text-dark-400 hover:text-dark-200 text-xs cursor-pointer"
+                      style={{ padding: '2px 4px' }}
+                      title="Fermer"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
                 <input
                   type="text"
                   value={newObjTitle}
@@ -422,83 +433,42 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                 />
               </div>
 
-              {/* Paramètres : Catégorie, Priorité, Cible */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {/* Catégorie */}
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-dark-400 uppercase tracking-wider">
-                    Catégorie
-                  </label>
-                  <select
-                    value={newObjCategoryId}
-                    onChange={(e) => setNewObjCategoryId(e.target.value)}
-                    className="w-full bg-dark-900 border border-dark-600/60 rounded-xl text-xs text-dark-100 focus:outline-none focus:border-accent-cyan cursor-pointer"
-                    style={{ padding: '6px 10px' }}
-                  >
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id} className="bg-dark-800 text-dark-100">
-                        {cat.icon} {cat.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Priorité */}
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-dark-400 uppercase tracking-wider">
-                    Priorité
-                  </label>
-                  <div className="grid grid-cols-3 gap-1">
-                    {[
-                      { val: 'P1', label: 'P1', color: 'text-accent-red border-accent-red/40 bg-accent-red/10' },
-                      { val: 'P2', label: 'P2', color: 'text-accent-orange border-accent-orange/40 bg-accent-orange/10' },
-                      { val: 'P3', label: 'P3', color: 'text-accent-cyan border-accent-cyan/40 bg-accent-cyan/10' }
-                    ].map(p => (
-                      <button
-                        type="button"
-                        key={p.val}
-                        onClick={() => setNewObjPriority(p.val)}
-                        className={`text-center rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                          newObjPriority === p.val
-                            ? `${p.color} ring-1 ring-current`
-                            : 'border-dark-600/40 text-dark-400 hover:text-dark-200 bg-dark-900/60'
-                        }`}
-                        style={{ padding: '5px 4px' }}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
+              {/* Ligne Priorité, Planification & Boutons */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Priorité (liste déroulante comme dans le formulaire complet) */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] font-bold text-dark-400 uppercase tracking-wider">
+                      Priorité :
+                    </label>
+                    <select
+                      value={newObjPriority}
+                      onChange={(e) => setNewObjPriority(e.target.value)}
+                      className="bg-dark-900 border border-dark-600/60 rounded-xl text-xs font-bold focus:outline-none focus:border-accent-cyan cursor-pointer transition-colors"
+                      style={{
+                        padding: '5px 10px',
+                        color: newObjPriority === 'P1' ? 'var(--color-accent-red, #ef4444)' :
+                               newObjPriority === 'P2' ? 'var(--color-accent-violet, #8b5cf6)' :
+                               'var(--color-accent-cyan, #06b6d4)'
+                      }}
+                    >
+                      <option value="P1" className="text-accent-red font-bold">P1</option>
+                      <option value="P2" className="text-accent-violet font-bold">P2</option>
+                      <option value="P3" className="text-accent-cyan font-bold">P3</option>
+                    </select>
                   </div>
-                </div>
 
-                {/* Cible */}
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-dark-400 uppercase tracking-wider">
-                    Cible
+                  {/* Planifier pour cette semaine */}
+                  <label className="flex items-center gap-1.5 text-xs text-dark-300 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={newObjAssignCurrentWeek}
+                      onChange={(e) => setNewObjAssignCurrentWeek(e.target.checked)}
+                      className="rounded border-dark-600 text-accent-cyan focus:ring-0 cursor-pointer"
+                    />
+                    <span>Planifier pour cette semaine</span>
                   </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={newObjTarget}
-                    onChange={(e) => setNewObjTarget(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full bg-dark-900 border border-dark-600/60 rounded-xl text-xs text-dark-100 focus:outline-none focus:border-accent-cyan"
-                    style={{ padding: '6px 10px' }}
-                  />
                 </div>
-              </div>
-
-              {/* Planification & boutons */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                <label className="flex items-center gap-1.5 text-xs text-dark-300 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={newObjAssignCurrentWeek}
-                    onChange={(e) => setNewObjAssignCurrentWeek(e.target.checked)}
-                    className="rounded border-dark-600 text-accent-cyan focus:ring-0 cursor-pointer"
-                  />
-                  <span>Planifier pour cette semaine</span>
-                </label>
 
                 <div className="flex items-center gap-2 ml-auto">
                   <button
@@ -706,11 +676,20 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                         <button
                           type="button"
                           onClick={() => toggleObjective(obj.id)}
-                          className="text-dark-400 hover:text-accent-red rounded-lg transition-colors cursor-pointer"
+                          className="text-dark-400 hover:text-dark-100 hover:bg-dark-700/60 rounded-lg transition-colors cursor-pointer"
                           style={{ padding: '3px 5px' }}
-                          title="Détacher du projet"
+                          title="Détacher du projet (ne supprime pas l'objectif)"
                         >
                           <X size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteObjective(obj.id)}
+                          className="text-dark-400 hover:text-accent-red hover:bg-accent-red/10 rounded-lg transition-colors cursor-pointer"
+                          style={{ padding: '3px 5px' }}
+                          title="Supprimer définitivement cet objectif"
+                        >
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </div>
