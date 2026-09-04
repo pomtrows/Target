@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Target, Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles, Trash2, Info } from 'lucide-react';
+import { Target, Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles, Trash2 } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useProjects } from '../../contexts/ProjectsContext';
 import { getObjectiveProjectProgress } from '../../utils/progressUtils';
@@ -80,20 +80,6 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
 
   const categories = targetState.categories || [];
   const allObjectives = targetState.objectives || [];
-
-  // Calcul en direct des dates effectives selon les objectifs rattachés
-  const effectiveDates = useMemo(() => {
-    return getProjectEffectiveDates(
-      {
-        id: projectToEdit?.id,
-        startDate: startDate || null,
-        endDate: endDate || null,
-        objectiveIds: selectedObjectiveIds
-      },
-      allObjectives,
-      targetState.progress || {}
-    );
-  }, [projectToEdit?.id, startDate, endDate, selectedObjectiveIds, allObjectives, targetState.progress]);
 
   // Si des objectifs sélectionnés débordent des dates actuellement saisies, on élargit automatiquement
   useEffect(() => {
@@ -363,14 +349,6 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
             />
           </div>
         </div>
-
-        {/* Info ajustement automatique des dates si débordement */}
-        {effectiveDates.isAdjusted && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-accent-cyan/10 border border-accent-cyan/25 text-[11px] text-accent-cyan -mt-1">
-            <Info size={13} className="flex-shrink-0" />
-            <span>Les dates englobent automatiquement les semaines des objectifs associés ({effectiveDates.startDate} au {effectiveDates.endDate}).</span>
-          </div>
-        )}
 
         {/* Description */}
         <div className="flex flex-col gap-1.5">
