@@ -618,7 +618,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                     style={{ padding: '5px 12px' }}
                   >
                     <Plus size={13} />
-                    {isCreatingInlineObj ? 'Création...' : 'Ajouter au projet'}
+                    {isCreatingInlineObj ? 'Création...' : 'Ajouter'}
                   </button>
                 </div>
               </div>
@@ -844,11 +844,20 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
       <ObjectiveForm
         isOpen={isAdvancedObjectiveModalOpen}
         onClose={() => setIsAdvancedObjectiveModalOpen(false)}
-        defaultProjectId={projectToEdit?.id || ''}
+        initialData={{
+          title: newObjTitle,
+          priority: newObjPriority,
+          categoryId: categoryId,
+          projectId: projectToEdit?.id || tempProjectId,
+          assignments: newObjAssignCurrentWeek ? [getCurrentWeekId()] : []
+        }}
+        defaultProjectId={projectToEdit?.id || tempProjectId}
         zIndex={250}
         onObjectiveCreated={(newId) => {
           setSelectedObjectiveIds(prev => prev.includes(newId) ? prev : [...prev, newId]);
           setIsAdvancedObjectiveModalOpen(false);
+          setObjectiveMode(null);
+          setNewObjTitle('');
         }}
       />
     )}

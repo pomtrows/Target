@@ -53,6 +53,7 @@ export default function ObjectiveForm({
   onClose, 
   weekId = null, 
   editObjective = null,
+  initialData = null,
   onObjectiveCreated = null,
   defaultProjectId = '',
   zIndex = 220
@@ -62,7 +63,7 @@ export default function ObjectiveForm({
   const { sessions } = useSport();
   const { state: notesState, createFolder, createNote } = useNotes();
   const { projects, updateProject } = useProjects();
-  const [selectedProjectId, setSelectedProjectId] = useState(defaultProjectId || '');
+  const [selectedProjectId, setSelectedProjectId] = useState(defaultProjectId || initialData?.projectId || '');
 
   const delegatableContacts = useMemo(() => {
     if (!state.contacts) return [];
@@ -132,10 +133,10 @@ export default function ObjectiveForm({
     setShowNotesModal(true);
   };
 
-  const [title, setTitle] = useState(editObjective?.title || '');
-  const [target, setTarget] = useState(editObjective?.target || 1);
-  const [categoryId, setCategoryId] = useState(editObjective?.categoryId || 'autre');
-  const [priority, setPriority] = useState(editObjective?.priority || 'P3');
+  const [title, setTitle] = useState(editObjective?.title || initialData?.title || '');
+  const [target, setTarget] = useState(editObjective?.target || initialData?.target || 1);
+  const [categoryId, setCategoryId] = useState(editObjective?.categoryId || initialData?.categoryId || 'autre');
+  const [priority, setPriority] = useState(editObjective?.priority || initialData?.priority || 'P3');
   const [sportSessionId, setSportSessionId] = useState(editObjective?.sportSessionId || '');
   const [assignedTo, setAssignedTo] = useState(editObjective?.assigned_to || '');
   const assignedContactName = useMemo(() => {
@@ -260,27 +261,28 @@ export default function ObjectiveForm({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Sync state when editObjective or isOpen changes
+  // Sync state when editObjective, initialData or isOpen changes
   useEffect(() => {
     if (isOpen) {
-      const initSched = getInitialSchedule(editObjective);
-      const initWks = getInitialWeeks(editObjective, weekId);
+      const data = editObjective || initialData;
+      const initSched = getInitialSchedule(data);
+      const initWks = getInitialWeeks(data, weekId);
 
       setTempId(editObjective?.id || `obj-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`);
       setFormNoteId(null);
-      setFormAttachments(editObjective?.attachments || []);
-      setTitle(editObjective?.title || '');
-      setTarget(editObjective?.target || 1);
-      setCategoryId(editObjective?.categoryId || 'autre');
-      setPriority(editObjective?.priority || 'P3');
-      setSportSessionId(editObjective?.sportSessionId || '');
-      const matchedProj = (projects || []).find(p => (p.objectiveIds || []).includes(editObjective?.id) || p.id === editObjective?.projectId);
-      setSelectedProjectId(matchedProj ? matchedProj.id : '');
-      setAssignedTo(editObjective?.assigned_to || '');
-      setSubObjectives(editObjective?.subObjectives || []);
+      setFormAttachments(data?.attachments || []);
+      setTitle(data?.title || '');
+      setTarget(data?.target || 1);
+      setCategoryId(data?.categoryId || 'autre');
+      setPriority(data?.priority || 'P3');
+      setSportSessionId(data?.sportSessionId || '');
+      const matchedProj = (projects || []).find(p => (p.objectiveIds || []).includes(data?.id) || p.id === data?.projectId);
+      setSelectedProjectId(matchedProj ? matchedProj.id : (data?.projectId || defaultProjectId || ''));
+      setAssignedTo(data?.assigned_to || '');
+      setSubObjectives(data?.subObjectives || []);
       setAssignType(
-        editObjective
-          ? (initWks.length > 0 ? 'week' : 'backlog')
+        data
+          ? (initWks.length > 0 ? 'week' : (data?.assignType || 'week'))
           : (weekId ? 'week' : 'backlog')
       );
       setAssignWeeks(
@@ -293,7 +295,7 @@ export default function ObjectiveForm({
       setEndTime(initSched.endTime);
       setShowPlanningSection(initSched.days.length > 0 || !!initSched.startTime || !!initSched.endTime);
     }
-  }, [isOpen, editObjective, weekId]);
+  }, [isOpen, editObjective, initialData, weekId, defaultProjectId]);
 
   const addSubObjective = () => {
     setSubObjectives([...subObjectives, { id: `sub-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`, title: '' }]);
