@@ -32,7 +32,7 @@ export default function Modal({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 flex items-center justify-center p-3 sm:p-4 md:pl-64"
+          className="fixed inset-0 flex items-center justify-center px-2 py-3 sm:p-4 md:pl-64"
           style={{ zIndex }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

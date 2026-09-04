@@ -225,8 +225,8 @@ export default function ProjectDetailModal({
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        headerPadding="12px 16px"
-        bodyPadding="14px 18px"
+        headerPadding="12px 12px"
+        bodyPadding="14px 12px"
         title={
           <div className="flex items-center gap-3">
             <span className="rounded-xl bg-accent-cyan/15 text-accent-cyan flex items-center justify-center" style={{ padding: '5px' }}>
