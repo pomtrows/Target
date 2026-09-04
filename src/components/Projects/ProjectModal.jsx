@@ -224,8 +224,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
       isOpen={isOpen}
       onClose={onClose}
       title={projectToEdit ? 'Modifier le projet' : 'Nouveau projet 📁'}
-      headerPadding="12px 12px"
-      bodyPadding="14px 12px"
+      headerPadding="10px 12px 8px 12px"
+      bodyPadding="6px 12px 14px 12px"
       maxWidth="max-w-2xl"
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-3.5 text-dark-200">
