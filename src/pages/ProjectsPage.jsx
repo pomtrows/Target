@@ -456,7 +456,7 @@ export default function ProjectsPage() {
       {/* KPI Mobile Summary Chart (< sm) */}
       <div 
         className="sm:hidden bg-dark-800/60 border border-dark-600/30 rounded-2xl flex items-center gap-3.5 shadow-sm"
-        style={{ padding: '10px 14px' }}
+        style={{ padding: '10px 14px', marginTop: '6px', marginBottom: '-6px' }}
       >
         {/* Donut SVG */}
         <div className="relative flex-shrink-0 w-12 h-12 flex items-center justify-center">
