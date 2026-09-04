@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { 
   Paperclip, FileText, Calendar, AlertTriangle, Clock, 
   MoreVertical, Edit2, Trash2, CheckCircle2, ChevronRight,
-  ExternalLink, Target, AlertCircle
+  Target, AlertCircle
 } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore, differenceInCalendarDays, startOfDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -216,25 +216,14 @@ export default function ProjectCard({
                       setShowMenu(false);
                     }} 
                   />
-                  <div className="absolute right-0 top-7 w-44 bg-dark-850 border border-dark-600 rounded-xl shadow-2xl py-1.5 z-50 flex flex-col text-xs font-medium">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowMenu(false);
-                        onOpenDetails?.(project);
-                      }}
-                      className="flex items-center gap-2.5 px-3.5 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors cursor-pointer"
-                    >
-                      <ExternalLink size={14} className="text-accent-cyan" />
-                      Fiche détaillée
-                    </button>
+                  <div className="absolute right-0 top-7 w-36 bg-dark-800 border border-dark-600/70 rounded-xl shadow-2xl py-1 z-50 flex flex-col text-xs font-medium overflow-hidden">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowMenu(false);
                         onEdit?.(project);
                       }}
-                      className="flex items-center gap-2.5 px-3.5 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors cursor-pointer"
+                      className="flex items-center gap-2 px-3 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors cursor-pointer"
                     >
                       <Edit2 size={14} className="text-accent-violet" />
                       Modifier
@@ -245,7 +234,7 @@ export default function ProjectCard({
                         setShowMenu(false);
                         setShowDeleteConfirm(true);
                       }}
-                      className="flex items-center gap-2.5 px-3.5 py-2 text-accent-red hover:bg-accent-red/10 text-left transition-colors cursor-pointer"
+                      className="flex items-center gap-2 px-3 py-2 text-accent-red hover:bg-accent-red/10 text-left transition-colors cursor-pointer"
                     >
                       <Trash2 size={14} />
                       Supprimer
