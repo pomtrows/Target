@@ -618,16 +618,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           )}
 
           {/* LISTE DES OBJECTIFS RATTACHÉS AU PROJET */}
-          <div className="flex flex-col gap-1.5">
-            {selectedObjectiveIds.length === 0 ? (
-              <div 
-                className="text-center rounded-xl border border-dashed border-dark-700/70 bg-dark-900/30 text-xs text-dark-400"
-                style={{ padding: '10px 10px' }}
-              >
-                Aucun objectif rattaché pour l'instant. Utilisez les boutons <strong className="text-accent-cyan font-bold">Créer</strong> ou <strong className="text-accent-cyan font-bold">Attribuer</strong> ci-dessus pour définir les objectifs de ce projet.
-              </div>
-            ) : (
-              <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+          {selectedObjectiveIds.length > 0 && (
+            <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-1">
                 {selectedObjectiveIds.map((objId) => {
                   const obj = allObjectives.find(o => o.id === objId);
                   if (!obj) return null;
@@ -698,7 +690,6 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                 })}
               </div>
             )}
-          </div>
         </div>
 
         {/* Buttons */}
