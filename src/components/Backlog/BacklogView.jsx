@@ -90,7 +90,7 @@ export default function BacklogView() {
           setEditObjective(null);
           setShowForm(true);
         }}
-        className="fixed bottom-8 right-8 w-14 h-14 rounded-full bg-dark-100 text-dark-900 shadow-2xl flex items-center justify-center z-50 hover:bg-white transition-all duration-300 md:bottom-10 md:right-10"
+        className="fixed bottom-8 right-8 w-14 h-14 rounded-full bg-dark-100 text-dark-900 shadow-2xl flex items-center justify-center z-50 hover:bg-dark-100 transition-all duration-300 md:bottom-10 md:right-10"
       >
         <Plus size={28} strokeWidth={2.5} />
       </motion.button>
