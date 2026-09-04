@@ -320,7 +320,7 @@ export default function ProjectDetailModal({
               style={{ padding: '6px 10px' }}
             >
               <Target size={15} />
-              <span>Aperçu & Objectifs ({linkedObjectives.length})</span>
+              <span>Avancement</span>
               {activeTab === 'overview' && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-cyan rounded-full" />
               )}
