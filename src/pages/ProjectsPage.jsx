@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FolderKanban, Plus, Search, Filter, LayoutGrid, Columns, CalendarRange,
@@ -8,6 +8,7 @@ import {
 import { parseISO, isBefore, startOfDay } from 'date-fns';
 import { useProjects } from '../contexts/ProjectsContext';
 import { useTarget } from '../contexts/TargetContext';
+import { getProjectEffectiveDates } from '../utils/projectUtils';
 import ProjectCard from '../components/Projects/ProjectCard';
 import ProjectKanban from '../components/Projects/ProjectKanban';
 import ProjectGantt from '../components/Projects/ProjectGantt';
@@ -47,8 +48,61 @@ ALTER TABLE public.objectives
 ADD COLUMN IF NOT EXISTS project_id UUID REFERENCES public.projects(id) ON DELETE SET NULL;`;
 
 export default function ProjectsPage() {
-  const { projects, loading, isLocalFallback } = useProjects();
+  const { projects: rawProjects, loading, isLocalFallback, updateProject } = useProjects();
   const { state: targetState } = useTarget();
+
+  // Calcul dynamique des dates effectives selon les objectifs rattachés et leurs semaines
+  const projects = useMemo(() => {
+    const allObjs = targetState.objectives || [];
+    const allProg = targetState.progress || {};
+    return (rawProjects || []).map(p => {
+      const effective = getProjectEffectiveDates(p, allObjs, allProg);
+      if (effective.isAdjusted) {
+        return {
+          ...p,
+          startDate: effective.startDate,
+          start_date: effective.startDate,
+          endDate: effective.endDate,
+          end_date: effective.endDate,
+          isDateAutoAdjusted: true
+        };
+      }
+      return p;
+    });
+  }, [rawProjects, targetState.objectives, targetState.progress]);
+
+  // Synchroniser automatiquement en arrière-plan les dates corrigées si nécessaire
+  const lastSyncHashRef = useRef('');
+  useEffect(() => {
+    if (loading || !rawProjects || rawProjects.length === 0) return;
+    const allObjs = targetState.objectives || [];
+    const allProg = targetState.progress || {};
+
+    const projectsToUpdate = [];
+    rawProjects.forEach(p => {
+      const effective = getProjectEffectiveDates(p, allObjs, allProg);
+      if (effective.isAdjusted) {
+        projectsToUpdate.push({
+          id: p.id,
+          startDate: effective.startDate,
+          endDate: effective.endDate
+        });
+      }
+    });
+
+    if (projectsToUpdate.length === 0) return;
+
+    const hash = projectsToUpdate.map(p => `${p.id}:${p.startDate}:${p.endDate}`).join('|');
+    if (lastSyncHashRef.current === hash) return;
+    lastSyncHashRef.current = hash;
+
+    projectsToUpdate.forEach(item => {
+      updateProject(item.id, {
+        startDate: item.startDate,
+        endDate: item.endDate
+      });
+    });
+  }, [rawProjects, targetState.objectives, targetState.progress, loading, updateProject]);
 
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('target_projects_view_mode') || 'kanban');
   const [searchQuery, setSearchQuery] = useState('');

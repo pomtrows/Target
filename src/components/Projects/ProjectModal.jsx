@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import { Target, Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles, Trash2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Target, Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles, Trash2, Info } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useProjects } from '../../contexts/ProjectsContext';
 import { getObjectiveProjectProgress } from '../../utils/progressUtils';
 import { getCurrentWeekId } from '../../utils/weekUtils';
+import { getProjectEffectiveDates } from '../../utils/projectUtils';
 import Modal from '../Shared/Modal';
 import ObjectiveForm from '../Dashboard/ObjectiveForm';
 
@@ -41,9 +42,22 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
       const prio = projectToEdit.priority === 'P1' ? 1 : projectToEdit.priority === 'P2' ? 2 : projectToEdit.priority === 'P3' ? 3 : (Number(projectToEdit.priority) || 2);
       setPriority(prio);
       setStatus(projectToEdit.status || '0-Non lancé');
-      setStartDate(projectToEdit.startDate || projectToEdit.start_date || '');
-      setEndDate(projectToEdit.endDate || projectToEdit.end_date || '');
-      setSelectedObjectiveIds(projectToEdit.objectiveIds || projectToEdit.objective_ids || []);
+      const initStart = projectToEdit.startDate || projectToEdit.start_date || '';
+      const initEnd = projectToEdit.endDate || projectToEdit.end_date || '';
+      const objIds = projectToEdit.objectiveIds || projectToEdit.objective_ids || [];
+      const effective = getProjectEffectiveDates(
+        {
+          id: projectToEdit.id,
+          startDate: initStart || null,
+          endDate: initEnd || null,
+          objectiveIds: objIds
+        },
+        targetState.objectives || [],
+        targetState.progress || {}
+      );
+      setStartDate(effective.startDate || initStart);
+      setEndDate(effective.endDate || initEnd);
+      setSelectedObjectiveIds(objIds);
     } else {
       setName('');
       const defaultCat = targetState.categories?.[0]?.id || 'autre';
@@ -60,12 +74,48 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
     setNewObjPriority('P2');
     setInlineObjFeedback('');
     setError('');
-  }, [projectToEdit, isOpen, targetState.categories]);
+  }, [projectToEdit, isOpen, targetState.categories, targetState.objectives, targetState.progress]);
 
   if (!isOpen) return null;
 
   const categories = targetState.categories || [];
   const allObjectives = targetState.objectives || [];
+
+  // Calcul en direct des dates effectives selon les objectifs rattachés
+  const effectiveDates = useMemo(() => {
+    return getProjectEffectiveDates(
+      {
+        id: projectToEdit?.id,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        objectiveIds: selectedObjectiveIds
+      },
+      allObjectives,
+      targetState.progress || {}
+    );
+  }, [projectToEdit?.id, startDate, endDate, selectedObjectiveIds, allObjectives, targetState.progress]);
+
+  // Si des objectifs sélectionnés débordent des dates actuellement saisies, on élargit automatiquement
+  useEffect(() => {
+    if (!isOpen || selectedObjectiveIds.length === 0) return;
+    const effective = getProjectEffectiveDates(
+      {
+        id: projectToEdit?.id,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        objectiveIds: selectedObjectiveIds
+      },
+      allObjectives,
+      targetState.progress || {}
+    );
+
+    if (effective.startDate && (!startDate || effective.startDate < startDate)) {
+      setStartDate(effective.startDate);
+    }
+    if (effective.endDate && (!endDate || effective.endDate > endDate)) {
+      setEndDate(effective.endDate);
+    }
+  }, [selectedObjectiveIds, isOpen, allObjectives, targetState.progress]);
 
   const filteredObjectives = allObjectives.filter(obj => {
     if (!objectiveSearch.trim()) return true;
@@ -133,7 +183,21 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
       return;
     }
 
-    if (startDate && endDate && startDate > endDate) {
+    const effective = getProjectEffectiveDates(
+      {
+        id: projectToEdit?.id,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        objectiveIds: selectedObjectiveIds
+      },
+      allObjectives,
+      targetState.progress || {}
+    );
+
+    const finalStartDate = effective.startDate || (startDate || null);
+    const finalEndDate = effective.endDate || (endDate || null);
+
+    if (finalStartDate && finalEndDate && finalStartDate > finalEndDate) {
       setError('La date de début ne peut pas être postérieure à la date de fin.');
       return;
     }
@@ -148,8 +212,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
         description: description.trim(),
         priority: Number(priority),
         status,
-        startDate: startDate || null,
-        endDate: endDate || null,
+        startDate: finalStartDate,
+        endDate: finalEndDate,
         objectiveIds: selectedObjectiveIds
       };
 
@@ -299,6 +363,14 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
             />
           </div>
         </div>
+
+        {/* Info ajustement automatique des dates si débordement */}
+        {effectiveDates.isAdjusted && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-accent-cyan/10 border border-accent-cyan/25 text-[11px] text-accent-cyan -mt-1">
+            <Info size={13} className="flex-shrink-0" />
+            <span>Les dates englobent automatiquement les semaines des objectifs associés ({effectiveDates.startDate} au {effectiveDates.endDate}).</span>
+          </div>
+        )}
 
         {/* Description */}
         <div className="flex flex-col gap-1.5">

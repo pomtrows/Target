@@ -11,6 +11,7 @@ import { useNotes } from '../../contexts/NotesContext';
 import { useProjects } from '../../contexts/ProjectsContext';
 import { getObjectiveProgress, getObjectiveProjectProgress, getObjectiveCompletedWeeks } from '../../utils/progressUtils';
 import { getCurrentWeekId } from '../../utils/weekUtils';
+import { getProjectEffectiveDates } from '../../utils/projectUtils';
 import NoteEditor from '../Notes/NoteEditor';
 import AttachmentManager from '../Attachments/AttachmentManager';
 import Modal from '../Shared/Modal';
@@ -191,8 +192,21 @@ export default function ProjectDetailModal({
   const handleAddObjectiveToProject = (objId) => {
     const current = project.objectiveIds || [];
     if (!current.includes(objId)) {
+      const newObjectiveIds = [...current, objId];
+      const effective = getProjectEffectiveDates(
+        {
+          id: project.id,
+          startDate: project.startDate || null,
+          endDate: project.endDate || null,
+          objectiveIds: newObjectiveIds
+        },
+        targetState.objectives || [],
+        targetState.progress || {}
+      );
       updateProject(project.id, {
-        objectiveIds: [...current, objId]
+        objectiveIds: newObjectiveIds,
+        startDate: effective.startDate || project.startDate,
+        endDate: effective.endDate || project.endDate
       });
     }
   };
