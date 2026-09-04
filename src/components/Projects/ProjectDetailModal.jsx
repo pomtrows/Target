@@ -14,6 +14,7 @@ import { getCurrentWeekId } from '../../utils/weekUtils';
 import { getProjectEffectiveDates } from '../../utils/projectUtils';
 import NoteEditor from '../Notes/NoteEditor';
 import AttachmentManager from '../Attachments/AttachmentManager';
+import ObjectiveForm from '../Dashboard/ObjectiveForm';
 import Modal from '../Shared/Modal';
 
 export default function ProjectDetailModal({ 
@@ -30,6 +31,7 @@ export default function ProjectDetailModal({
   const [projectNoteId, setProjectNoteId] = useState(null);
   const [showAttachmentsManager, setShowAttachmentsManager] = useState(false);
   const [showAddObjectives, setShowAddObjectives] = useState(false);
+  const [editingObjective, setEditingObjective] = useState(null);
 
   if (!isOpen || !project) return null;
 
@@ -216,6 +218,23 @@ export default function ProjectDetailModal({
     updateProject(project.id, {
       objectiveIds: current.filter(id => id !== objId)
     });
+  };
+
+  const handleDeleteObjective = async (objId) => {
+    if (!window.confirm('Voulez-vous vraiment supprimer définitivement cet objectif ?')) {
+      return;
+    }
+    try {
+      const current = project.objectiveIds || [];
+      if (current.includes(objId)) {
+        await updateProject(project.id, {
+          objectiveIds: current.filter(id => id !== objId)
+        });
+      }
+      await targetDispatch({ type: 'DELETE_OBJECTIVE', payload: objId });
+    } catch (err) {
+      console.error('Erreur lors de la suppression de l\'objectif:', err);
+    }
   };
 
   const attachments = project.attachments || [];
@@ -505,33 +524,13 @@ export default function ProjectDetailModal({
                           }`}
                           style={{ padding: '6px 10px' }}
                         >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className="flex flex-col min-w-0">
-                              <span className={`font-semibold text-xs truncate ${isDone ? 'text-dark-300 line-through' : 'text-dark-100'}`}>
-                                {obj.title}
-                              </span>
-                              <div className="flex items-center gap-1.5 text-[10px] text-dark-400 mt-0.5">
-                                {objCat && (
-                                  <span 
-                                    className="rounded flex items-center gap-1 shrink-0"
-                                    style={{ color: objCat.color, backgroundColor: `${objCat.color}15`, padding: '1px 5px' }}
-                                  >
-                                    {objCat.icon} {objCat.label}
-                                  </span>
-                                )}
-                                <span>•</span>
-                                <span className="shrink-0">Cible : {obj.target || 1}x</span>
-                                {isDone && (
-                                  <>
-                                    <span>•</span>
-                                    <span className="text-accent-green font-semibold shrink-0">Validé</span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
+                          <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
+                            <span className="font-semibold text-xs truncate text-dark-100">
+                              {obj.title}
+                            </span>
                           </div>
 
-                          <div className="flex items-center gap-2.5 shrink-0">
+                          <div className="flex items-center gap-1.5 shrink-0">
                             <button
                               type="button"
                               onClick={() => handleToggleObjective(obj)}
@@ -545,12 +544,33 @@ export default function ProjectDetailModal({
                             </button>
 
                             <button
-                              onClick={() => handleRemoveObjectiveFromProject(obj.id)}
-                              className="rounded text-dark-500 hover:text-accent-red hover:bg-accent-red/10 transition-colors cursor-pointer"
+                              type="button"
+                              onClick={() => setEditingObjective(obj)}
+                              className="rounded text-dark-400 hover:text-accent-cyan hover:bg-accent-cyan/10 transition-colors cursor-pointer"
                               style={{ padding: '3px' }}
-                              title="Détacher du projet"
+                              title="Modifier l'objectif"
+                            >
+                              <Edit2 size={13} />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveObjectiveFromProject(obj.id)}
+                              className="rounded text-dark-400 hover:text-dark-200 hover:bg-dark-700/60 transition-colors cursor-pointer"
+                              style={{ padding: '3px' }}
+                              title="Détacher du projet (ne supprime pas l'objectif)"
                             >
                               <X size={14} />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteObjective(obj.id)}
+                              className="rounded text-dark-400 hover:text-accent-red hover:bg-accent-red/10 transition-colors cursor-pointer"
+                              style={{ padding: '3px' }}
+                              title="Supprimer définitivement l'objectif"
+                            >
+                              <Trash2 size={13} />
                             </button>
                           </div>
                         </div>
@@ -654,6 +674,16 @@ export default function ProjectDetailModal({
           onUpdate={({ attachments: updated }) => {
             updateProject(project.id, { attachments: updated });
           }}
+        />
+      )}
+
+      {/* Objective Edit Modal */}
+      {editingObjective && (
+        <ObjectiveForm
+          isOpen={!!editingObjective}
+          onClose={() => setEditingObjective(null)}
+          editObjective={editingObjective}
+          zIndex={250}
         />
       )}
     </>
