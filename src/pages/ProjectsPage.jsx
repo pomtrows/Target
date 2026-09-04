@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FolderKanban, Plus, Search, Filter, LayoutGrid, Columns, 
-  CheckCircle2, Clock, AlertTriangle, Circle, Eye, EyeOff
+  CheckCircle2, Clock, AlertTriangle, Circle, Eye, EyeOff,
+  Database, Copy, Check, Info
 } from 'lucide-react';
 import { parseISO, isBefore, startOfDay } from 'date-fns';
 import { useProjects } from '../contexts/ProjectsContext';
@@ -11,12 +12,44 @@ import ProjectCard from '../components/Projects/ProjectCard';
 import ProjectKanban from '../components/Projects/ProjectKanban';
 import ProjectModal from '../components/Projects/ProjectModal';
 import ProjectDetailModal from '../components/Projects/ProjectDetailModal';
+import Modal from '../components/Shared/Modal';
+
+const SQL_SCRIPT = `-- 1. Création de la table projects
+CREATE TABLE IF NOT EXISTS public.projects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  profile TEXT NOT NULL DEFAULT 'perso',
+  name TEXT NOT NULL,
+  category_id TEXT,
+  description TEXT DEFAULT '',
+  priority SMALLINT NOT NULL DEFAULT 2 CHECK (priority IN (1, 2, 3)),
+  status TEXT NOT NULL DEFAULT '0-Non lancé' CHECK (status IN ('0-Non lancé', '1-En cours', '2-Terminé')),
+  start_date DATE,
+  end_date DATE,
+  attachments JSONB DEFAULT '[]'::JSONB,
+  objective_ids JSONB DEFAULT '[]'::JSONB,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 2. Sécurité RLS
+ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage their own projects" ON public.projects;
+CREATE POLICY "Users can manage their own projects"
+  ON public.projects FOR ALL
+  TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- 3. Colonne project_id sur objectives
+ALTER TABLE public.objectives 
+ADD COLUMN IF NOT EXISTS project_id UUID REFERENCES public.projects(id) ON DELETE SET NULL;`;
 
 export default function ProjectsPage() {
-  const { projects, loading } = useProjects();
+  const { projects, loading, isLocalFallback } = useProjects();
   const { state: targetState } = useTarget();
 
-  const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'grid'
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('target_projects_view_mode') || 'kanban');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedPriority, setSelectedPriority] = useState('all');
@@ -27,6 +60,13 @@ export default function ProjectsPage() {
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState(null);
   const [detailProject, setDetailProject] = useState(null);
+  const [showSqlModal, setShowSqlModal] = useState(false);
+  const [copiedSql, setCopiedSql] = useState(false);
+
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    localStorage.setItem('target_projects_view_mode', mode);
+  };
 
   const categories = targetState.categories || [];
 
@@ -139,6 +179,27 @@ export default function ProjectsPage() {
           Nouveau projet
         </button>
       </div>
+
+      {/* Local Fallback Notice Banner */}
+      {isLocalFallback && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-gradient-to-r from-accent-cyan/10 to-accent-violet/10 border border-accent-cyan/30 rounded-2xl text-xs">
+          <div className="flex items-center gap-2.5 text-dark-200">
+            <span className="p-1.5 rounded-lg bg-accent-cyan/20 text-accent-cyan flex-shrink-0">
+              <Database size={15} />
+            </span>
+            <span>
+              <strong className="text-dark-100">Mode de secours local immédiat actif</strong> : Vos projets sont enregistrés sur cet appareil et 100% opérationnels sans attendre.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowSqlModal(true)}
+            className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-accent-cyan text-dark-950 font-bold hover:bg-accent-cyan/90 transition-all cursor-pointer whitespace-nowrap shadow-sm text-xs"
+          >
+            Activer le Cloud (SQL)
+          </button>
+        </div>
+      )}
 
       {/* KPI Stats Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -258,7 +319,7 @@ export default function ProjectsPage() {
         {/* View Switcher: Kanban vs Grid */}
         <div className="flex items-center gap-1 self-end lg:self-auto bg-dark-800/90 p-1 rounded-xl border border-dark-600/40">
           <button
-            onClick={() => setViewMode('kanban')}
+            onClick={() => handleViewModeChange('kanban')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               viewMode === 'kanban' 
                 ? 'bg-accent-cyan text-dark-950 shadow-sm' 
@@ -271,7 +332,7 @@ export default function ProjectsPage() {
           </button>
 
           <button
-            onClick={() => setViewMode('grid')}
+            onClick={() => handleViewModeChange('grid')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               viewMode === 'grid' 
                 ? 'bg-accent-cyan text-dark-950 shadow-sm' 
@@ -364,6 +425,60 @@ export default function ProjectsPage() {
           project={activeDetailProject}
           onEdit={handleOpenEdit}
         />
+      )}
+
+      {/* SQL Migration Modal */}
+      {showSqlModal && (
+        <Modal
+          isOpen={showSqlModal}
+          onClose={() => setShowSqlModal(false)}
+          title="Activer la synchronisation Cloud Supabase ☁️"
+          maxWidth="max-w-2xl"
+        >
+          <div className="flex flex-col gap-4 text-dark-200">
+            <p className="text-xs text-dark-300 leading-relaxed">
+              Vos projets fonctionnent actuellement en <strong>mode de secours local</strong> (enregistrés en toute sécurité sur votre appareil).
+              Pour activer la synchronisation cloud et accéder à vos projets sur tous vos appareils, copiez ce script et exécutez-le dans le <strong>SQL Editor</strong> de votre console Supabase :
+            </p>
+
+            <div className="relative">
+              <pre className="bg-dark-900 border border-dark-600/50 rounded-xl p-3 text-[11px] text-dark-200 font-mono overflow-x-auto max-h-64 custom-scrollbar">
+                {SQL_SCRIPT}
+              </pre>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(SQL_SCRIPT);
+                  setCopiedSql(true);
+                  setTimeout(() => setCopiedSql(false), 3000);
+                }}
+                className="absolute top-2 right-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dark-700 hover:bg-dark-600 border border-dark-500/50 text-xs font-semibold text-dark-100 transition-all shadow-md cursor-pointer"
+              >
+                {copiedSql ? (
+                  <>
+                    <Check size={14} className="text-accent-green" />
+                    Copié !
+                  </>
+                ) : (
+                  <>
+                    <Copy size={14} />
+                    Copier le code SQL
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowSqlModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-dark-700 hover:bg-dark-600 text-dark-200 transition-colors cursor-pointer"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

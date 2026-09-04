@@ -379,6 +379,25 @@ export function isOfflineError(error) {
 }
 
 /**
+ * Check if an error represents a missing table or schema cache issue in Supabase
+ */
+export function isTableMissingError(error) {
+  if (!error) return false;
+  const msg = (error.message || '').toLowerCase();
+  const code = error.code || '';
+  return (
+    code === '42P01' || // PostgreSQL relation does not exist
+    code === 'PGRST204' ||
+    code === 'PGRST200' ||
+    msg.includes('relation "public.projects" does not exist') ||
+    msg.includes('relation "projects" does not exist') ||
+    msg.includes('could not find the table') ||
+    msg.includes('table not found') ||
+    (msg.includes('does not exist') && msg.includes('projects'))
+  );
+}
+
+/**
  * Process all pending actions in the sync queue sequentially towards Supabase
  */
 export async function processSyncQueue(userId, profile, supabase) {
@@ -970,7 +989,7 @@ export async function processProjectsSyncQueue(userId, profile, supabase) {
       }
 
       if (reqError) {
-        if (isOfflineError(reqError)) {
+        if (isOfflineError(reqError) || isTableMissingError(reqError)) {
           break;
         } else {
           console.warn(`Project sync item failed permanently (${item.type}):`, reqError.message);

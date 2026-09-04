@@ -10,7 +10,8 @@ import {
   processProjectsSyncQueue,
   getPendingProjectsQueueCount,
   generateUUID,
-  isOfflineError
+  isOfflineError,
+  isTableMissingError
 } from '../utils/offlineSync';
 
 const ProjectsContext = createContext(null);
@@ -50,6 +51,7 @@ export function ProjectsProvider({ children }) {
 
   const [pendingProjectsCount, setPendingProjectsCount] = useState(0);
   const [isSyncingProjects, setIsSyncingProjects] = useState(false);
+  const [isLocalFallback, setIsLocalFallback] = useState(false);
 
   const refreshPendingProjectsCount = useCallback(() => {
     if (user) {
@@ -139,14 +141,19 @@ export function ProjectsProvider({ children }) {
           .order('created_at', { ascending: false });
 
         if (error) {
-          // Table might not exist yet if user hasn't run sql migration
-          console.warn('Supabase projects table query warning:', error.message);
+          if (isTableMissingError(error)) {
+            console.info('Mode de secours actif : table projects non trouvée sur Supabase.');
+            setIsLocalFallback(true);
+          } else {
+            console.warn('Supabase projects table query warning:', error.message);
+          }
           if (!cached && isMounted) {
             dispatch({ type: 'INITIALIZE', payload: [] });
           }
           return;
         }
 
+        setIsLocalFallback(false);
         if (!isMounted) return;
 
         const normalized = (data || []).map(p => ({
@@ -204,7 +211,7 @@ export function ProjectsProvider({ children }) {
     dispatch({ type: 'ADD_PROJECT', payload: newProject });
     showToast('Projet créé avec succès !', 'success');
 
-    if (!navigator.onLine) {
+    if (!navigator.onLine || isLocalFallback) {
       enqueueProjectsSyncAction(user.id, currentProfile, 'ADD_PROJECT', newProject);
       refreshPendingProjectsCount();
       return newProject;
@@ -229,18 +236,14 @@ export function ProjectsProvider({ children }) {
       });
 
       if (error) {
-        if (isOfflineError(error)) {
-          enqueueProjectsSyncAction(user.id, currentProfile, 'ADD_PROJECT', newProject);
-          refreshPendingProjectsCount();
-        } else {
-          console.warn('Supabase projects insert error:', error.message);
-          // Fallback to queue if table missing or temporary issue
-          enqueueProjectsSyncAction(user.id, currentProfile, 'ADD_PROJECT', newProject);
-          refreshPendingProjectsCount();
+        if (isTableMissingError(error)) {
+          setIsLocalFallback(true);
         }
+        enqueueProjectsSyncAction(user.id, currentProfile, 'ADD_PROJECT', newProject);
+        refreshPendingProjectsCount();
       }
     } catch (err) {
-      console.warn('Network error saving project:', err);
+      console.warn('Network error saving project (saved locally):', err);
       enqueueProjectsSyncAction(user.id, currentProfile, 'ADD_PROJECT', newProject);
       refreshPendingProjectsCount();
     }
@@ -270,7 +273,7 @@ export function ProjectsProvider({ children }) {
 
     dispatch({ type: 'UPDATE_PROJECT', payload: updated });
 
-    if (!navigator.onLine) {
+    if (!navigator.onLine || isLocalFallback) {
       enqueueProjectsSyncAction(user.id, currentProfile, 'UPDATE_PROJECT', updated);
       refreshPendingProjectsCount();
       return updated;
@@ -291,17 +294,14 @@ export function ProjectsProvider({ children }) {
       }).eq('id', id);
 
       if (error) {
-        if (isOfflineError(error)) {
-          enqueueProjectsSyncAction(user.id, currentProfile, 'UPDATE_PROJECT', updated);
-          refreshPendingProjectsCount();
-        } else {
-          console.warn('Supabase projects update error:', error.message);
-          enqueueProjectsSyncAction(user.id, currentProfile, 'UPDATE_PROJECT', updated);
-          refreshPendingProjectsCount();
+        if (isTableMissingError(error)) {
+          setIsLocalFallback(true);
         }
+        enqueueProjectsSyncAction(user.id, currentProfile, 'UPDATE_PROJECT', updated);
+        refreshPendingProjectsCount();
       }
     } catch (err) {
-      console.warn('Network error updating project:', err);
+      console.warn('Network error updating project (saved locally):', err);
       enqueueProjectsSyncAction(user.id, currentProfile, 'UPDATE_PROJECT', updated);
       refreshPendingProjectsCount();
     }
@@ -315,7 +315,7 @@ export function ProjectsProvider({ children }) {
     dispatch({ type: 'DELETE_PROJECT', payload: id });
     showToast('Projet supprimé', 'info');
 
-    if (!navigator.onLine) {
+    if (!navigator.onLine || isLocalFallback) {
       enqueueProjectsSyncAction(user.id, currentProfile, 'DELETE_PROJECT', { id });
       refreshPendingProjectsCount();
       return;
@@ -324,15 +324,14 @@ export function ProjectsProvider({ children }) {
     try {
       const { error } = await supabase.from('projects').delete().eq('id', id);
       if (error) {
-        if (isOfflineError(error)) {
-          enqueueProjectsSyncAction(user.id, currentProfile, 'DELETE_PROJECT', { id });
-          refreshPendingProjectsCount();
-        } else {
-          console.warn('Supabase projects delete error:', error.message);
+        if (isTableMissingError(error)) {
+          setIsLocalFallback(true);
         }
+        enqueueProjectsSyncAction(user.id, currentProfile, 'DELETE_PROJECT', { id });
+        refreshPendingProjectsCount();
       }
     } catch (err) {
-      console.warn('Network error deleting project:', err);
+      console.warn('Network error deleting project (saved locally):', err);
       enqueueProjectsSyncAction(user.id, currentProfile, 'DELETE_PROJECT', { id });
       refreshPendingProjectsCount();
     }
@@ -349,6 +348,7 @@ export function ProjectsProvider({ children }) {
         loading: state.loading,
         isSyncingProjects,
         pendingProjectsCount,
+        isLocalFallback,
         syncProjectsNow,
         createProject,
         updateProject,
