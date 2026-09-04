@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Plus, Trash2, Dumbbell, FileText, Paperclip, UserPlus, Check } from 'lucide-react';
+import { Plus, Trash2, Dumbbell, FileText, Paperclip, UserPlus, Check, FolderKanban } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSport } from '../../contexts/SportContext';
 import { useNotes } from '../../contexts/NotesContext';
+import { useProjects } from '../../contexts/ProjectsContext';
 import Modal from '../Shared/Modal';
 import NoteEditor from '../Notes/NoteEditor';
 import AttachmentManager from '../Attachments/AttachmentManager';
@@ -52,6 +53,8 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
   const { user } = useAuth();
   const { sessions } = useSport();
   const { state: notesState, createFolder, createNote } = useNotes();
+  const { projects, updateProject } = useProjects();
+  const [selectedProjectId, setSelectedProjectId] = useState('');
 
   const delegatableContacts = useMemo(() => {
     if (!state.contacts) return [];
@@ -263,6 +266,8 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
       setCategoryId(editObjective?.categoryId || 'autre');
       setPriority(editObjective?.priority || 'P3');
       setSportSessionId(editObjective?.sportSessionId || '');
+      const matchedProj = (projects || []).find(p => (p.objectiveIds || []).includes(editObjective?.id) || p.id === editObjective?.projectId);
+      setSelectedProjectId(matchedProj ? matchedProj.id : '');
       setAssignedTo(editObjective?.assigned_to || '');
       setSubObjectives(editObjective?.subObjectives || []);
       setAssignType(
@@ -364,9 +369,21 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
       });
     }
 
+    // Update project affiliation
+    const savedObjId = editObjective ? editObjective.id : tempId;
+    (projects || []).forEach(p => {
+      const hasObj = (p.objectiveIds || []).includes(savedObjId);
+      if (p.id === selectedProjectId && !hasObj) {
+        updateProject(p.id, { objectiveIds: [...(p.objectiveIds || []), savedObjId] });
+      } else if (p.id !== selectedProjectId && hasObj) {
+        updateProject(p.id, { objectiveIds: (p.objectiveIds || []).filter(id => id !== savedObjId) });
+      }
+    });
+
     onClose();
     // Reset
     setTempId(`obj-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`);
+    setSelectedProjectId('');
     setFormNoteId(null);
     setFormAttachments([]);
     setTitle('');
@@ -557,6 +574,27 @@ export default function ObjectiveForm({ isOpen, onClose, weekId = null, editObje
                 <option value="">-- Aucune séance associée --</option>
                 {sessions.map(s => (
                   <option key={s.id} value={s.id}>{s.name} ({s.exercises?.length || 0} ex)</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Rattacher à un Projet (Optionnel) */}
+          {(projects || []).length > 0 && (
+            <div className="mt-3 bg-dark-900/40 p-3 rounded-2xl border border-dark-600/30">
+              <label className="block text-xs font-bold text-dark-200 mb-1.5 flex items-center gap-1.5">
+                <FolderKanban size={14} className="text-accent-cyan" /> Rattacher à un projet (Optionnel)
+              </label>
+              <select
+                value={selectedProjectId}
+                onChange={(e) => setSelectedProjectId(e.target.value)}
+                className="w-full bg-dark-800 border border-dark-600/50 rounded-xl py-2 px-3 text-xs text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer"
+              >
+                <option value="">-- Aucun projet (objectif autonome) --</option>
+                {projects.map(p => (
+                  <option key={p.id} value={p.id}>
+                    📁 {p.name} ({p.status})
+                  </option>
                 ))}
               </select>
             </div>

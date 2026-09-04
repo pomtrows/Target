@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Minus, Check, Pencil, Trash2, Play, FileText, Paperclip } from 'lucide-react';
+import { Plus, Minus, Check, Pencil, Trash2, Play, FileText, Paperclip, FolderKanban } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTarget } from '../../contexts/TargetContext';
 import { useSport } from '../../contexts/SportContext';
 import { useNotes } from '../../contexts/NotesContext';
+import { useProjects } from '../../contexts/ProjectsContext';
 import { getObjectiveProgress, getProgressColor, isBitSet } from '../../utils/progressUtils';
 import WorkoutPlayer from '../Sport/WorkoutPlayer';
 import Modal from '../Shared/Modal';
@@ -16,6 +17,7 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
   const { state, dispatch } = useTarget();
   const { sessions } = useSport();
   const { state: notesState, createFolder, createNote } = useNotes();
+  const { projects } = useProjects();
   const [sessionToPlay, setSessionToPlay] = useState(null);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [showAttachmentsModal, setShowAttachmentsModal] = useState(false);
@@ -189,6 +191,21 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
       </div>
 
       <div className="flex-1 w-full">
+        {/* Project Badge */}
+        {(() => {
+          const matchedProject = (projects || []).find(p => 
+            (p.objectiveIds || []).includes(objective.id) || p.id === objective.projectId
+          );
+          if (!matchedProject) return null;
+          return (
+            <div className="mb-1 pl-1">
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/25 px-2 py-0.5 rounded-md">
+                <FolderKanban size={11} /> {matchedProject.name}
+              </span>
+            </div>
+          );
+        })()}
+
         {/* Title */}
         <h3 
           className="font-bold text-lg text-dark-100 mb-2 pl-1"

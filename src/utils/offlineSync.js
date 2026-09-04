@@ -12,6 +12,9 @@ const NOTES_QUEUE_KEY_PREFIX = 'target_notes_sync_queue_';
 const SPORT_CACHE_KEY_PREFIX = 'target_offline_sport_';
 const SPORT_QUEUE_KEY_PREFIX = 'target_sport_sync_queue_';
 
+const PROJECTS_CACHE_KEY_PREFIX = 'target_offline_projects_';
+const PROJECTS_QUEUE_KEY_PREFIX = 'target_projects_sync_queue_';
+
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
@@ -64,6 +67,16 @@ const getSportCacheKey = (userId) => `${SPORT_CACHE_KEY_PREFIX}${userId}`;
  * Get sport sync queue key for a specific user
  */
 const getSportQueueKey = (userId) => `${SPORT_QUEUE_KEY_PREFIX}${userId}`;
+
+/**
+ * Get projects cache key for a specific user and profile
+ */
+const getProjectsCacheKey = (userId, profile) => `${PROJECTS_CACHE_KEY_PREFIX}${userId}_${profile || 'perso'}`;
+
+/**
+ * Get projects sync queue key for a specific user and profile
+ */
+const getProjectsQueueKey = (userId, profile) => `${PROJECTS_QUEUE_KEY_PREFIX}${userId}_${profile || 'perso'}`;
 
 /**
  * Save complete target state to local storage for instant offline loading
@@ -775,6 +788,208 @@ export async function processSportSyncQueue(userId, supabase) {
       }
       remainingQueue.shift();
       saveSportSyncQueue(userId, remainingQueue);
+      processedCount++;
+    }
+  }
+
+  return {
+    success: remainingQueue.length === 0,
+    processedCount,
+    pendingCount: remainingQueue.length
+  };
+}
+
+// ================= PROJECTS OFFLINE CACHE & QUEUE =================
+
+/**
+ * Save projects to local cache
+ */
+export function saveLocalProjects(userId, profile, projects) {
+  if (!userId) return;
+  try {
+    const key = getProjectsCacheKey(userId, profile);
+    const dataToSave = {
+      projects: projects || [],
+      cachedAt: new Date().toISOString()
+    };
+    localStorage.setItem(key, JSON.stringify(dataToSave));
+  } catch (error) {
+    console.warn('Failed to save local projects cache:', error);
+  }
+}
+
+/**
+ * Load projects from local cache
+ */
+export function loadLocalProjects(userId, profile) {
+  if (!userId) return null;
+  try {
+    const key = getProjectsCacheKey(userId, profile);
+    const saved = localStorage.getItem(key);
+    if (!saved) return null;
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) ? parsed : (parsed.projects || []);
+  } catch (error) {
+    console.warn('Failed to load local projects cache:', error);
+    return null;
+  }
+}
+
+/**
+ * Get projects sync queue
+ */
+export function getProjectsSyncQueue(userId, profile) {
+  if (!userId) return [];
+  try {
+    const key = getProjectsQueueKey(userId, profile);
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : [];
+  } catch (error) {
+    console.warn('Failed to read projects sync queue:', error);
+    return [];
+  }
+}
+
+/**
+ * Save projects sync queue
+ */
+function saveProjectsSyncQueue(userId, profile, queue) {
+  if (!userId) return;
+  try {
+    const key = getProjectsQueueKey(userId, profile);
+    localStorage.setItem(key, JSON.stringify(queue));
+  } catch (error) {
+    console.warn('Failed to save projects sync queue:', error);
+  }
+}
+
+/**
+ * Enqueue a project action
+ */
+export function enqueueProjectsSyncAction(userId, profile, actionType, payload) {
+  if (!userId) return;
+  const queue = getProjectsSyncQueue(userId, profile);
+  const actionItem = {
+    id: `sync_proj_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+    type: actionType,
+    payload,
+    timestamp: new Date().toISOString()
+  };
+  queue.push(actionItem);
+  saveProjectsSyncQueue(userId, profile, queue);
+  return actionItem;
+}
+
+/**
+ * Count pending projects sync operations
+ */
+export function getPendingProjectsQueueCount(userId, profile) {
+  return getProjectsSyncQueue(userId, profile).length;
+}
+
+/**
+ * Clear projects sync queue
+ */
+export function clearProjectsSyncQueue(userId, profile) {
+  if (!userId) return;
+  const key = getProjectsQueueKey(userId, profile);
+  localStorage.removeItem(key);
+}
+
+/**
+ * Process projects sync queue
+ */
+export async function processProjectsSyncQueue(userId, profile, supabase) {
+  if (!userId || !navigator.onLine) {
+    return { success: false, processedCount: 0, pendingCount: getPendingProjectsQueueCount(userId, profile) };
+  }
+
+  const queue = getProjectsSyncQueue(userId, profile);
+  if (queue.length === 0) {
+    return { success: true, processedCount: 0, pendingCount: 0 };
+  }
+
+  let processedCount = 0;
+  const remainingQueue = [...queue];
+
+  for (let i = 0; i < queue.length; i++) {
+    const item = queue[i];
+    try {
+      let reqError = null;
+
+      switch (item.type) {
+        case 'ADD_PROJECT': {
+          const projId = isValidUUID(item.payload.id) ? item.payload.id : generateUUID();
+          const { error } = await supabase.from('projects').upsert({
+            id: projId,
+            user_id: userId,
+            profile: profile || 'perso',
+            name: item.payload.name,
+            category_id: item.payload.category_id || item.payload.categoryId || 'autre',
+            description: item.payload.description || '',
+            priority: Number(item.payload.priority) || 2,
+            status: item.payload.status || '0-Non lancé',
+            start_date: item.payload.start_date || item.payload.startDate || null,
+            end_date: item.payload.end_date || item.payload.endDate || null,
+            attachments: item.payload.attachments || [],
+            objective_ids: item.payload.objective_ids || item.payload.objectiveIds || [],
+            created_at: item.payload.created_at || item.payload.createdAt || new Date().toISOString(),
+            updated_at: item.payload.updated_at || item.payload.updatedAt || new Date().toISOString()
+          }, { onConflict: 'id' });
+          reqError = error;
+          break;
+        }
+
+        case 'UPDATE_PROJECT': {
+          if (!isValidUUID(item.payload.id)) break;
+          const { error } = await supabase.from('projects').update({
+            name: item.payload.name,
+            category_id: item.payload.category_id || item.payload.categoryId,
+            description: item.payload.description,
+            priority: Number(item.payload.priority) || 2,
+            status: item.payload.status,
+            start_date: item.payload.start_date || item.payload.startDate || null,
+            end_date: item.payload.end_date || item.payload.endDate || null,
+            attachments: item.payload.attachments || [],
+            objective_ids: item.payload.objective_ids || item.payload.objectiveIds || [],
+            updated_at: new Date().toISOString()
+          }).eq('id', item.payload.id);
+          reqError = error;
+          break;
+        }
+
+        case 'DELETE_PROJECT': {
+          if (!isValidUUID(item.payload.id)) break;
+          const { error } = await supabase.from('projects').delete().eq('id', item.payload.id);
+          reqError = error;
+          break;
+        }
+
+        default:
+          break;
+      }
+
+      if (reqError) {
+        if (isOfflineError(reqError)) {
+          break;
+        } else {
+          console.warn(`Project sync item failed permanently (${item.type}):`, reqError.message);
+          remainingQueue.shift();
+          saveProjectsSyncQueue(userId, profile, remainingQueue);
+          processedCount++;
+          continue;
+        }
+      }
+
+      remainingQueue.shift();
+      saveProjectsSyncQueue(userId, profile, remainingQueue);
+      processedCount++;
+    } catch (err) {
+      if (isOfflineError(err)) {
+        break;
+      }
+      remainingQueue.shift();
+      saveProjectsSyncQueue(userId, profile, remainingQueue);
       processedCount++;
     }
   }

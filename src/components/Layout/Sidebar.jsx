@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Target, Inbox, BarChart3, Settings, Menu, X, Sun, Moon, LogOut, Users, FileText, Dumbbell, Bell, BellOff, Info, CheckCircle2, Gift, Sliders, Wifi, WifiOff, RotateCw, User } from 'lucide-react';
+import { Target, Inbox, BarChart3, Settings, Menu, X, Sun, Moon, LogOut, Users, FileText, Dumbbell, Bell, BellOff, Info, CheckCircle2, Gift, Sliders, Wifi, WifiOff, RotateCw, User, FolderKanban } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../contexts/ToastContext';
@@ -10,6 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTarget } from '../../contexts/TargetContext';
 import { useNotes } from '../../contexts/NotesContext';
 import { useSport } from '../../contexts/SportContext';
+import { useProjects } from '../../contexts/ProjectsContext';
 import Modal from '../Shared/Modal';
 import {
   isNotificationSupported,
@@ -24,6 +25,7 @@ import NotificationCenter from '../Notifications/NotificationCenter';
 
 const navItems = [
   { path: '/', label: 'Objectifs', icon: Target },
+  { path: '/projects', label: 'Projets', icon: FolderKanban },
   { path: '/backlog', label: 'Backlog', icon: Inbox },
   { path: '/history', label: 'Historique', icon: BarChart3 },
   { path: '/categories', label: 'Catégories', icon: Settings },
@@ -42,14 +44,16 @@ export default function Sidebar() {
   const { isOnline, isSyncing, pendingSyncCount, syncNow } = useTarget();
   const { isSyncingNotes, pendingNotesCount, syncNotesNow } = useNotes();
   const { isSyncingSport, pendingSportCount, syncSportNow } = useSport();
+  const { isSyncingProjects, pendingProjectsCount, syncProjectsNow } = useProjects();
 
-  const totalPending = (pendingSyncCount || 0) + (pendingNotesCount || 0) + (pendingSportCount || 0);
-  const syncing = isSyncing || isSyncingNotes || isSyncingSport;
+  const totalPending = (pendingSyncCount || 0) + (pendingNotesCount || 0) + (pendingSportCount || 0) + (pendingProjectsCount || 0);
+  const syncing = isSyncing || isSyncingNotes || isSyncingSport || isSyncingProjects;
 
   const handleSyncAll = () => {
     syncNow();
     syncNotesNow?.();
     syncSportNow?.();
+    syncProjectsNow?.();
   };
 
   // Notification settings states

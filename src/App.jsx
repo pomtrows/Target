@@ -8,6 +8,7 @@ import { SettingsProvider } from './contexts/SettingsContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { NotesProvider } from './contexts/NotesContext';
 import { SportProvider } from './contexts/SportContext';
+import { ProjectsProvider } from './contexts/ProjectsContext';
 import Sidebar from './components/Layout/Sidebar';
 import AuthScreen from './components/Auth/AuthScreen';
 import InstallPrompt from './components/Shared/InstallPrompt';
@@ -16,6 +17,7 @@ import { useTarget } from './contexts/TargetContext';
 
 // Code Splitting / Lazy Loading of Pages
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
 const BacklogPage = lazy(() => import('./pages/BacklogPage'));
 const RewardsPage = lazy(() => import('./pages/RewardsPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
@@ -65,33 +67,36 @@ function AppContent() {
       <NotificationScheduler />
       <NotesProvider>
         <SportProvider>
-          <div className="flex overflow-hidden" style={{ height: 'var(--app-height, 100vh)' }}>
-            <Sidebar />
-            <InstallPrompt />
+          <ProjectsProvider>
+            <div className="flex overflow-hidden" style={{ height: 'var(--app-height, 100vh)' }}>
+              <Sidebar />
+              <InstallPrompt />
 
-            {/* Main content - offset for sidebar */}
-            <main data-main style={{ paddingLeft: '12px', paddingRight: '12px', paddingTop: '20px' }} className="flex-1 h-full overflow-hidden flex flex-col py-6 md:py-8">
-              {/* Spacer for mobile menu to prevent overlap */}
-              <div className="flex-none h-12 w-full md:hidden"></div>
-              
-              <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col overflow-y-auto custom-scrollbar h-full px-2">
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
-                    <Route path="/" element={<DashboardPage />} />
-                    <Route path="/rewards" element={<RewardsPage />} />
-                    <Route path="/backlog" element={<BacklogPage />} />
-                    <Route path="/history" element={<HistoryPage />} />
-                    <Route path="/notes" element={<NotesPage />} />
-                    <Route path="/categories" element={<CategoriesPage />} />
-                    <Route path="/admin/users" element={<AdminPage defaultTab="users" />} />
-                    <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
-                    <Route path="/sport" element={<SportPage />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </Suspense>
-              </div>
-            </main>
-          </div>
+              {/* Main content - offset for sidebar */}
+              <main data-main style={{ paddingLeft: '12px', paddingRight: '12px', paddingTop: '20px' }} className="flex-1 h-full overflow-hidden flex flex-col py-6 md:py-8">
+                {/* Spacer for mobile menu to prevent overlap */}
+                <div className="flex-none h-12 w-full md:hidden"></div>
+                
+                <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col overflow-y-auto custom-scrollbar h-full px-2">
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      <Route path="/" element={<DashboardPage />} />
+                      <Route path="/projects" element={<ProjectsPage />} />
+                      <Route path="/rewards" element={<RewardsPage />} />
+                      <Route path="/backlog" element={<BacklogPage />} />
+                      <Route path="/history" element={<HistoryPage />} />
+                      <Route path="/notes" element={<NotesPage />} />
+                      <Route path="/categories" element={<CategoriesPage />} />
+                      <Route path="/admin/users" element={<AdminPage defaultTab="users" />} />
+                      <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
+                      <Route path="/sport" element={<SportPage />} />
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                  </Suspense>
+                </div>
+              </main>
+            </div>
+          </ProjectsProvider>
         </SportProvider>
       </NotesProvider>
     </TargetProvider>
