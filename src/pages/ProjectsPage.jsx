@@ -462,7 +462,7 @@ export default function ProjectsPage() {
 
       {/* Filter & View Bar */}
       <div 
-        className="flex flex-wrap items-center justify-between gap-3 bg-dark-850/80 border border-dark-600/40 rounded-2xl"
+        className="flex flex-wrap items-center justify-between gap-3 bg-dark-800/80 border border-dark-600/40 rounded-2xl"
         style={{ padding: '8px 12px' }}
       >
         {/* Search & Filters */}
@@ -685,7 +685,7 @@ export default function ProjectsPage() {
           <span className="text-xs text-dark-400 font-medium">Chargement des projets...</span>
         </div>
       ) : filteredProjects.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center min-h-[350px] p-8 text-center bg-dark-850/40 border border-dashed border-dark-700 rounded-3xl gap-4">
+        <div className="flex-1 flex flex-col items-center justify-center min-h-[350px] p-8 text-center bg-dark-800/40 border border-dashed border-dark-700 rounded-3xl gap-4">
           <div className="w-16 h-16 rounded-2xl bg-dark-700/60 flex items-center justify-center text-dark-400">
             <FolderKanban size={32} />
           </div>
