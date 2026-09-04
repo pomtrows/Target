@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { useTarget } from '../../contexts/TargetContext';
 import Modal from '../Shared/Modal';
 
-export default function AttachmentManager({ isOpen, onClose, objective, onUpdate }) {
+export default function AttachmentManager({ isOpen, onClose, objective, onUpdate, zIndex = 220 }) {
   const { dispatch } = useTarget();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
@@ -128,6 +128,7 @@ export default function AttachmentManager({ isOpen, onClose, objective, onUpdate
       onClose={onClose}
       title="Pièces jointes"
       maxWidth="max-w-2xl"
+      zIndex={zIndex}
     >
       <div className="w-full flex flex-col">
         

@@ -185,7 +185,7 @@ export function ProjectsProvider({ children }) {
   const createProject = async (projectData) => {
     if (!user) return null;
 
-    const newId = generateUUID();
+    const newId = projectData.id || generateUUID();
     const newProject = {
       id: newId,
       user_id: user.id,

@@ -1,16 +1,22 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Target, Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles, Trash2 } from 'lucide-react';
+import { Target, Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles, Trash2, Paperclip, FileText } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useProjects } from '../../contexts/ProjectsContext';
+import { useNotes } from '../../contexts/NotesContext';
 import { getObjectiveProjectProgress } from '../../utils/progressUtils';
 import { getCurrentWeekId } from '../../utils/weekUtils';
 import { getProjectEffectiveDates } from '../../utils/projectUtils';
+import { generateUUID } from '../../utils/offlineSync';
 import Modal from '../Shared/Modal';
 import ObjectiveForm from '../Dashboard/ObjectiveForm';
+import AttachmentManager from '../Attachments/AttachmentManager';
+import NoteEditor from '../Notes/NoteEditor';
 
 export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) {
   const { state: targetState, dispatch } = useTarget();
   const { createProject, updateProject } = useProjects();
+
+  const { state: notesState, createFolder, createNote } = useNotes();
 
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('autre');
@@ -23,6 +29,13 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
   const [objectiveSearch, setObjectiveSearch] = useState('');
   const [objectiveMode, setObjectiveMode] = useState(null); // 'create' | 'assign' | null
   const [isAdvancedObjectiveModalOpen, setIsAdvancedObjectiveModalOpen] = useState(false);
+
+  // Attachments and Notes states
+  const [tempProjectId, setTempProjectId] = useState(() => projectToEdit?.id || generateUUID());
+  const [formAttachments, setFormAttachments] = useState(projectToEdit?.attachments || []);
+  const [showAttachmentsModal, setShowAttachmentsModal] = useState(false);
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [projectNoteId, setProjectNoteId] = useState(null);
 
   // Inline objective creation state
   const [newObjTitle, setNewObjTitle] = useState('');
@@ -37,6 +50,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
     if (!isOpen) return;
 
     if (projectToEdit) {
+      setTempProjectId(projectToEdit.id);
+      setFormAttachments(projectToEdit.attachments || []);
       setName(projectToEdit.name || '');
       const cat = projectToEdit.categoryId || projectToEdit.category_id || 'autre';
       setCategoryId(cat);
@@ -61,6 +76,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
       setEndDate(effective.endDate || initEnd);
       setSelectedObjectiveIds(objIds);
     } else {
+      setTempProjectId(generateUUID());
+      setFormAttachments([]);
       setName('');
       const defaultCat = targetState.categories?.[0]?.id || 'autre';
       setCategoryId(defaultCat);
@@ -71,12 +88,47 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
       setEndDate('');
       setSelectedObjectiveIds([]);
     }
+    setShowAttachmentsModal(false);
+    setShowNotesModal(false);
+    setProjectNoteId(null);
     setObjectiveMode(null);
     setNewObjTitle('');
     setNewObjPriority('P2');
     setInlineObjFeedback('');
     setError('');
   }, [projectToEdit?.id, isOpen]);
+
+  const notesFolder = notesState?.folders?.find(f => f.name === 'Projets');
+  const projectNote = notesFolder ? notesState?.notes?.find(n => n.folder_id === notesFolder.id && n.title === tempProjectId) : null;
+  const hasNotes = !!(projectNote && projectNote.content && projectNote.content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim() !== '');
+
+  const handleOpenNotes = async (e) => {
+    e?.preventDefault();
+    let folder = notesState?.folders?.find(f => f.name === 'Projets');
+    let folderId = folder?.id;
+    if (!folderId) {
+      try {
+        const newFolder = await createFolder('Projets');
+        folderId = newFolder.id;
+      } catch (err) {
+        console.error("Erreur création dossier Projets", err);
+        return;
+      }
+    }
+    const existingNote = notesState?.notes?.find(n => n.folder_id === folderId && n.title === tempProjectId);
+    let noteId = existingNote?.id;
+    if (!noteId) {
+      try {
+        const newNote = await createNote(tempProjectId, folderId);
+        noteId = newNote?.id;
+      } catch (err) {
+        console.error("Erreur création note", err);
+        return;
+      }
+    }
+    setProjectNoteId(noteId);
+    setShowNotesModal(true);
+  };
 
   if (!isOpen) return null;
 
@@ -196,6 +248,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
 
     try {
       const payload = {
+        id: tempProjectId,
         name: name.trim(),
         categoryId,
         description: description.trim(),
@@ -203,7 +256,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
         status,
         startDate: finalStartDate,
         endDate: finalEndDate,
-        objectiveIds: selectedObjectiveIds
+        objectiveIds: selectedObjectiveIds,
+        attachments: formAttachments
       };
 
       if (projectToEdit) {
@@ -257,15 +311,15 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           />
         </div>
 
-        {/* Category */}
-        <div className="flex items-center gap-3">
+        {/* Category & Actions (Pièces jointes, Notes) */}
+        <div className="flex items-center gap-2 sm:gap-3">
           <label className="text-xs font-bold text-dark-300 uppercase tracking-wider shrink-0">
             Catégorie <span className="text-accent-red">*</span>
           </label>
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            className="flex-1 bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer h-[34px] px-2.5"
+            className="w-36 sm:w-44 bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer h-[34px] px-2 truncate"
           >
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id} className="bg-dark-800 text-dark-100">
@@ -273,6 +327,38 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
               </option>
             ))}
           </select>
+
+          {/* Boutons Pièces jointes et Notes à droite */}
+          <div className="flex items-center gap-1.5 ml-auto shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowAttachmentsModal(true)}
+              className={`flex items-center justify-center gap-1.5 h-[34px] px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                formAttachments.length > 0
+                  ? 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/40 shadow-sm'
+                  : 'bg-dark-900/80 text-dark-300 border-dark-600/60 hover:text-dark-100 hover:border-dark-500 hover:bg-dark-800'
+              }`}
+              title={`Pièces jointes ${formAttachments.length > 0 ? `(${formAttachments.length})` : ''}`}
+            >
+              <Paperclip size={15} className="shrink-0" />
+              {formAttachments.length > 0 && (
+                <span className="text-[11px] font-black">{formAttachments.length}</span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenNotes}
+              className={`flex items-center justify-center h-[34px] px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                hasNotes
+                  ? 'bg-accent-violet/15 text-accent-violet border-accent-violet/40 shadow-sm'
+                  : 'bg-dark-900/80 text-dark-300 border-dark-600/60 hover:text-dark-100 hover:border-dark-500 hover:bg-dark-800'
+              }`}
+              title="Notes du projet"
+            >
+              <FileText size={15} className="shrink-0" />
+            </button>
+          </div>
         </div>
 
         {/* Priority & Status sur la même ligne */}
@@ -594,8 +680,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                 ) : (
                   filteredObjectives.map((obj) => {
                     const isSelected = selectedObjectiveIds.includes(obj.id);
-                    const objCat = categories.find(c => c.id === obj.categoryId);
-                    const isDone = getObjectiveProjectProgress(obj, targetState.progress) >= 1;
+                    const progressRatio = getObjectiveProjectProgress(obj, targetState.progress);
+                    const percent = Math.round(progressRatio * 100);
 
                     return (
                       <div
@@ -620,18 +706,9 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                             {isSelected && <Check size={11} strokeWidth={3} />}
                           </div>
                           <span className="truncate">{obj.title}</span>
-                          {isDone && (
-                            <span 
-                              className="text-[10px] font-bold rounded bg-accent-green/20 text-accent-green border border-accent-green/30 flex-shrink-0"
-                              style={{ padding: '1px 5px' }}
-                              title="Objectif réalisé"
-                            >
-                              ✓
-                            </span>
-                          )}
                         </div>
 
-                        <div className="flex items-center gap-1 flex-shrink-0 ml-1.5">
+                        <div className="flex items-center gap-1.5 flex-shrink-0 ml-1.5">
                           {obj.priority && (
                             <span 
                               className={`text-[9px] font-black rounded border ${
@@ -644,14 +721,18 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                               {obj.priority}
                             </span>
                           )}
-                          {objCat && (
-                            <span 
-                              className="text-[10px] rounded font-medium flex items-center gap-1"
-                              style={{ padding: '1px 5px', backgroundColor: `${objCat.color}20`, color: objCat.color }}
-                            >
-                              {objCat.icon} {objCat.label}
-                            </span>
-                          )}
+                          <span 
+                            className={`text-[10px] font-black rounded border flex-shrink-0 ${
+                              percent >= 100 
+                                ? 'bg-accent-green/20 text-accent-green border-accent-green/30' 
+                                : percent > 0 
+                                  ? 'bg-accent-cyan/20 text-accent-cyan border-accent-cyan/30' 
+                                  : 'bg-dark-700/60 text-dark-400 border-dark-600/40'
+                            }`}
+                            style={{ padding: '1px 5px' }}
+                          >
+                            {percent}%
+                          </span>
                         </div>
                       </div>
                     );
@@ -667,8 +748,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                 {selectedObjectiveIds.map((objId) => {
                   const obj = allObjectives.find(o => o.id === objId);
                   if (!obj) return null;
-                  const objCat = categories.find(c => c.id === obj.categoryId);
-                  const isDone = getObjectiveProjectProgress(obj, targetState.progress) >= 1;
+                  const progressRatio = getObjectiveProjectProgress(obj, targetState.progress);
+                  const percent = Math.round(progressRatio * 100);
 
                   return (
                     <div
@@ -679,18 +760,9 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                       <div className="flex items-center gap-1.5 min-w-0 truncate">
                         <Target size={13} className="text-accent-cyan flex-shrink-0" />
                         <span className="truncate font-medium text-dark-100">{obj.title}</span>
-                        {isDone && (
-                          <span 
-                            className="text-[10px] font-bold rounded bg-accent-green/20 text-accent-green border border-accent-green/30 flex-shrink-0"
-                            style={{ padding: '1px 5px' }}
-                            title="Objectif réalisé"
-                          >
-                            ✓
-                          </span>
-                        )}
                       </div>
 
-                      <div className="flex items-center gap-1 flex-shrink-0 ml-1.5">
+                      <div className="flex items-center gap-1.5 flex-shrink-0 ml-1.5">
                         {obj.priority && (
                           <span 
                             className={`text-[9px] font-black rounded border ${
@@ -703,14 +775,18 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                             {obj.priority}
                           </span>
                         )}
-                        {objCat && (
-                          <span 
-                            className="text-[10px] rounded font-medium flex items-center gap-1"
-                            style={{ padding: '1px 5px', backgroundColor: `${objCat.color}20`, color: objCat.color }}
-                          >
-                            {objCat.icon} {objCat.label}
-                          </span>
-                        )}
+                        <span 
+                          className={`text-[10px] font-black rounded border flex-shrink-0 ${
+                            percent >= 100 
+                              ? 'bg-accent-green/20 text-accent-green border-accent-green/30' 
+                              : percent > 0 
+                                ? 'bg-accent-cyan/20 text-accent-cyan border-accent-cyan/30' 
+                                : 'bg-dark-700/60 text-dark-400 border-dark-600/40'
+                          }`}
+                          style={{ padding: '1px 5px' }}
+                        >
+                          {percent}%
+                        </span>
                         <button
                           type="button"
                           onClick={() => toggleObjective(obj.id)}
@@ -775,6 +851,42 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           setIsAdvancedObjectiveModalOpen(false);
         }}
       />
+    )}
+
+    {/* Modale Pièces jointes du projet */}
+    {showAttachmentsModal && (
+      <AttachmentManager
+        isOpen={showAttachmentsModal}
+        onClose={() => setShowAttachmentsModal(false)}
+        objective={{
+          id: tempProjectId,
+          attachments: formAttachments
+        }}
+        zIndex={220}
+        onUpdate={({ attachments }) => {
+          setFormAttachments(attachments);
+          if (projectToEdit) {
+            updateProject(projectToEdit.id, { attachments });
+          }
+        }}
+      />
+    )}
+
+    {/* Modale Notes du projet */}
+    {showNotesModal && projectNoteId && (
+      <Modal
+        isOpen={showNotesModal}
+        onClose={() => setShowNotesModal(false)}
+        title={`Notes du projet : ${name || 'Nouveau projet'}`}
+        maxWidth="max-w-4xl"
+        zIndex={220}
+      >
+        <div className="h-[75vh] flex flex-col p-1">
+          <NoteEditor 
+            noteId={projectNoteId} 
+          />
+        </div>
+      </Modal>
     )}
     </>
   );
