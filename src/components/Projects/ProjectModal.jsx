@@ -258,15 +258,14 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
         </div>
 
         {/* Category */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold text-dark-300 uppercase tracking-wider">
+        <div className="flex items-center gap-3">
+          <label className="text-xs font-bold text-dark-300 uppercase tracking-wider shrink-0">
             Catégorie <span className="text-accent-red">*</span>
           </label>
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer"
-            style={{ padding: '6px 10px' }}
+            className="flex-1 bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer h-[34px] px-2.5"
           >
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id} className="bg-dark-800 text-dark-100">
