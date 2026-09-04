@@ -163,9 +163,9 @@ export default function ProjectsPage() {
   const activeDetailProject = detailProject ? (projects.find(p => p.id === detailProject.id) || null) : null;
 
   return (
-    <div className="flex-1 flex flex-col gap-6 pb-12">
+    <div className="flex-1 flex flex-col gap-6 pb-28 md:pb-32">
       {/* Top Header */}
-      <div className="relative flex flex-col sm:flex-row items-center justify-center gap-4">
+      <div className="flex items-center justify-center">
         <div className="flex items-center justify-center gap-3">
           <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-accent-cyan/20 to-accent-violet/20 border border-accent-cyan/30 flex items-center justify-center text-accent-cyan shadow-md">
             <FolderKanban size={24} />
@@ -174,14 +174,6 @@ export default function ProjectsPage() {
             Projets
           </h1>
         </div>
-        <button
-          onClick={handleOpenCreate}
-          className="sm:absolute sm:right-0 flex items-center gap-2 rounded-xl bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 font-bold text-xs transition-all shadow-lg shadow-accent-cyan/20 active:scale-95 cursor-pointer"
-          style={{ padding: '6px 12px' }}
-        >
-          <Plus size={15} strokeWidth={2.5} />
-          <span>Nouveau projet</span>
-        </button>
       </div>
 
       {/* Local Fallback Notice Banner */}
@@ -619,6 +611,17 @@ export default function ProjectsPage() {
           </div>
         </Modal>
       )}
+
+      {/* Bouton flottant Nouveau projet (+) */}
+      <motion.button
+        whileHover={{ scale: 1.1, rotate: 90 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={handleOpenCreate}
+        className="fixed bottom-8 right-8 w-14 h-14 rounded-full bg-dark-100 text-dark-900 shadow-2xl flex items-center justify-center z-50 hover:bg-white transition-all duration-300 md:bottom-10 md:right-10 cursor-pointer border-none"
+        title="Nouveau projet"
+      >
+        <Plus size={28} strokeWidth={2.5} />
+      </motion.button>
     </div>
   );
 }
