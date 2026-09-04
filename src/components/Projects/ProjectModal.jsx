@@ -276,43 +276,37 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
         </div>
 
         {/* Priority & Status sur la même ligne */}
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3.5">
           {/* Priority */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-dark-300 uppercase tracking-wider">
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-dark-300 uppercase tracking-wider shrink-0">
               Priorité <span className="text-accent-red">*</span>
             </label>
-            <div className="grid grid-cols-3 gap-1 sm:gap-1.5">
-              {[
-                { val: 1, label: 'P1', color: 'text-accent-red border-accent-red/40 bg-accent-red/10' },
-                { val: 2, label: 'P2', color: 'text-accent-violet border-accent-violet/40 bg-accent-violet/10' },
-                { val: 3, label: 'P3', color: 'text-accent-cyan border-accent-cyan/40 bg-accent-cyan/10' }
-              ].map(p => (
-                <button
-                  type="button"
-                  key={p.val}
-                  onClick={() => setPriority(p.val)}
-                  className={`text-center rounded-xl text-xs font-bold border transition-all cursor-pointer h-[34px] flex items-center justify-center ${
-                    priority === p.val 
-                      ? `${p.color} ring-1 ring-current shadow-sm` 
-                      : 'border-dark-600/40 text-dark-400 hover:text-dark-200 hover:bg-dark-700/40'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(Number(e.target.value))}
+              className="flex-1 min-w-0 bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm font-bold focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer h-[34px] px-2 text-center"
+              style={{
+                color: Number(priority) === 1 ? 'var(--color-accent-red, #ef4444)' :
+                       Number(priority) === 2 ? 'var(--color-accent-violet, #8b5cf6)' :
+                       'var(--color-accent-cyan, #06b6d4)'
+              }}
+            >
+              <option value={1} className="bg-dark-800 text-accent-red font-bold">P1</option>
+              <option value={2} className="bg-dark-800 text-accent-violet font-bold">P2</option>
+              <option value={3} className="bg-dark-800 text-accent-cyan font-bold">P3</option>
+            </select>
           </div>
 
           {/* Status */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-dark-300 uppercase tracking-wider">
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-dark-300 uppercase tracking-wider shrink-0">
               Statut <span className="text-accent-red">*</span>
             </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer h-[34px] px-2"
+              className="flex-1 min-w-0 bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer h-[34px] px-1.5"
             >
               <option value="0-Non lancé" className="bg-dark-800 text-dark-200">⚪ 0-Non lancé</option>
               <option value="1-En cours" className="bg-dark-800 text-accent-cyan">🔵 1-En cours</option>
