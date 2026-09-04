@@ -192,6 +192,14 @@ export default function ProjectGantt({
     container.scrollTo({ left: targetScroll, behavior: 'smooth' });
   };
 
+  const handleTimelineWheel = (e) => {
+    if (scrollContainerRef.current) {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        scrollContainerRef.current.scrollLeft += e.deltaY;
+      }
+    }
+  };
+
   useEffect(() => {
     // Center on today on initial load
     const timer = setTimeout(() => {
@@ -303,10 +311,10 @@ export default function ProjectGantt({
   const totalTimelineWidth = weeks.length * colWidth;
 
   return (
-    <div className="flex-1 flex flex-col bg-dark-800/80 border border-dark-600/40 rounded-3xl overflow-hidden shadow-xl min-h-[500px] lg:min-h-[580px] xl:min-h-[calc(100vh-270px)]">
+    <div className="flex-1 min-h-0 flex flex-col bg-dark-800/80 border border-dark-600/40 rounded-2xl md:rounded-3xl overflow-hidden shadow-xl h-full">
       {/* 1. TOP TOOLBAR CONTROLS */}
       <div 
-        className="flex flex-wrap items-center justify-between gap-3 border-b border-dark-600/40 bg-dark-800"
+        className="flex flex-wrap items-center justify-between gap-3 border-b border-dark-600/40 bg-dark-800 flex-shrink-0"
         style={{ padding: '10px 14px' }}
       >
         {/* Left: Mode Title or Focus Indicator */}
@@ -384,11 +392,11 @@ export default function ProjectGantt({
       </div>
 
       {/* 2. GANTT MAIN SPLIT TABLE & TIMELINE CANVAS */}
-      <div className="relative flex flex-1 min-h-[400px] lg:min-h-[480px] overflow-hidden">
+      <div className="relative flex flex-1 min-h-0 overflow-hidden">
         {/* SCROLLABLE WRAPPER (Horizontal + Vertical) */}
         <div 
           ref={scrollContainerRef}
-          className="flex-1 overflow-auto custom-scrollbar relative flex"
+          className="flex-1 min-h-0 overflow-auto custom-scrollbar relative flex"
         >
           {/* A. LEFT FROZEN COLUMN: PROJECTS & OBJECTIVES TREE */}
           <div 
@@ -397,7 +405,7 @@ export default function ProjectGantt({
           >
             {/* Header placeholder matching height of timeline header */}
             <div 
-              className="h-[65px] border-b border-dark-600/60 bg-dark-800 flex items-center justify-between pl-3.5 pr-6 text-xs font-bold text-dark-300 uppercase tracking-wider"
+              className="sticky top-0 z-40 h-[65px] border-b border-dark-600/60 bg-dark-800 flex items-center justify-between pl-3.5 pr-6 text-xs font-bold text-dark-300 uppercase tracking-wider"
             >
               <span>Projets & Objectifs</span>
               <span className="text-[10px] text-dark-400 font-normal">Arborescence</span>
@@ -527,7 +535,10 @@ export default function ProjectGantt({
             style={{ width: `${totalTimelineWidth}px`, minWidth: `${totalTimelineWidth}px` }}
           >
             {/* Header: Months (Level 1) + Weeks (Level 2) */}
-            <div className="sticky top-0 z-20 flex flex-col bg-dark-800/95 border-b border-dark-600/60 backdrop-blur-md h-[65px]">
+            <div 
+              onWheel={handleTimelineWheel}
+              className="sticky top-0 z-20 flex flex-col bg-dark-800/95 border-b border-dark-600/60 backdrop-blur-md h-[65px]"
+            >
               {/* Level 1: Month Headers */}
               <div className="flex border-b border-dark-700/60 h-[30px] text-xs font-bold text-dark-200">
                 {monthGroups.map((group, idx) => (
@@ -690,7 +701,7 @@ export default function ProjectGantt({
 
       {/* 3. BOTTOM LEGEND */}
       <div 
-        className="flex flex-wrap items-center justify-between gap-3 border-t border-dark-600/40 bg-dark-800 text-xs text-dark-300 pr-20 md:pr-24"
+        className="flex flex-wrap items-center justify-between gap-3 border-t border-dark-600/40 bg-dark-800 text-xs text-dark-300 flex-shrink-0 pr-20 md:pr-24"
         style={{ padding: '8px 14px', paddingRight: '80px' }}
       >
         <div className="flex flex-wrap items-center gap-4 text-[11px]">

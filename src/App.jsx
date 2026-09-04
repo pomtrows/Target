@@ -87,7 +87,7 @@ function AppContent() {
                 {/* Spacer for mobile menu to prevent overlap */}
                 <div className="flex-none h-12 w-full md:hidden"></div>
                 
-                <div className={`${isProjectsPage ? 'w-full max-w-none 2xl:max-w-[2400px] mx-auto px-1 md:px-3' : 'max-w-7xl mx-auto w-full px-2'} flex-1 flex flex-col overflow-y-auto custom-scrollbar h-full`}>
+                <div className={`${isProjectsPage ? 'w-full max-w-none 2xl:max-w-[2400px] mx-auto px-1 md:px-3' : 'max-w-7xl mx-auto w-full px-2'} flex-1 min-h-0 flex flex-col overflow-y-auto custom-scrollbar h-full`}>
                   <Suspense fallback={<PageLoader />}>
                     <Routes>
                       <Route path="/" element={<DashboardPage />} />
