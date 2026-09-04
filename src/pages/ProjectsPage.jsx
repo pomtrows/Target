@@ -155,23 +155,18 @@ export default function ProjectsPage() {
   return (
     <div className="flex-1 flex flex-col gap-6 pb-12">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="relative flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div className="flex items-center justify-center gap-3">
           <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-accent-cyan/20 to-accent-violet/20 border border-accent-cyan/30 flex items-center justify-center text-accent-cyan shadow-md">
             <FolderKanban size={24} />
           </div>
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-dark-100">
-              Projets
-            </h1>
-            <p className="text-xs text-dark-400 font-medium">
-              Pilotez vos chantiers, vos échéances et les objectifs qui y contribuent.
-            </p>
-          </div>
+          <h1 className="text-2xl font-black tracking-tight text-dark-100">
+            Projets
+          </h1>
         </div>
         <button
           onClick={handleOpenCreate}
-          className="self-start sm:self-auto flex items-center gap-2 rounded-xl bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 font-bold text-xs transition-all shadow-lg shadow-accent-cyan/20 active:scale-95 cursor-pointer"
+          className="sm:absolute sm:right-0 flex items-center gap-2 rounded-xl bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 font-bold text-xs transition-all shadow-lg shadow-accent-cyan/20 active:scale-95 cursor-pointer"
           style={{ padding: '6px 12px' }}
         >
           <Plus size={15} strokeWidth={2.5} />
