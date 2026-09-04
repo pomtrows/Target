@@ -109,7 +109,6 @@ export default function ProjectsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedPriority, setSelectedPriority] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [hideCompleted, setHideCompleted] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const mobileSearchInputRef = useRef(null);
@@ -172,9 +171,6 @@ export default function ProjectsPage() {
   // Filtered projects
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
-      // Hide completed
-      if (hideCompleted && p.status === '2-Terminé') return false;
-
       // Search
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -211,7 +207,7 @@ export default function ProjectsPage() {
 
       return true;
     });
-  }, [projects, searchQuery, selectedCategory, selectedPriority, selectedStatus, hideCompleted]);
+  }, [projects, searchQuery, selectedCategory, selectedPriority, selectedStatus]);
 
   const handleOpenCreate = () => {
     setProjectToEdit(null);
@@ -378,24 +374,8 @@ export default function ProjectsPage() {
           )}
         </div>
 
-        {/* Non complétés */}
-        <button
-          type="button"
-          onClick={() => setHideCompleted(!hideCompleted)}
-          className={`flex items-center gap-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-            hideCompleted 
-              ? 'bg-accent-violet/15 text-accent-violet border border-accent-violet/50 shadow-sm font-bold' 
-              : 'bg-dark-800/40 text-dark-400 border border-dark-600/25 hover:border-dark-500/40 hover:text-dark-200'
-          }`}
-          style={{ padding: '5px 12px' }}
-          title="Masquer ou afficher les projets terminés"
-        >
-          <Clock size={14} />
-          <span>Non complétés</span>
-        </button>
-
         {/* Bouton Réinitialiser si des filtres sont actifs */}
-        {(searchQuery || selectedCategory !== 'all' || selectedPriority !== 'all' || selectedStatus !== 'all' || hideCompleted) && (
+        {(searchQuery || selectedCategory !== 'all' || selectedPriority !== 'all' || selectedStatus !== 'all') && (
           <button
             type="button"
             onClick={() => {
@@ -404,7 +384,6 @@ export default function ProjectsPage() {
               setSelectedCategory('all');
               setSelectedPriority('all');
               setSelectedStatus('all');
-              setHideCompleted(false);
             }}
             className="flex items-center gap-1 rounded-full text-xs font-medium text-dark-400 hover:text-accent-red transition-colors cursor-pointer px-2 py-1"
             title="Réinitialiser tous les filtres"
