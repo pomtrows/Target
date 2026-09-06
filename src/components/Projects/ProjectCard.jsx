@@ -305,7 +305,6 @@ export default function ProjectCard({
         >
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1.5 text-dark-300 font-medium">
-              <Target size={13} className="text-accent-cyan" />
               Objectifs :
               <strong className="text-dark-100">
                 {linkedObjectives.length > 0 ? `${completedObjectivesCount}/${linkedObjectives.length}` : '0'}
