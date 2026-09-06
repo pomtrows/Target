@@ -700,14 +700,14 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
               {/* Ligne Planification (Semaine + Backlog) */}
               <div className="flex items-center gap-2 pt-0.5">
                 {/* Sélecteur de semaines */}
-                <div className="relative flex-1 min-w-0" ref={weekDropdownRef}>
+                <div className="relative flex-1 min-w-0 max-w-[210px] sm:max-w-[230px]" ref={weekDropdownRef}>
                   <button
                     type="button"
                     onClick={() => {
                       setNewObjAssignType('week');
                       setIsWeekDropdownOpen(!isWeekDropdownOpen);
                     }}
-                    className={`w-full flex items-center justify-between gap-2 border rounded-xl py-1.5 px-3 text-xs transition-colors cursor-pointer ${
+                    className={`w-full flex items-center justify-between gap-1.5 border rounded-xl py-1.5 px-2.5 text-xs transition-colors cursor-pointer ${
                       newObjAssignType === 'week'
                         ? 'bg-dark-700/50 hover:bg-dark-700/80 border-dark-600/50 text-dark-100 focus:border-accent-cyan/50'
                         : 'bg-dark-800/40 hover:bg-dark-700/40 border-dark-600/30 text-dark-400 opacity-60'
@@ -720,7 +720,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                           ? formatWeekLabel(newObjAssignWeeks[0])
                           : `${newObjAssignWeeks.length} semaines sélectionnées`}
                     </span>
-                    <span className="text-dark-400 text-xs shrink-0">▼</span>
+                    <span className="text-dark-400 text-xs shrink-0 ml-1">▼</span>
                   </button>
 
                   {isWeekDropdownOpen && (
@@ -756,7 +756,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                     setNewObjAssignType(prev => prev === 'backlog' ? 'week' : 'backlog');
                     setIsWeekDropdownOpen(false);
                   }}
-                  className={`h-[31px] px-3 rounded-xl text-xs font-medium shrink-0 flex items-center gap-1.5 transition-all cursor-pointer border ${
+                  className={`h-[31px] px-3 rounded-xl text-xs font-medium shrink-0 flex items-center gap-1.5 transition-all cursor-pointer border ml-1.5 mr-2 ${
                     newObjAssignType === 'backlog'
                       ? 'bg-accent-violet/20 text-accent-violet border-accent-violet/40 font-semibold shadow-sm'
                       : 'bg-dark-700/50 text-dark-400 border-dark-600/30 hover:text-dark-200 hover:bg-dark-700/80'
