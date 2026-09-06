@@ -566,7 +566,6 @@ export default function ProjectGantt({
                         >
                           <div className="flex items-center gap-1.5 min-w-0 flex-1">
                             <span className="text-dark-500 text-xs">└</span>
-                            <Target size={12} className={isDone ? 'text-accent-green' : 'text-accent-cyan'} />
                             <span className="text-xs text-dark-200 truncate font-medium" title={obj.title}>
                               {obj.title}
                             </span>
