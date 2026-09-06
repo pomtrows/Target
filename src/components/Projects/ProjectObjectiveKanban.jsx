@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Circle, Clock, CheckCircle2, Plus, Calendar } from 'lucide-react';
+import { Circle, Clock, CheckCircle2, Plus, Calendar, X, Check, Inbox } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
+import { useToast } from '../../contexts/ToastContext';
 import { getObjectiveProjectProgress, getObjectiveCompletedWeeks, getObjectiveProgress } from '../../utils/progressUtils';
-import { getCurrentWeekId, formatWeekShort } from '../../utils/weekUtils';
+import { getCurrentWeekId, formatWeekShort, getSelectableWeeks } from '../../utils/weekUtils';
 import ObjectiveCard from '../Dashboard/ObjectiveCard';
 import Modal from '../Shared/Modal';
 
@@ -46,8 +47,10 @@ export default function ProjectObjectiveKanban({
   onAddObjective
 }) {
   const { state: targetState, dispatch: targetDispatch } = useTarget();
+  const { showToast } = useToast();
   const currentWeekId = useMemo(() => getCurrentWeekId(), []);
   const [deleteConfirmObjective, setDeleteConfirmObjective] = useState(null);
+  const [assignWeeksModalObjective, setAssignWeeksModalObjective] = useState(null);
 
   // Filter linked objectives
   const linkedObjectiveIds = useMemo(() => new Set(project.objectiveIds || []), [project.objectiveIds]);
@@ -222,13 +225,20 @@ export default function ProjectObjectiveKanban({
         : `${formatWeekShort(assignedWeeks[0])}, ${formatWeekShort(assignedWeeks[1])} +${assignedWeeks.length - 2}`;
 
       return (
-        <span 
-          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/30 rounded-md px-2 py-0.5 leading-tight"
-          title={`Affecté à : ${assignedWeeks.map(formatWeekShort).join(', ')}`}
+        <button 
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setAssignWeeksModalObjective(obj);
+          }}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-dark-100 hover:text-accent-cyan transition-colors cursor-pointer p-0 bg-transparent border-none text-left group/week"
+          title={`Semaine(s) d'affectation : ${assignedWeeks.map(formatWeekShort).join(', ')} — Cliquer pour modifier`}
         >
-          <Calendar size={12} className="text-accent-cyan shrink-0" />
-          <span>Affecté : {label}</span>
-        </span>
+          <Calendar size={13} className="text-dark-400 group-hover/week:text-accent-cyan shrink-0 transition-colors" />
+          <span>
+            Affecté : <span className="font-bold underline decoration-dark-400/40 group-hover/week:decoration-accent-cyan">{label}</span>
+          </span>
+        </button>
       );
     }
 
@@ -261,6 +271,86 @@ export default function ProjectObjectiveKanban({
       targetDispatch({ type: 'DELETE_OBJECTIVE', payload: deleteConfirmObjective.id });
       setDeleteConfirmObjective(null);
     }
+  };
+
+  // Handle toggling week assignment directly from Kanban
+  const handleToggleWeek = (obj, targetWeekId) => {
+    if (!obj || !targetWeekId) return;
+
+    const currentObj = (targetState.objectives || []).find(o => o.id === obj.id) || obj;
+    const currentWeeks = (currentObj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
+    const otherAssignments = (currentObj.assignments || []).filter(a => typeof a === 'string' && !/^\d{4}-S\d{2}$/.test(a));
+    const isAlreadyAssigned = currentWeeks.includes(targetWeekId);
+
+    if (isAlreadyAssigned) {
+      if (currentWeeks.length > 1) {
+        const newWeeks = currentWeeks.filter(w => w !== targetWeekId);
+        targetDispatch({
+          type: 'UPDATE_OBJECTIVE',
+          payload: {
+            ...currentObj,
+            assignType: 'week',
+            assignments: [...otherAssignments, ...newWeeks]
+          }
+        });
+        targetDispatch({
+          type: 'TOGGLE_PROGRESS',
+          payload: { weekId: targetWeekId, objectiveId: currentObj.id, value: 0 }
+        });
+        showToast(`Semaine ${formatWeekShort(targetWeekId)} retirée`, 'info');
+      } else {
+        handleMoveToBacklog(currentObj);
+      }
+    } else {
+      const newWeeks = [...currentWeeks, targetWeekId].sort();
+      targetDispatch({
+        type: 'UPDATE_OBJECTIVE',
+        payload: {
+          ...currentObj,
+          assignType: 'week',
+          assignments: [...otherAssignments, ...newWeeks]
+        }
+      });
+
+      const prog = getObjectiveProjectProgress(currentObj, targetState.progress);
+      if (prog >= 1) {
+        const completeValue = currentObj.subObjectives?.length > 0
+          ? (1 << currentObj.subObjectives.length) - 1
+          : (Number(currentObj.target) > 1 ? Number(currentObj.target) : 1);
+        targetDispatch({
+          type: 'TOGGLE_PROGRESS',
+          payload: { weekId: targetWeekId, objectiveId: currentObj.id, value: completeValue }
+        });
+      }
+
+      showToast(`Semaine ${formatWeekShort(targetWeekId)} affectée`, 'success');
+    }
+  };
+
+  // Handle removing all assignments and moving to backlog
+  const handleMoveToBacklog = (obj) => {
+    if (!obj) return;
+    const currentObj = (targetState.objectives || []).find(o => o.id === obj.id) || obj;
+    const otherAssignments = (currentObj.assignments || []).filter(a => typeof a === 'string' && !/^\d{4}-S\d{2}$/.test(a));
+
+    targetDispatch({
+      type: 'UPDATE_OBJECTIVE',
+      payload: {
+        ...currentObj,
+        assignType: 'backlog',
+        assignments: otherAssignments
+      }
+    });
+
+    const completedWeeks = getObjectiveCompletedWeeks(currentObj, targetState.progress);
+    completedWeeks.forEach(w => {
+      targetDispatch({
+        type: 'TOGGLE_PROGRESS',
+        payload: { weekId: w, objectiveId: currentObj.id, value: 0 }
+      });
+    });
+
+    showToast(`"${currentObj.title}" replacé dans le Backlog`, 'info');
   };
 
   // Drag and drop between columns
@@ -493,6 +583,147 @@ export default function ProjectObjectiveKanban({
           </div>
         </Modal>
       )}
+
+      {/* Assign Weeks Modal */}
+      {assignWeeksModalObjective && (() => {
+        const currentObj = (targetState.objectives || []).find(o => o.id === assignWeeksModalObjective.id) || assignWeeksModalObjective;
+        const assignedWeeks = (currentObj.assignments || [])
+          .filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a))
+          .sort();
+        const isBacklog = assignedWeeks.length === 0 || currentObj.assignType === 'backlog';
+        const quickWeeks = getSelectableWeeks(2, 10);
+        const allSelectableWeeks = getSelectableWeeks(4, 52);
+
+        return (
+          <Modal
+            isOpen={!!assignWeeksModalObjective}
+            onClose={() => setAssignWeeksModalObjective(null)}
+            title="Semaines d'affectation"
+            maxWidth="max-w-md"
+          >
+            <div className="flex flex-col gap-4 text-dark-200">
+              {/* Objective Title Header */}
+              <div className="bg-dark-900/50 border border-dark-600/40 rounded-xl p-3">
+                <h4 className="font-bold text-dark-100 text-sm truncate" title={currentObj.title}>
+                  {currentObj.title}
+                </h4>
+                <div className="flex items-center gap-2 mt-1 text-xs text-dark-400">
+                  <Calendar size={13} className="text-accent-cyan" />
+                  <span>
+                    {isBacklog 
+                      ? '📋 Actuellement en Backlog' 
+                      : `Affecté à ${assignedWeeks.length} semaine${assignedWeeks.length > 1 ? 's' : ''}`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Assigned Weeks Chips */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-dark-300 uppercase tracking-wider">
+                  Semaines affectées ({assignedWeeks.length}) :
+                </label>
+                {assignedWeeks.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                    {assignedWeeks.map(wId => (
+                      <span 
+                        key={wId} 
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30 text-xs font-bold"
+                      >
+                        <span>{formatWeekShort(wId)} {wId === currentWeekId ? '(Actuelle)' : ''}</span>
+                        <button 
+                          type="button" 
+                          onClick={() => handleToggleWeek(currentObj, wId)} 
+                          className="hover:text-accent-red hover:bg-accent-red/20 rounded p-0.5 transition-colors cursor-pointer border-none bg-transparent"
+                          title={`Retirer la semaine ${formatWeekShort(wId)}`}
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-xs text-dark-400 italic">Aucune semaine affectée (dans le Backlog)</span>
+                )}
+              </div>
+
+              {/* Quick Select Buttons */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-dark-300 uppercase tracking-wider">
+                  Sélection rapide :
+                </label>
+                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1">
+                  {quickWeeks.map(wId => {
+                    const isSelected = assignedWeeks.includes(wId);
+                    return (
+                      <button
+                        key={wId}
+                        type="button"
+                        onClick={() => handleToggleWeek(currentObj, wId)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                          isSelected 
+                            ? 'bg-accent-cyan text-dark-950 border-accent-cyan font-bold shadow-sm' 
+                            : 'bg-dark-800/80 text-dark-300 border-dark-600/50 hover:border-accent-cyan/50 hover:text-white'
+                        }`}
+                        title={`${formatWeekShort(wId)} ${wId === currentWeekId ? '(Semaine en cours)' : ''}`}
+                      >
+                        {isSelected && <Check size={12} strokeWidth={3} />}
+                        <span>{formatWeekShort(wId)}</span>
+                        {wId === currentWeekId && (
+                          <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-dark-950' : 'bg-accent-cyan'}`} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Dropdown for All Weeks */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-dark-300 uppercase tracking-wider">
+                  Autre semaine :
+                </label>
+                <select
+                  value=""
+                  onChange={(e) => { 
+                    if (e.target.value) handleToggleWeek(currentObj, e.target.value); 
+                  }}
+                  className="w-full bg-dark-800 border border-dark-600 rounded-xl px-3 py-2 text-xs text-dark-100 focus:border-accent-cyan outline-none cursor-pointer"
+                >
+                  <option value="" disabled>+ Choisir une autre semaine...</option>
+                  {allSelectableWeeks.map(wId => (
+                    <option key={wId} value={wId}>
+                      {assignedWeeks.includes(wId) ? '✓ ' : ''}{formatWeekShort(wId)} {wId === currentWeekId ? '(Cette semaine)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="pt-2 border-t border-dark-700/60 flex items-center justify-between gap-3">
+                {!isBacklog ? (
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      handleMoveToBacklog(currentObj);
+                    }} 
+                    className="flex items-center gap-1.5 text-xs font-semibold text-accent-violet hover:bg-accent-violet/15 border border-accent-violet/30 rounded-xl px-3 py-1.5 transition-colors cursor-pointer"
+                  >
+                    <Inbox size={13} />
+                    <span>Remettre en Backlog</span>
+                  </button>
+                ) : <span />}
+                <button 
+                  type="button" 
+                  onClick={() => setAssignWeeksModalObjective(null)} 
+                  className="px-4 py-1.5 rounded-xl text-xs font-bold bg-dark-700 text-dark-100 hover:bg-dark-600 transition-colors cursor-pointer"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </Modal>
+        );
+      })()}
     </DragDropContext>
   );
 }
