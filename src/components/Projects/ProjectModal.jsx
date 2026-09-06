@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Target, Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles, Trash2, Paperclip, FileText } from 'lucide-react';
+import { Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles, Trash2, Paperclip, FileText } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useProjects } from '../../contexts/ProjectsContext';
 import { useNotes } from '../../contexts/NotesContext';
@@ -458,7 +458,6 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           {/* Header de la section avec les 2 boutons Créer et Attribuer */}
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-dark-700/50 px-1">
             <div className="flex items-center gap-2">
-              <Target size={16} className="text-accent-cyan" />
               <span className="text-xs font-bold text-dark-200 uppercase tracking-wider">
                 Objectifs
               </span>
@@ -758,7 +757,6 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                       style={{ padding: '5px 6px' }}
                     >
                       <div className="flex items-center gap-1.5 min-w-0 truncate">
-                        <Target size={13} className="text-accent-cyan flex-shrink-0" />
                         <span className="truncate font-medium text-dark-100">{obj.title}</span>
                       </div>
 
