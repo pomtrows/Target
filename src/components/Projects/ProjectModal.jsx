@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles, Trash2, Paperclip, FileText } from 'lucide-react';
+import { Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles, Trash2, Paperclip, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useProjects } from '../../contexts/ProjectsContext';
 import { useNotes } from '../../contexts/NotesContext';
@@ -36,6 +36,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
   const [showAttachmentsModal, setShowAttachmentsModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [projectNoteId, setProjectNoteId] = useState(null);
+  const [showDescriptionMobile, setShowDescriptionMobile] = useState(false);
 
   // Inline objective creation state
   const [newObjTitle, setNewObjTitle] = useState('');
@@ -91,6 +92,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
     setShowAttachmentsModal(false);
     setShowNotesModal(false);
     setProjectNoteId(null);
+    setShowDescriptionMobile(false);
     setObjectiveMode(null);
     setNewObjTitle('');
     setNewObjPriority('P2');
@@ -437,17 +439,36 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
 
         {/* Description */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold text-dark-300 uppercase tracking-wider">
-            Description
-          </label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            placeholder="Détaillez les grandes étapes, les enjeux et les livrables de ce projet..."
-            className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-sm text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-colors resize-none leading-relaxed"
-            style={{ padding: '6px 10px', minHeight: '65px' }}
-          />
+          <button
+            type="button"
+            onClick={() => setShowDescriptionMobile(prev => !prev)}
+            className="flex items-center justify-between w-full py-0.5 text-left cursor-pointer sm:cursor-default"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-dark-300 hover:text-dark-100 sm:hover:text-dark-300 uppercase tracking-wider transition-colors">
+                Description
+              </span>
+              {description.trim() && !showDescriptionMobile && (
+                <span className="sm:hidden text-[10px] font-semibold text-accent-cyan/80 bg-accent-cyan/10 border border-accent-cyan/25 rounded-md px-1.5 py-0.5">
+                  Remplie
+                </span>
+              )}
+            </div>
+            <span className="sm:hidden text-dark-400 hover:text-dark-200 transition-colors p-0.5">
+              {showDescriptionMobile ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+            </span>
+          </button>
+
+          <div className={`${showDescriptionMobile ? 'block' : 'hidden sm:block'}`}>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              placeholder="Détaillez les grandes étapes, les enjeux et les livrables de ce projet..."
+              className="w-full bg-dark-900/80 border border-dark-600/60 rounded-xl text-sm text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan transition-colors resize-none leading-relaxed"
+              style={{ padding: '6px 10px', minHeight: '65px' }}
+            />
+          </div>
         </div>
 
         {/* Section Objectifs avec 2 boutons : Créer et Attribuer */}
