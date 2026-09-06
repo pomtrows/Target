@@ -551,77 +551,77 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                 </div>
               )}
 
-              {/* Titre de l'objectif */}
+              {/* Titre de l'objectif et Choix de la Priorité sur la même ligne */}
               <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pb-0.5">
                   <label className="text-[11px] font-bold text-dark-300 uppercase tracking-wider">
                     Objectif <span className="text-accent-red">*</span>
                   </label>
-                  {!inlineObjFeedback && (
-                    <button
-                      type="button"
-                      onClick={() => setObjectiveMode(null)}
-                      className="text-dark-400 hover:text-dark-200 text-xs cursor-pointer"
-                      style={{ padding: '2px 4px' }}
-                      title="Fermer"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] font-bold text-dark-300 uppercase tracking-wider mr-4">
+                      Priorité
+                    </label>
+                    {!inlineObjFeedback && (
+                      <button
+                        type="button"
+                        onClick={() => setObjectiveMode(null)}
+                        className="text-dark-400 hover:text-dark-200 text-xs cursor-pointer"
+                        style={{ padding: '2px 4px' }}
+                        title="Fermer"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <input
-                  type="text"
-                  value={newObjTitle}
-                  onChange={(e) => setNewObjTitle(e.target.value)}
-                  placeholder="Ex: Rédiger le cahier des charges, Maquette Figma..."
-                  className="w-full bg-dark-900 border border-dark-600/60 rounded-xl text-xs text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan"
-                  style={{ padding: '6px 10px' }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleCreateInlineObjective();
-                    }
-                  }}
-                  autoFocus
-                />
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newObjTitle}
+                    onChange={(e) => setNewObjTitle(e.target.value)}
+                    placeholder="Ex: Rédiger le cahier des charges, Maquette Figma..."
+                    className="flex-1 min-w-0 bg-dark-900 border border-dark-600/60 rounded-xl text-xs text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan h-[34px] px-2.5"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleCreateInlineObjective();
+                      }
+                    }}
+                    autoFocus
+                  />
+
+                  <select
+                    value={newObjPriority}
+                    onChange={(e) => setNewObjPriority(e.target.value)}
+                    className="w-16 shrink-0 bg-dark-900 border border-dark-600/60 rounded-xl text-xs font-bold focus:outline-none focus:border-accent-cyan cursor-pointer transition-colors h-[34px] px-2 text-center"
+                    style={{
+                      textAlignLast: 'center',
+                      color: newObjPriority === 'P1' ? 'var(--color-accent-red, #ef4444)' :
+                             newObjPriority === 'P2' ? 'var(--color-accent-violet, #8b5cf6)' :
+                             'var(--color-accent-cyan, #06b6d4)'
+                    }}
+                    title="Priorité de l'objectif"
+                  >
+                    <option value="P1" className="bg-dark-800 text-accent-red font-bold">P1</option>
+                    <option value="P2" className="bg-dark-800 text-accent-violet font-bold">P2</option>
+                    <option value="P3" className="bg-dark-800 text-accent-cyan font-bold">P3</option>
+                  </select>
+                </div>
               </div>
 
-              {/* Ligne Priorité, Planification & Boutons */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                <div className="flex flex-wrap items-center gap-3">
-                  {/* Priorité (liste déroulante comme dans le formulaire complet) */}
-                  <div className="flex items-center gap-2">
-                    <label className="text-[11px] font-bold text-dark-400 uppercase tracking-wider">
-                      Priorité :
-                    </label>
-                    <select
-                      value={newObjPriority}
-                      onChange={(e) => setNewObjPriority(e.target.value)}
-                      className="bg-dark-900 border border-dark-600/60 rounded-xl text-xs font-bold focus:outline-none focus:border-accent-cyan cursor-pointer transition-colors"
-                      style={{
-                        padding: '5px 10px',
-                        color: newObjPriority === 'P1' ? 'var(--color-accent-red, #ef4444)' :
-                               newObjPriority === 'P2' ? 'var(--color-accent-violet, #8b5cf6)' :
-                               'var(--color-accent-cyan, #06b6d4)'
-                      }}
-                    >
-                      <option value="P1" className="text-accent-red font-bold">P1</option>
-                      <option value="P2" className="text-accent-violet font-bold">P2</option>
-                      <option value="P3" className="text-accent-cyan font-bold">P3</option>
-                    </select>
-                  </div>
-
-                  {/* Planifier pour cette semaine */}
-                  <label className="flex items-center gap-1.5 text-xs text-dark-300 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={newObjAssignCurrentWeek}
-                      onChange={(e) => setNewObjAssignCurrentWeek(e.target.checked)}
-                      className="rounded border-dark-600 text-accent-cyan focus:ring-0 cursor-pointer"
-                    />
-                    <span>Planifier pour cette semaine</span>
-                  </label>
-                </div>
+              {/* Ligne Planification & Boutons */}
+              <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+                {/* Planifier pour cette semaine */}
+                <label className="flex items-center gap-1.5 text-xs text-dark-300 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={newObjAssignCurrentWeek}
+                    onChange={(e) => setNewObjAssignCurrentWeek(e.target.checked)}
+                    className="rounded border-dark-600 text-accent-cyan focus:ring-0 cursor-pointer"
+                  />
+                  <span>Planifier pour cette semaine</span>
+                </label>
 
                 <div className="flex items-center gap-2 ml-auto">
                   <button
