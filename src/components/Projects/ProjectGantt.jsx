@@ -330,6 +330,50 @@ export default function ProjectGantt({
   const [internalFocusedProjectId, setInternalFocusedProjectId] = useState(null);
   const focusedProjectId = externalFocusedProjectId || internalFocusedProjectId;
 
+  // Resizable left column width (default: 310px)
+  const [leftColWidth, setLeftColWidth] = useState(() => {
+    const saved = localStorage.getItem('target_gantt_left_col_width');
+    return saved ? Math.max(200, Math.min(800, Number(saved))) : 310;
+  });
+  const [isResizingLeftCol, setIsResizingLeftCol] = useState(false);
+
+  const handleStartResize = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizingLeftCol(true);
+
+    const startX = e.clientX;
+    const startWidth = leftColWidth;
+
+    const onMouseMove = (moveEvent) => {
+      moveEvent.preventDefault();
+      const deltaX = moveEvent.clientX - startX;
+      const newWidth = Math.max(200, Math.min(window.innerWidth - 200, startWidth + deltaX));
+      setLeftColWidth(newWidth);
+    };
+
+    const onMouseUp = (upEvent) => {
+      const deltaX = upEvent.clientX - startX;
+      const finalWidth = Math.max(200, Math.min(window.innerWidth - 200, startWidth + deltaX));
+      setLeftColWidth(finalWidth);
+      try {
+        localStorage.setItem('target_gantt_left_col_width', finalWidth.toString());
+      } catch (err) {
+        // ignore
+      }
+      setIsResizingLeftCol(false);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
   // By default, expand if focusedProjectId is set or if viewing a single project
   const [expandedProjectIds, setExpandedProjectIds] = useState(() => {
     if (externalFocusedProjectId) return new Set([externalFocusedProjectId]);
@@ -482,6 +526,13 @@ export default function ProjectGantt({
     }, 150);
     return () => clearTimeout(timer);
   }, [zoomLevel, focusedProjectId]);
+
+  useEffect(() => {
+    return () => {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, []);
 
   // Toggle expand for a project
   const toggleExpand = (projectId) => {
@@ -724,8 +775,8 @@ export default function ProjectGantt({
         >
           {/* A. LEFT FROZEN COLUMN: PROJECTS & OBJECTIVES TREE */}
           <div 
-            className="sticky left-0 z-30 flex flex-col bg-dark-800 border-r border-dark-600/60 shrink-0 shadow-lg min-h-full"
-            style={{ width: '310px', minWidth: '310px' }}
+            className="sticky left-0 z-30 flex flex-col bg-dark-800 border-r border-dark-600/60 shrink-0 shadow-lg min-h-full relative"
+            style={{ width: `${leftColWidth}px`, minWidth: `${leftColWidth}px` }}
           >
             {/* Header matching height and 2-level structure of timeline header (65px total: 30px + 35px) */}
             <div 
@@ -903,6 +954,27 @@ export default function ProjectGantt({
                   </React.Fragment>
                 );
               })}
+            </div>
+
+            {/* Resizer Handle (Drag to resize left column) */}
+            <div
+              onMouseDown={handleStartResize}
+              onDoubleClick={() => {
+                setLeftColWidth(310);
+                try { localStorage.setItem('target_gantt_left_col_width', '310'); } catch (err) {}
+              }}
+              className={`absolute top-0 -right-1.5 w-3 h-full cursor-col-resize z-50 transition-colors group select-none flex items-center justify-center ${
+                isResizingLeftCol ? 'bg-accent-cyan/20' : 'hover:bg-accent-cyan/15'
+              }`}
+              title="Glisser pour redimensionner la colonne des objectifs (Double-clic pour réinitialiser)"
+            >
+              <div 
+                className={`w-[2px] h-full transition-colors ${
+                  isResizingLeftCol 
+                    ? 'bg-accent-cyan shadow-[0_0_8px_rgba(6,182,212,0.9)]' 
+                    : 'bg-transparent group-hover:bg-accent-cyan/80'
+                }`} 
+              />
             </div>
           </div>
 
