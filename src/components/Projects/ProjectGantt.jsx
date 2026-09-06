@@ -470,14 +470,14 @@ export default function ProjectGantt({
           >
             {/* Header placeholder matching height of timeline header */}
             <div 
-              className="sticky top-0 z-40 h-[65px] border-b border-dark-600/60 bg-dark-800 flex items-center justify-between pl-3.5 pr-6 text-xs font-bold text-dark-300 uppercase tracking-wider"
+              className="sticky top-0 z-40 h-[65px] border-b border-dark-500/30 bg-dark-800 flex items-center justify-between pl-3.5 pr-6 text-xs font-bold text-dark-300 uppercase tracking-wider"
             >
               <span>Projets & Objectifs</span>
               <span className="text-[10px] text-dark-400 font-normal">Arborescence</span>
             </div>
 
             {/* Tree Rows List */}
-            <div className="flex flex-col divide-y divide-dark-700/30">
+            <div className="flex flex-col">
               {displayedProjects.map((project) => {
                 const isExpanded = expandedProjectIds.has(project.id);
                 const linkedObjectives = getProjectObjectives(project);
@@ -489,7 +489,7 @@ export default function ProjectGantt({
                   <React.Fragment key={project.id}>
                     {/* Project Row Header in Tree */}
                     <div 
-                      className="group flex items-center justify-between gap-2 pl-3.5 pr-6 hover:bg-dark-700/40 transition-colors h-[48px]"
+                      className="group flex items-center justify-between gap-2 pl-3.5 pr-6 hover:bg-dark-500/10 transition-colors h-[48px] border-b border-dark-500/30 bg-dark-800/90"
                     >
                       <div className="flex items-center gap-1.5 min-w-0 flex-1">
                         {/* Expand Button */}
@@ -562,7 +562,7 @@ export default function ProjectGantt({
                       return (
                         <div 
                           key={obj.id}
-                          className="flex items-center justify-between gap-2 pl-8 pr-6 py-1.5 bg-dark-900/40 hover:bg-dark-700/30 transition-colors h-[38px] border-t border-dark-700/20"
+                          className="flex items-center justify-between gap-2 pl-8 pr-6 py-1.5 hover:bg-dark-500/10 transition-colors h-[38px] border-b border-dark-500/20 even:bg-dark-500/[0.02] odd:bg-transparent"
                         >
                           <div className="flex items-center gap-1.5 min-w-0 flex-1">
                             <span className="text-dark-500 text-xs">└</span>
@@ -603,14 +603,14 @@ export default function ProjectGantt({
             {/* Header: Months (Level 1) + Weeks (Level 2) */}
             <div 
               onWheel={handleTimelineWheel}
-              className="sticky top-0 z-20 flex flex-col bg-dark-800/95 border-b border-dark-600/60 backdrop-blur-md h-[65px]"
+              className="sticky top-0 z-20 flex flex-col bg-dark-800/95 border-b border-dark-500/30 backdrop-blur-md h-[65px]"
             >
               {/* Level 1: Month Headers */}
-              <div className="flex border-b border-dark-700/60 h-[30px] text-xs font-bold text-dark-200">
+              <div className="flex border-b border-dark-500/30 h-[30px] text-xs font-bold text-dark-200">
                 {monthGroups.map((group, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-center border-r border-dark-700/40 text-center truncate uppercase tracking-wider text-[11px]"
+                    className="flex items-center justify-center border-r border-dark-500/30 text-center truncate uppercase tracking-wider text-[11px]"
                     style={{ width: `${group.count * colWidth}px` }}
                   >
                     {group.label}
@@ -623,12 +623,12 @@ export default function ProjectGantt({
                 {weeks.map((w) => (
                   <div
                     key={w.weekId}
-                    className={`flex flex-col items-center justify-center border-r border-dark-700/30 font-semibold transition-colors ${
+                    className={`flex flex-col items-center justify-center border-r font-semibold transition-colors ${
                       w.isCurrent 
                         ? 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/40 font-black' 
-                        : 'hover:bg-dark-700/30'
+                        : 'border-dark-500/25 hover:bg-dark-500/10'
                     }`}
-                    style={{ width: `${colWidth}px` }}
+                    style={{ width: `${colWidth}px`, minWidth: `${colWidth}px` }}
                     title={`${w.weekId} : du ${format(w.startDate, 'd MMM', { locale: fr })} au ${format(w.endDate, 'd MMM', { locale: fr })}`}
                   >
                     <span>{w.shortLabel}</span>
@@ -643,16 +643,16 @@ export default function ProjectGantt({
             </div>
 
             {/* Background Grid Columns Lines */}
-            <div className="absolute inset-0 top-[65px] pointer-events-none flex">
+            <div className="absolute top-[65px] bottom-0 left-0 right-0 pointer-events-none flex">
               {weeks.map((w) => (
                 <div
                   key={w.weekId}
                   className={`h-full border-r ${
                     w.isCurrent 
-                      ? 'border-accent-cyan/25 bg-accent-cyan/5' 
-                      : 'border-dark-700/20'
+                      ? 'border-accent-cyan/40 bg-accent-cyan/[0.04]' 
+                      : 'border-dark-500/25'
                   }`}
-                  style={{ width: `${colWidth}px` }}
+                  style={{ width: `${colWidth}px`, minWidth: `${colWidth}px`, maxWidth: `${colWidth}px` }}
                 />
               ))}
 
@@ -671,7 +671,7 @@ export default function ProjectGantt({
             </div>
 
             {/* Timeline Rows: Project Bars & Objective Sub-Bars */}
-            <div className="flex flex-col divide-y divide-dark-700/30 relative z-10">
+            <div className="flex flex-col relative z-10">
               {displayedProjects.map((project) => {
                 const isExpanded = expandedProjectIds.has(project.id);
                 const linkedObjectives = getProjectObjectives(project);
@@ -682,7 +682,7 @@ export default function ProjectGantt({
                 return (
                   <React.Fragment key={project.id}>
                     {/* Project Gantt Row */}
-                    <div className="relative h-[48px] flex items-center">
+                    <div className="relative h-[48px] flex items-center border-b border-dark-500/30 hover:bg-dark-500/5 transition-colors">
                       {/* Project Horizontal Bar */}
                       <div
                         onClick={() => onOpenDetails?.(project)}
@@ -721,7 +721,7 @@ export default function ProjectGantt({
                       const segments = getObjectiveSegments(obj);
 
                       return (
-                        <div key={obj.id} className="relative h-[38px] flex items-center bg-dark-900/20">
+                        <div key={obj.id} className="relative h-[38px] flex items-center border-b border-dark-500/20 hover:bg-dark-500/10 transition-colors even:bg-dark-500/[0.02] odd:bg-transparent">
                           {segments.length > 0 ? (
                             segments.map((seg, sIdx) => (
                               <div
