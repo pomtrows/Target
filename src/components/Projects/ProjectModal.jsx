@@ -661,7 +661,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                 </div>
 
                 {/* Colonne Priorité (parfaitement alignée verticalement) */}
-                <div className="w-16 sm:w-20 shrink-0 flex flex-col gap-1">
+                <div className="w-[88px] shrink-0 flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-dark-300 uppercase tracking-wider text-center">
                     Priorité
                   </label>
@@ -684,30 +684,32 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                 </div>
 
                 {/* Bouton fermer */}
-                {!inlineObjFeedback && (
-                  <button
-                    type="button"
-                    onClick={() => setObjectiveMode(null)}
-                    className="text-dark-400 hover:text-dark-200 text-xs cursor-pointer shrink-0 mt-0.5"
-                    style={{ padding: '2px 4px' }}
-                    title="Fermer"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
+                <div className="w-[22px] shrink-0 flex items-center justify-end">
+                  {!inlineObjFeedback && (
+                    <button
+                      type="button"
+                      onClick={() => setObjectiveMode(null)}
+                      className="text-dark-400 hover:text-dark-200 text-xs cursor-pointer shrink-0 mt-0.5"
+                      style={{ padding: '2px 0' }}
+                      title="Fermer"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Ligne Planification (Semaine + Backlog) */}
               <div className="flex items-center gap-2 pt-0.5">
                 {/* Sélecteur de semaines */}
-                <div className="relative flex-1 min-w-0 max-w-[210px] sm:max-w-[230px]" ref={weekDropdownRef}>
+                <div className="relative flex-1 min-w-0" ref={weekDropdownRef}>
                   <button
                     type="button"
                     onClick={() => {
                       setNewObjAssignType('week');
                       setIsWeekDropdownOpen(!isWeekDropdownOpen);
                     }}
-                    className={`w-full flex items-center justify-between gap-1.5 border rounded-xl py-1.5 px-2.5 text-xs transition-colors cursor-pointer ${
+                    className={`w-full h-[34px] flex items-center justify-between gap-1.5 border rounded-xl px-2.5 text-xs transition-colors cursor-pointer ${
                       newObjAssignType === 'week'
                         ? 'bg-dark-700/50 hover:bg-dark-700/80 border-dark-600/50 text-dark-100 focus:border-accent-cyan/50'
                         : 'bg-dark-800/40 hover:bg-dark-700/40 border-dark-600/30 text-dark-400 opacity-60'
@@ -756,7 +758,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                     setNewObjAssignType(prev => prev === 'backlog' ? 'week' : 'backlog');
                     setIsWeekDropdownOpen(false);
                   }}
-                  className={`h-[31px] w-[88px] justify-center rounded-xl text-xs font-medium shrink-0 flex items-center gap-1.5 transition-all cursor-pointer border ml-1.5 mr-2 ${
+                  className={`h-[34px] w-[88px] justify-center rounded-xl text-xs font-medium shrink-0 flex items-center gap-1.5 transition-all cursor-pointer border ${
                     newObjAssignType === 'backlog'
                       ? 'bg-accent-violet/20 text-accent-violet border-accent-violet/40 font-semibold shadow-sm'
                       : 'bg-dark-700/50 text-dark-400 border-dark-600/30 hover:text-dark-200 hover:bg-dark-700/80'
@@ -765,12 +767,15 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                 >
                   <span>📋 Backlog</span>
                 </button>
+
+                {/* Espaceur pour alignement avec la colonne du bouton X */}
+                <div className="w-[22px] shrink-0" />
               </div>
 
               {/* Ligne Actions Objectif : Pièces jointes, Note, Délégué & Bouton Ajouter (+) */}
               <div className="flex items-center gap-2 pt-0.5">
                 {/* Icônes Pièces jointes, Note, Délégué */}
-                <div className="flex items-center gap-2 flex-1 min-w-0 max-w-[210px] sm:max-w-[230px]">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
                   {/* Pièces jointes */}
                   <button
                     type="button"
@@ -820,22 +825,26 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                   </button>
                 </div>
 
-                {/* Bouton Ajouter (+) circulaire aligné sous le bouton Backlog */}
-                <div className="w-[88px] flex items-center justify-center shrink-0 ml-1.5 mr-2">
+                {/* Bouton Ajouter (+) circulaire aligné sous le bouton Backlog et Priorité */}
+                <div className="w-[88px] flex items-center justify-center shrink-0">
                   <button
                     type="button"
                     disabled={!newObjTitle.trim() || isCreatingInlineObj}
                     onClick={handleCreateInlineObjective}
-                    className="w-8 h-8 rounded-full bg-dark-100 text-dark-900 hover:opacity-90 flex items-center justify-center transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-md"
+                    className="w-8 h-8 rounded-full bg-black text-white hover:bg-neutral-900 active:scale-95 disabled:cursor-not-allowed flex items-center justify-center transition-all shadow-md shrink-0 cursor-pointer"
+                    style={{ backgroundColor: '#000000', color: '#ffffff' }}
                     title="Ajouter l'objectif"
                   >
                     {isCreatingInlineObj ? (
-                      <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <Plus size={18} strokeWidth={2.5} />
+                      <Plus size={18} strokeWidth={2.5} className="text-white" />
                     )}
                   </button>
                 </div>
+
+                {/* Espaceur pour alignement avec la colonne du bouton X */}
+                <div className="w-[22px] shrink-0" />
               </div>
             </div>
           )}
