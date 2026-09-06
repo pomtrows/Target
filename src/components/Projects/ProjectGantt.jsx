@@ -843,7 +843,9 @@ export default function ProjectGantt({
                           <div className="flex items-center min-w-0 flex-1">
                             <span 
                               onClick={() => onEditObjective?.(obj)}
-                              className="text-[11px] text-dark-200 hover:text-accent-cyan truncate font-medium leading-none cursor-pointer transition-colors" 
+                              className={`${
+                                zoomLevel === 'compact' ? 'text-[11px]' : zoomLevel === 'normal' ? 'text-[12.5px]' : 'text-[13px]'
+                              } text-dark-200 hover:text-accent-cyan truncate font-medium leading-tight cursor-pointer transition-colors`} 
                               title={`${obj.title} (Cliquer pour modifier)`}
                             >
                               {obj.title}
@@ -1147,7 +1149,9 @@ export default function ProjectGantt({
                                   left: `${seg.left}px`,
                                   width: `${seg.width}px`
                                 }}
-                                className={`absolute h-[18px] rounded-md flex items-center justify-center text-[10px] font-bold shadow-sm transition-transform hover:scale-105 cursor-grab active:cursor-grabbing border select-none z-10 ${
+                                className={`absolute h-[18px] rounded-md flex items-center justify-center ${
+                                  zoomLevel === 'compact' ? 'text-[10px]' : 'text-[11px]'
+                                } font-bold shadow-sm transition-transform hover:scale-105 cursor-grab active:cursor-grabbing border select-none z-10 ${
                                   seg.isDone 
                                     ? 'bg-accent-green text-dark-950 border-accent-green/80' 
                                     : seg.prog > 0 
@@ -1191,7 +1195,9 @@ export default function ProjectGantt({
                                 });
                               }}
                               style={{ left: `${Math.max(4, coords.left)}px` }}
-                              className="absolute h-[18px] rounded-md border border-dashed border-dark-600 bg-dark-800/80 hover:border-accent-cyan text-dark-400 hover:text-accent-cyan text-[9px] px-1.5 flex items-center gap-1 italic leading-none cursor-grab active:cursor-grabbing shadow-sm transition-all select-none z-10"
+                              className={`absolute h-[18px] rounded-md border border-dashed border-dark-600 bg-dark-800/80 hover:border-accent-cyan text-dark-400 hover:text-accent-cyan ${
+                                zoomLevel === 'compact' ? 'text-[9px]' : 'text-[10px]'
+                              } px-1.5 flex items-center gap-1 italic leading-none cursor-grab active:cursor-grabbing shadow-sm transition-all select-none z-10`}
                               title="Glisser vers une semaine ou cliquer pour planifier"
                             >
                               <span>Non planifié (Backlog)</span>
