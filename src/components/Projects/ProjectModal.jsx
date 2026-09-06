@@ -756,7 +756,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                     setNewObjAssignType(prev => prev === 'backlog' ? 'week' : 'backlog');
                     setIsWeekDropdownOpen(false);
                   }}
-                  className={`h-[31px] px-3 rounded-xl text-xs font-medium shrink-0 flex items-center gap-1.5 transition-all cursor-pointer border ml-1.5 mr-2 ${
+                  className={`h-[31px] w-[88px] justify-center rounded-xl text-xs font-medium shrink-0 flex items-center gap-1.5 transition-all cursor-pointer border ml-1.5 mr-2 ${
                     newObjAssignType === 'backlog'
                       ? 'bg-accent-violet/20 text-accent-violet border-accent-violet/40 font-semibold shadow-sm'
                       : 'bg-dark-700/50 text-dark-400 border-dark-600/30 hover:text-dark-200 hover:bg-dark-700/80'
@@ -768,9 +768,9 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
               </div>
 
               {/* Ligne Actions Objectif : Pièces jointes, Note, Délégué & Bouton Ajouter (+) */}
-              <div className="flex items-center justify-between gap-2 pt-0.5">
+              <div className="flex items-center gap-2 pt-0.5">
                 {/* Icônes Pièces jointes, Note, Délégué */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0 max-w-[210px] sm:max-w-[230px]">
                   {/* Pièces jointes */}
                   <button
                     type="button"
@@ -820,20 +820,22 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                   </button>
                 </div>
 
-                {/* Bouton Ajouter (+) circulaire */}
-                <button
-                  type="button"
-                  disabled={!newObjTitle.trim() || isCreatingInlineObj}
-                  onClick={handleCreateInlineObjective}
-                  className="w-8 h-8 rounded-full bg-dark-800 hover:bg-dark-700 border border-dark-600/60 text-white flex items-center justify-center transition-all active:scale-95 disabled:opacity-30 cursor-pointer shadow-md shrink-0 ml-auto"
-                  title="Ajouter l'objectif"
-                >
-                  {isCreatingInlineObj ? (
-                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Plus size={18} strokeWidth={2.5} />
-                  )}
-                </button>
+                {/* Bouton Ajouter (+) circulaire aligné sous le bouton Backlog */}
+                <div className="w-[88px] flex items-center justify-center shrink-0 ml-1.5 mr-2">
+                  <button
+                    type="button"
+                    disabled={!newObjTitle.trim() || isCreatingInlineObj}
+                    onClick={handleCreateInlineObjective}
+                    className="w-8 h-8 rounded-full bg-dark-800 hover:bg-dark-700 border border-dark-600/60 text-white flex items-center justify-center transition-all active:scale-95 disabled:opacity-30 cursor-pointer shadow-md"
+                    title="Ajouter l'objectif"
+                  >
+                    {isCreatingInlineObj ? (
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Plus size={18} strokeWidth={2.5} />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}
