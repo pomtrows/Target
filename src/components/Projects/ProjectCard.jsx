@@ -268,7 +268,7 @@ export default function ProjectCard({
           </div>
         </div>
 
-        {/* Row 2: Dates, Date Alert and Category */}
+        {/* Row 2: Dates, Date Alert, Actions & Category */}
         <div className="flex items-center justify-between gap-2 text-xs text-dark-400">
           <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
             <div className="flex items-center gap-1.5 text-dark-400">
@@ -293,6 +293,55 @@ export default function ProjectCard({
                 {dateAlert.text}
               </span>
             )}
+
+            {/* Actions: Attachments, Notes & Details */}
+            <div className="flex items-center gap-1 ml-1">
+              {/* Attachments button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowAttachmentsModal(true);
+                }}
+                className={`rounded-lg border transition-all flex items-center gap-1 text-xs cursor-pointer ${
+                  attachmentsCount > 0
+                    ? 'bg-accent-cyan/15 border-accent-cyan/40 text-accent-cyan'
+                    : 'bg-dark-700/40 border-dark-600/30 text-dark-400 hover:text-dark-200'
+                }`}
+                style={{ padding: '2px 5px' }}
+                title={attachmentsCount > 0 ? `${attachmentsCount} pièce(s) jointe(s)` : 'Ajouter une pièce jointe'}
+              >
+                <Paperclip size={13} />
+                {attachmentsCount > 0 && <span className="font-bold text-[10px]">{attachmentsCount}</span>}
+              </button>
+
+              {/* Notes button */}
+              <button
+                onClick={handleOpenNotes}
+                className={`rounded-lg border transition-all flex items-center gap-1 text-xs cursor-pointer ${
+                  hasNotes
+                    ? 'bg-accent-violet/20 border-accent-violet/40 text-accent-violet'
+                    : 'bg-dark-700/40 border-dark-600/30 text-dark-400 hover:text-dark-200'
+                }`}
+                style={{ padding: '2px 5px' }}
+                title={hasNotes ? 'Voir les notes du projet' : 'Rédiger une note'}
+              >
+                <FileText size={13} />
+                {hasNotes && <span className="w-1.5 h-1.5 rounded-full bg-accent-violet" />}
+              </button>
+
+              {/* Details trigger */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenDetails?.(project);
+                }}
+                className="rounded-lg bg-dark-700/40 border border-dark-600/30 text-dark-300 hover:text-accent-cyan hover:border-accent-cyan/40 transition-all cursor-pointer flex items-center justify-center"
+                style={{ padding: '2px 4px' }}
+                title="Ouvrir la fiche complète"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
           </div>
 
           {/* Category */}
@@ -357,12 +406,12 @@ export default function ProjectCard({
           </button>
         </div>
 
-        {/* Bottom Actions: Status selector (optional) & Badges (Attachments, Notes, Details) */}
-        <div 
-          className="flex items-center justify-end gap-1.5 border-t border-dark-700/40"
-          style={{ paddingTop: '6px' }}
-        >
-          {showStatus && (
+        {/* Status selector (optional) */}
+        {showStatus && (
+          <div 
+            className="flex items-center justify-start gap-1.5 border-t border-dark-700/40"
+            style={{ paddingTop: '6px' }}
+          >
             <div className="mr-auto">
               <select
                 value={project.status}
@@ -376,54 +425,8 @@ export default function ProjectCard({
                 <option value="2-Terminé" className="bg-dark-800 text-accent-green">🟢 2-Terminé</option>
               </select>
             </div>
-          )}
-
-          {/* Attachments & Notes buttons */}
-          <div className="flex items-center gap-1.5">
-            {/* Attachments button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowAttachmentsModal(true);
-              }}
-              className={`rounded-lg border transition-all flex items-center gap-1.5 text-xs cursor-pointer ${
-                attachmentsCount > 0
-                  ? 'bg-accent-cyan/15 border-accent-cyan/40 text-accent-cyan'
-                  : 'bg-dark-700/40 border-dark-600/30 text-dark-400 hover:text-dark-200'
-              }`}
-              style={{ padding: '3px 6px' }}
-              title={attachmentsCount > 0 ? `${attachmentsCount} pièce(s) jointe(s)` : 'Ajouter une pièce jointe'}
-            >
-              <Paperclip size={14} />
-              {attachmentsCount > 0 && <span className="font-bold text-[10px]">{attachmentsCount}</span>}
-            </button>
-
-            {/* Notes button */}
-            <button
-              onClick={handleOpenNotes}
-              className={`rounded-lg border transition-all flex items-center gap-1.5 text-xs cursor-pointer ${
-                hasNotes
-                  ? 'bg-accent-violet/20 border-accent-violet/40 text-accent-violet'
-                  : 'bg-dark-700/40 border-dark-600/30 text-dark-400 hover:text-dark-200'
-              }`}
-              style={{ padding: '3px 6px' }}
-              title={hasNotes ? 'Voir les notes du projet' : 'Rédiger une note'}
-            >
-              <FileText size={14} />
-              {hasNotes && <span className="w-1.5 h-1.5 rounded-full bg-accent-violet" />}
-            </button>
-
-            {/* Details trigger */}
-            <button
-              onClick={() => onOpenDetails?.(project)}
-              className="rounded-lg bg-dark-700/40 border border-dark-600/30 text-dark-300 hover:text-accent-cyan hover:border-accent-cyan/40 transition-all ml-1 cursor-pointer"
-              style={{ padding: '3px 5px' }}
-              title="Ouvrir la fiche complète"
-            >
-              <ChevronRight size={15} />
-            </button>
           </div>
-        </div>
+        )}
       </motion.div>
 
       {/* Attachments Modal */}
