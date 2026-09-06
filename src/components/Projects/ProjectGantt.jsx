@@ -47,6 +47,9 @@ const ZOOM_CONFIGS = {
   detailed: { colWidth: 115, label: 'Détaillé' }
 };
 
+const PROJECT_ROW_HEIGHT = 36;
+const OBJECTIVE_ROW_HEIGHT = 26;
+
 export default function ProjectGantt({ 
   projects, 
   onEdit, 
@@ -520,7 +523,7 @@ export default function ProjectGantt({
                     {/* Project Row Header in Tree */}
                     <div 
                       className="group flex items-center justify-between gap-2 pl-3.5 pr-6 hover:bg-dark-500/10 transition-colors border-b border-dark-500/30 bg-dark-800/90 shrink-0 overflow-hidden"
-                      style={{ height: '48px', minHeight: '48px', maxHeight: '48px', boxSizing: 'border-box' }}
+                      style={{ height: `${PROJECT_ROW_HEIGHT}px`, minHeight: `${PROJECT_ROW_HEIGHT}px`, maxHeight: `${PROJECT_ROW_HEIGHT}px`, boxSizing: 'border-box' }}
                     >
                       <div className="flex items-center gap-1.5 min-w-0 flex-1">
                         {/* Expand Button */}
@@ -528,17 +531,17 @@ export default function ProjectGantt({
                           <button
                             type="button"
                             onClick={() => toggleExpand(project.id)}
-                            className="p-1 rounded-lg hover:bg-dark-600/60 text-dark-400 hover:text-dark-100 transition-colors cursor-pointer flex-shrink-0"
+                            className="p-0.5 rounded-md hover:bg-dark-600/60 text-dark-400 hover:text-dark-100 transition-colors cursor-pointer flex-shrink-0"
                             title={isExpanded ? 'Masquer les objectifs' : 'Afficher les objectifs'}
                           >
                             {isExpanded ? <ChevronDown size={14} className="text-accent-cyan" /> : <ChevronRight size={14} />}
                           </button>
                         ) : (
-                          <span className="w-5 flex-shrink-0" />
+                          <span className="w-4 flex-shrink-0" />
                         )}
 
                         {/* Title & Category */}
-                        <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
                           <span 
                             onClick={() => (onFocusProject || onOpenDetails)?.(project)}
                             className="text-xs font-bold text-dark-100 truncate hover:text-accent-cyan cursor-pointer transition-colors"
@@ -546,9 +549,9 @@ export default function ProjectGantt({
                           >
                             {project.name}
                           </span>
-                          <span className="text-[10px] text-dark-400 truncate flex items-center gap-1">
+                          <span className="text-[10px] text-dark-400 truncate flex items-center gap-0.5 shrink-0">
                             <span>{category.icon}</span>
-                            <span>{category.label}</span>
+                            <span className="hidden sm:inline">{category.label}</span>
                           </span>
                         </div>
                       </div>
@@ -571,14 +574,14 @@ export default function ProjectGantt({
                           <button
                             type="button"
                             onClick={() => setInternalFocusedProjectId(focusedProjectId === project.id ? null : project.id)}
-                            className={`p-1 rounded-lg border transition-colors cursor-pointer ${
+                            className={`p-0.5 rounded-md border transition-colors cursor-pointer ${
                               focusedProjectId === project.id
                                 ? 'bg-accent-cyan/20 border-accent-cyan text-accent-cyan'
                                 : 'bg-transparent border-transparent hover:border-dark-600 text-dark-400 hover:text-accent-cyan'
                             }`}
                             title={focusedProjectId === project.id ? 'Quitter le zoom focus' : 'Zoomer spécifiquement sur ce projet'}
                           >
-                            {focusedProjectId === project.id ? <Minimize2 size={13} /> : <ZoomIn size={13} />}
+                            {focusedProjectId === project.id ? <Minimize2 size={12} /> : <ZoomIn size={12} />}
                           </button>
                         )}
                       </div>
@@ -593,26 +596,26 @@ export default function ProjectGantt({
                       return (
                         <div 
                           key={obj.id}
-                          className="flex items-center justify-between gap-2 pl-8 pr-6 hover:bg-dark-500/10 transition-colors border-b border-dark-500/20 even:bg-dark-500/[0.02] odd:bg-transparent shrink-0 overflow-hidden"
-                          style={{ height: '38px', minHeight: '38px', maxHeight: '38px', boxSizing: 'border-box' }}
+                          className="flex items-center justify-between gap-2 pl-7 pr-6 hover:bg-dark-500/10 transition-colors border-b border-dark-500/20 even:bg-dark-500/[0.02] odd:bg-transparent shrink-0 overflow-hidden"
+                          style={{ height: `${OBJECTIVE_ROW_HEIGHT}px`, minHeight: `${OBJECTIVE_ROW_HEIGHT}px`, maxHeight: `${OBJECTIVE_ROW_HEIGHT}px`, boxSizing: 'border-box' }}
                         >
                           <div className="flex items-center min-w-0 flex-1">
-                            <span className="text-xs text-dark-200 truncate font-medium" title={obj.title}>
+                            <span className="text-[11px] text-dark-200 truncate font-medium leading-none" title={obj.title}>
                               {obj.title}
                             </span>
                           </div>
 
                           <div className="flex items-center gap-1.5 flex-shrink-0">
                             {isDone ? (
-                              <span className="text-[10px] font-bold text-accent-green bg-accent-green/10 border border-accent-green/30 rounded px-1.5 py-0.5">
+                              <span className="text-[9px] font-bold text-accent-green bg-accent-green/10 border border-accent-green/30 rounded px-1.5 py-0.5 leading-none">
                                 ✓ Fait
                               </span>
                             ) : assignmentsCount > 0 ? (
-                              <span className="text-[10px] text-dark-400 bg-dark-800 border border-dark-700 rounded px-1.5 py-0.5">
+                              <span className="text-[9px] text-dark-400 bg-dark-800 border border-dark-700 rounded px-1.5 py-0.5 leading-none">
                                 {assignmentsCount} sem.
                               </span>
                             ) : (
-                              <span className="text-[9px] text-dark-500 italic">
+                              <span className="text-[9px] text-dark-500 italic leading-none">
                                 Non planifié
                               </span>
                             )}
@@ -732,7 +735,7 @@ export default function ProjectGantt({
                     {/* Project Gantt Row */}
                     <div 
                       className="relative flex items-center border-b border-dark-500/30 hover:bg-dark-500/5 transition-colors shrink-0 overflow-hidden"
-                      style={{ height: '48px', minHeight: '48px', maxHeight: '48px', boxSizing: 'border-box' }}
+                      style={{ height: `${PROJECT_ROW_HEIGHT}px`, minHeight: `${PROJECT_ROW_HEIGHT}px`, maxHeight: `${PROJECT_ROW_HEIGHT}px`, boxSizing: 'border-box' }}
                     >
                       {/* Project Horizontal Bar */}
                       <div
@@ -741,7 +744,7 @@ export default function ProjectGantt({
                           left: `${Math.max(0, coords.left)}px`,
                           width: `${Math.max(30, coords.width)}px`,
                         }}
-                        className={`absolute h-7 rounded-xl flex items-center px-2.5 text-xs font-bold shadow-md cursor-pointer transition-all hover:brightness-110 group overflow-hidden border ${
+                        className={`absolute h-6 rounded-lg flex items-center px-2 text-xs font-bold shadow-md cursor-pointer transition-all hover:brightness-110 group overflow-hidden border ${
                           project.status === '2-Terminé'
                             ? 'bg-gradient-to-r from-accent-green/80 to-accent-green text-dark-950 border-accent-green'
                             : project.status === '0-Non lancé'
@@ -775,7 +778,7 @@ export default function ProjectGantt({
                         <div 
                           key={obj.id} 
                           className="relative flex items-center border-b border-dark-500/20 hover:bg-dark-500/10 transition-colors even:bg-dark-500/[0.02] odd:bg-transparent shrink-0 overflow-hidden"
-                          style={{ height: '38px', minHeight: '38px', maxHeight: '38px', boxSizing: 'border-box' }}
+                          style={{ height: `${OBJECTIVE_ROW_HEIGHT}px`, minHeight: `${OBJECTIVE_ROW_HEIGHT}px`, maxHeight: `${OBJECTIVE_ROW_HEIGHT}px`, boxSizing: 'border-box' }}
                         >
                           {segments.length > 0 ? (
                             segments.map((seg, sIdx) => (
@@ -785,7 +788,7 @@ export default function ProjectGantt({
                                   left: `${seg.left}px`,
                                   width: `${seg.width}px`
                                 }}
-                                className={`absolute h-5 rounded-lg flex items-center justify-center text-[10px] font-bold shadow-sm transition-transform hover:scale-105 border ${
+                                className={`absolute h-[18px] rounded-md flex items-center justify-center text-[10px] font-bold shadow-sm transition-transform hover:scale-105 border ${
                                   seg.isDone 
                                     ? 'bg-accent-green text-dark-950 border-accent-green/80' 
                                     : seg.prog > 0 
@@ -794,7 +797,7 @@ export default function ProjectGantt({
                                 }`}
                                 title={`${obj.title} [${seg.weekId}] : ${seg.isDone ? 'Complété ✓' : seg.prog > 0 ? `${Math.round(seg.prog * 100)}% réalisé` : 'Affecté à cette semaine'}`}
                               >
-                                <span className="truncate px-1">
+                                <span className="truncate px-0.5 leading-none">
                                   {seg.isDone ? '✓' : formatWeekShort(seg.weekId)}
                                 </span>
                               </div>
@@ -803,7 +806,7 @@ export default function ProjectGantt({
                             /* Non-assigned objective pill */
                             <div 
                               style={{ left: `${Math.max(4, coords.left)}px` }}
-                              className="absolute h-5 rounded-lg border border-dashed border-dark-600 bg-dark-800/60 text-dark-400 text-[10px] px-2 flex items-center gap-1 italic"
+                              className="absolute h-[18px] rounded-md border border-dashed border-dark-600 bg-dark-800/60 text-dark-400 text-[9px] px-1.5 flex items-center gap-1 italic leading-none"
                               title="Aucune semaine d'affectation : cet objectif est dans le backlog"
                             >
                               <span>Non planifié (Backlog)</span>
