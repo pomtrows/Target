@@ -357,6 +357,7 @@ export default function ProjectObjectiveKanban({
                     ) : (
                       colObjectives.map((obj, index) => {
                         const prog = getObjectiveProjectProgress(obj, targetState.progress);
+                        const percent = Math.min(100, Math.round(prog * 100));
                         const isDone = prog >= 1;
                         const completedWeeks = getObjectiveCompletedWeeks(obj, targetState.progress);
                         const assignedWeeks = (obj.assignments || []).filter(a => /^\d{4}-S\d{2}$/.test(a));
