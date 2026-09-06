@@ -20,7 +20,8 @@ export default function ProjectCard({
   onEdit, 
   onOpenDetails,
   onFocusProject,
-  compact = false 
+  compact = false,
+  showStatus = false 
 }) {
   const { state: targetState } = useTarget();
   const { state: notesState, createFolder, createNote } = useNotes();
@@ -336,19 +337,21 @@ export default function ProjectCard({
           className="flex items-center justify-between gap-2 border-t border-dark-700/40"
           style={{ paddingTop: '6px' }}
         >
-          {/* Status Quick Dropdown & Priority */}
+          {/* Priority Badge & optional Status dropdown */}
           <div className="flex items-center gap-2">
-            <select
-              value={project.status}
-              onChange={(e) => changeProjectStatus(project.id, e.target.value)}
-              onClick={(e) => e.stopPropagation()}
-              className={`text-xs font-bold rounded-lg border cursor-pointer transition-all outline-none ${statusConfig.bg} ${statusConfig.color}`}
-              style={{ padding: '3px 6px' }}
-            >
-              <option value="0-Non lancé" className="bg-dark-800 text-dark-200">⚪ 0-Non lancé</option>
-              <option value="1-En cours" className="bg-dark-800 text-accent-cyan">🔵 1-En cours</option>
-              <option value="2-Terminé" className="bg-dark-800 text-accent-green">🟢 2-Terminé</option>
-            </select>
+            {showStatus && (
+              <select
+                value={project.status}
+                onChange={(e) => changeProjectStatus(project.id, e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                className={`text-xs font-bold rounded-lg border cursor-pointer transition-all outline-none ${statusConfig.bg} ${statusConfig.color}`}
+                style={{ padding: '3px 6px' }}
+              >
+                <option value="0-Non lancé" className="bg-dark-800 text-dark-200">⚪ 0-Non lancé</option>
+                <option value="1-En cours" className="bg-dark-800 text-accent-cyan">🔵 1-En cours</option>
+                <option value="2-Terminé" className="bg-dark-800 text-accent-green">🟢 2-Terminé</option>
+              </select>
+            )}
 
             {/* Priority Badge */}
             <span 
