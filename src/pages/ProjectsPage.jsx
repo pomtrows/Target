@@ -478,7 +478,7 @@ export default function ProjectsPage() {
   };
 
   return (
-    <div className={`flex-1 flex flex-col ${viewMode === 'gantt' ? 'h-full min-h-0 gap-2 pb-1 overflow-hidden' : 'gap-6 pb-28 md:pb-32'}`}>
+    <div className={`flex-1 flex flex-col ${viewMode === 'gantt' ? 'h-full min-h-0 gap-2 pb-1 overflow-hidden' : 'gap-5 sm:gap-6 pb-28 md:pb-32 px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4'}`}>
       {/* View Switcher: Kanban / Grille / Gantt (Style exact écran Objectifs, aligné avec le menu mobile) */}
       <div className="fixed top-[12px] left-1/2 -translate-x-1/2 z-[80] md:static md:translate-x-0 md:flex md:justify-center md:mb-1">
         <div 
@@ -554,7 +554,7 @@ export default function ProjectsPage() {
 
       {/* Focus Project Header OR Global Projects KPIs & Filters */}
       {focusedProject ? (
-        <div className="flex flex-col gap-3.5 bg-dark-800/90 border border-dark-600/50 rounded-2xl p-4 shadow-lg animate-in fade-in duration-200">
+        <div className="flex flex-col gap-3.5 bg-dark-800/90 border border-dark-600/50 rounded-2xl p-4 sm:p-5 shadow-lg animate-in fade-in duration-200">
           {/* Top Bar: Return link + Actions */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
             {/* Back button to all projects */}
