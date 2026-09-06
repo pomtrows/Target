@@ -44,6 +44,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
   const [newObjTitle, setNewObjTitle] = useState('');
   const [newObjPriority, setNewObjPriority] = useState('P2');
   const [newObjAssignWeeks, setNewObjAssignWeeks] = useState(() => [getCurrentWeekId()]);
+  const [newObjAssignType, setNewObjAssignType] = useState('week'); // 'week' | 'backlog'
   const [isWeekDropdownOpen, setIsWeekDropdownOpen] = useState(false);
   const weekDropdownRef = useRef(null);
   const [isCreatingInlineObj, setIsCreatingInlineObj] = useState(false);
@@ -112,6 +113,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
     setObjectiveMode(null);
     setNewObjTitle('');
     setNewObjPriority('P2');
+    setNewObjAssignType('week');
     setNewObjAssignWeeks([getCurrentWeekId()]);
     setIsWeekDropdownOpen(false);
     setInlineObjFeedback('');
@@ -196,7 +198,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
     setInlineObjFeedback('');
     try {
       const newId = `obj-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
-      const assignments = newObjAssignWeeks;
+      const assignments = newObjAssignType === 'backlog' ? [] : newObjAssignWeeks;
 
       await dispatch({
         type: 'ADD_OBJECTIVE',
@@ -215,6 +217,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
 
       setSelectedObjectiveIds(prev => prev.includes(newId) ? prev : [...prev, newId]);
       setNewObjTitle('');
+      setNewObjAssignType('week');
       setNewObjAssignWeeks([getCurrentWeekId()]);
       setIsWeekDropdownOpen(false);
       setInlineObjFeedback('✓ Objectif créé et rattaché !');
@@ -627,14 +630,21 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                 )}
               </div>
 
-              {/* Ligne Planification & Boutons */}
-              <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+              {/* Ligne Planification (Semaine + Backlog) */}
+              <div className="flex items-center gap-2 pt-0.5">
                 {/* Sélecteur de semaines */}
-                <div className="relative w-full sm:w-auto" ref={weekDropdownRef}>
+                <div className="relative flex-1 min-w-0" ref={weekDropdownRef}>
                   <button
                     type="button"
-                    onClick={() => setIsWeekDropdownOpen(!isWeekDropdownOpen)}
-                    className="w-full sm:w-auto flex items-center justify-between gap-2 bg-dark-700/50 hover:bg-dark-700/80 border border-dark-600/50 rounded-xl py-1.5 px-3 text-xs text-dark-100 focus:outline-none focus:border-accent-cyan/50 transition-colors cursor-pointer sm:min-w-[240px] sm:max-w-[300px]"
+                    onClick={() => {
+                      setNewObjAssignType('week');
+                      setIsWeekDropdownOpen(!isWeekDropdownOpen);
+                    }}
+                    className={`w-full flex items-center justify-between gap-2 border rounded-xl py-1.5 px-3 text-xs transition-colors cursor-pointer ${
+                      newObjAssignType === 'week'
+                        ? 'bg-dark-700/50 hover:bg-dark-700/80 border-dark-600/50 text-dark-100 focus:border-accent-cyan/50'
+                        : 'bg-dark-800/40 hover:bg-dark-700/40 border-dark-600/30 text-dark-400 opacity-60'
+                    }`}
                   >
                     <span className="truncate">
                       {newObjAssignWeeks.length === 0
@@ -654,6 +664,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                             type="checkbox"
                             checked={newObjAssignWeeks.includes(week)}
                             onChange={(e) => {
+                              setNewObjAssignType('week');
                               if (e.target.checked) {
                                 setNewObjAssignWeeks([...newObjAssignWeeks, week]);
                               } else {
@@ -671,27 +682,45 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 ml-auto">
-                  <button
-                    type="button"
-                    onClick={() => setIsAdvancedObjectiveModalOpen(true)}
-                    className="text-[11px] text-dark-400 hover:text-accent-cyan underline transition-colors cursor-pointer flex items-center gap-1"
-                    style={{ padding: '4px 6px' }}
-                  >
-                    <Sparkles size={12} />
-                    Formulaire complet...
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!newObjTitle.trim() || isCreatingInlineObj}
-                    onClick={handleCreateInlineObjective}
-                    className="rounded-xl text-xs font-bold bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 transition-all active:scale-95 disabled:opacity-40 cursor-pointer flex items-center gap-1"
-                    style={{ padding: '5px 12px' }}
-                  >
-                    <Plus size={13} />
-                    {isCreatingInlineObj ? 'Création...' : 'Ajouter'}
-                  </button>
-                </div>
+                {/* Bouton Backlog */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewObjAssignType(prev => prev === 'backlog' ? 'week' : 'backlog');
+                    setIsWeekDropdownOpen(false);
+                  }}
+                  className={`h-[31px] px-3 rounded-xl text-xs font-medium shrink-0 flex items-center gap-1.5 transition-all cursor-pointer border ${
+                    newObjAssignType === 'backlog'
+                      ? 'bg-accent-violet/20 text-accent-violet border-accent-violet/40 font-semibold shadow-sm'
+                      : 'bg-dark-700/50 text-dark-400 border-dark-600/30 hover:text-dark-200 hover:bg-dark-700/80'
+                  }`}
+                  title="Ajouter au Backlog (sans semaine)"
+                >
+                  <span>📋 Backlog</span>
+                </button>
+              </div>
+
+              {/* Ligne Boutons d'action */}
+              <div className="flex items-center justify-between gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setIsAdvancedObjectiveModalOpen(true)}
+                  className="text-[11px] text-dark-400 hover:text-accent-cyan underline transition-colors cursor-pointer flex items-center gap-1"
+                  style={{ padding: '4px 6px' }}
+                >
+                  <Sparkles size={12} />
+                  Formulaire complet...
+                </button>
+                <button
+                  type="button"
+                  disabled={!newObjTitle.trim() || isCreatingInlineObj}
+                  onClick={handleCreateInlineObjective}
+                  className="rounded-xl text-xs font-bold bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 transition-all active:scale-95 disabled:opacity-40 cursor-pointer flex items-center gap-1 ml-auto"
+                  style={{ padding: '5px 12px' }}
+                >
+                  <Plus size={13} />
+                  {isCreatingInlineObj ? 'Création...' : 'Ajouter'}
+                </button>
               </div>
             </div>
           )}
@@ -811,7 +840,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           priority: newObjPriority,
           categoryId: categoryId,
           projectId: projectToEdit?.id || tempProjectId,
-          assignments: newObjAssignWeeks
+          assignments: newObjAssignType === 'backlog' ? [] : newObjAssignWeeks
         }}
         defaultProjectId={projectToEdit?.id || tempProjectId}
         zIndex={250}
