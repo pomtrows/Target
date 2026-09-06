@@ -194,81 +194,117 @@ export default function ProjectCard({
             {project.name}
           </h3>
 
-          {/* Menu Dropdown */}
-          <div className="relative flex-shrink-0">
+          {/* Right actions: Attachments, Notes & Menu */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Attachments button */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setShowMenu(!showMenu);
+                setShowAttachmentsModal(true);
               }}
-              className="rounded-lg text-dark-400 hover:text-dark-100 hover:bg-dark-700/60 transition-colors cursor-pointer"
-              style={{ padding: '3px 4px' }}
-              title="Options"
+              className={`rounded-lg border transition-all flex items-center gap-1 text-xs cursor-pointer ${
+                attachmentsCount > 0
+                  ? 'bg-accent-cyan/15 border-accent-cyan/40 text-accent-cyan'
+                  : 'bg-dark-700/40 border-dark-600/30 text-dark-400 hover:text-dark-200'
+              }`}
+              style={{ padding: '2px 5px' }}
+              title={attachmentsCount > 0 ? `${attachmentsCount} pièce(s) jointe(s)` : 'Ajouter une pièce jointe'}
             >
-              <MoreVertical size={16} />
+              <Paperclip size={13} />
+              {attachmentsCount > 0 && <span className="font-bold text-[10px]">{attachmentsCount}</span>}
             </button>
 
-            {showMenu && (
-              <>
-                <div 
-                  className="fixed inset-0 z-40" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowMenu(false);
-                  }} 
-                />
-                <div className="absolute right-0 top-7 w-36 bg-dark-800 border border-dark-600/70 rounded-xl shadow-2xl py-1 z-50 flex flex-col text-xs font-medium overflow-hidden">
-                  <button
+            {/* Notes button */}
+            <button
+              onClick={handleOpenNotes}
+              className={`rounded-lg border transition-all flex items-center gap-1 text-xs cursor-pointer ${
+                hasNotes
+                  ? 'bg-accent-violet/20 border-accent-violet/40 text-accent-violet'
+                  : 'bg-dark-700/40 border-dark-600/30 text-dark-400 hover:text-dark-200'
+              }`}
+              style={{ padding: '2px 5px' }}
+              title={hasNotes ? 'Voir les notes du projet' : 'Rédiger une note'}
+            >
+              <FileText size={13} />
+              {hasNotes && <span className="w-1.5 h-1.5 rounded-full bg-accent-violet" />}
+            </button>
+
+            {/* Menu Dropdown */}
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(!showMenu);
+                }}
+                className="rounded-lg text-dark-400 hover:text-dark-100 hover:bg-dark-700/60 transition-colors cursor-pointer"
+                style={{ padding: '3px 4px' }}
+                title="Options"
+              >
+                <MoreVertical size={16} />
+              </button>
+
+              {showMenu && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowMenu(false);
-                      (onFocusProject || onOpenDetails)?.(project);
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors cursor-pointer"
-                  >
-                    <Target size={14} className="text-accent-cyan" />
-                    Voir les objectifs
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMenu(false);
-                      onOpenDetails?.(project);
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors cursor-pointer"
-                  >
-                    <Info size={14} className="text-accent-cyan" />
-                    Détails du projet
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMenu(false);
-                      onEdit?.(project);
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors cursor-pointer"
-                  >
-                    <Edit2 size={14} className="text-accent-violet" />
-                    Modifier
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMenu(false);
-                      setShowDeleteConfirm(true);
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 text-accent-red hover:bg-accent-red/10 text-left transition-colors cursor-pointer"
-                  >
-                    <Trash2 size={14} />
-                    Supprimer
-                  </button>
-                </div>
-              </>
-            )}
+                    }} 
+                  />
+                  <div className="absolute right-0 top-7 w-36 bg-dark-800 border border-dark-600/70 rounded-xl shadow-2xl py-1 z-50 flex flex-col text-xs font-medium overflow-hidden">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(false);
+                        (onFocusProject || onOpenDetails)?.(project);
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors cursor-pointer"
+                    >
+                      <Target size={14} className="text-accent-cyan" />
+                      Voir les objectifs
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(false);
+                        onOpenDetails?.(project);
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors cursor-pointer"
+                    >
+                      <Info size={14} className="text-accent-cyan" />
+                      Détails du projet
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(false);
+                        onEdit?.(project);
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors cursor-pointer"
+                    >
+                      <Edit2 size={14} className="text-accent-violet" />
+                      Modifier
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(false);
+                        setShowDeleteConfirm(true);
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 text-accent-red hover:bg-accent-red/10 text-left transition-colors cursor-pointer"
+                    >
+                      <Trash2 size={14} />
+                      Supprimer
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Row 2: Dates, Date Alert, Actions & Category */}
+        {/* Row 2: Dates, Date Alert and Category */}
         <div className="flex items-center justify-between gap-2 text-xs text-dark-400">
           <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
             <div className="flex items-center gap-1.5 text-dark-400">
@@ -293,42 +329,6 @@ export default function ProjectCard({
                 {dateAlert.text}
               </span>
             )}
-
-            {/* Actions: Attachments, Notes & Details */}
-            <div className="flex items-center gap-1 ml-1">
-              {/* Attachments button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowAttachmentsModal(true);
-                }}
-                className={`rounded-lg border transition-all flex items-center gap-1 text-xs cursor-pointer ${
-                  attachmentsCount > 0
-                    ? 'bg-accent-cyan/15 border-accent-cyan/40 text-accent-cyan'
-                    : 'bg-dark-700/40 border-dark-600/30 text-dark-400 hover:text-dark-200'
-                }`}
-                style={{ padding: '2px 5px' }}
-                title={attachmentsCount > 0 ? `${attachmentsCount} pièce(s) jointe(s)` : 'Ajouter une pièce jointe'}
-              >
-                <Paperclip size={13} />
-                {attachmentsCount > 0 && <span className="font-bold text-[10px]">{attachmentsCount}</span>}
-              </button>
-
-              {/* Notes button */}
-              <button
-                onClick={handleOpenNotes}
-                className={`rounded-lg border transition-all flex items-center gap-1 text-xs cursor-pointer ${
-                  hasNotes
-                    ? 'bg-accent-violet/20 border-accent-violet/40 text-accent-violet'
-                    : 'bg-dark-700/40 border-dark-600/30 text-dark-400 hover:text-dark-200'
-                }`}
-                style={{ padding: '2px 5px' }}
-                title={hasNotes ? 'Voir les notes du projet' : 'Rédiger une note'}
-              >
-                <FileText size={13} />
-                {hasNotes && <span className="w-1.5 h-1.5 rounded-full bg-accent-violet" />}
-              </button>
-            </div>
           </div>
 
           {/* Category */}
