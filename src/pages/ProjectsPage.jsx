@@ -918,6 +918,7 @@ export default function ProjectsPage() {
           />
         ) : viewMode === 'gantt' ? (
           <ProjectGantt
+            key={focusedProject.id}
             projects={[focusedProject]}
             focusedProjectId={focusedProject.id}
             onEdit={handleOpenEdit}

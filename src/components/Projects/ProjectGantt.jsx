@@ -51,7 +51,8 @@ export default function ProjectGantt({
   projects, 
   onEdit, 
   onOpenDetails,
-  onFocusProject 
+  onFocusProject,
+  focusedProjectId: externalFocusedProjectId
 }) {
   const { state: targetState } = useTarget();
   const { changeProjectStatus } = useProjects();
@@ -62,8 +63,15 @@ export default function ProjectGantt({
 
   // Zoom & Views
   const [zoomLevel, setZoomLevel] = useState('normal'); // 'compact' | 'normal' | 'detailed'
-  const [expandedProjectIds, setExpandedProjectIds] = useState(new Set());
-  const [focusedProjectId, setFocusedProjectId] = useState(null);
+  const [internalFocusedProjectId, setInternalFocusedProjectId] = useState(null);
+  const focusedProjectId = externalFocusedProjectId || internalFocusedProjectId;
+
+  // By default, expand if focusedProjectId is set or if viewing a single project
+  const [expandedProjectIds, setExpandedProjectIds] = useState(() => {
+    if (externalFocusedProjectId) return new Set([externalFocusedProjectId]);
+    if (projects && projects.length === 1) return new Set([projects[0].id]);
+    return new Set();
+  });
 
   const scrollContainerRef = useRef(null);
   const todayMarkerRef = useRef(null);
@@ -82,8 +90,10 @@ export default function ProjectGantt({
   useEffect(() => {
     if (focusedProjectId) {
       setExpandedProjectIds(prev => new Set([...prev, focusedProjectId]));
+    } else if (projects && projects.length === 1) {
+      setExpandedProjectIds(prev => new Set([...prev, projects[0].id]));
     }
-  }, [focusedProjectId]);
+  }, [focusedProjectId, projects]);
 
   // 1. Calculate Timeline Range (Start & End dates)
   const { timelineStart, timelineEnd, weeks } = useMemo(() => {
@@ -471,19 +481,21 @@ export default function ProjectGantt({
                           P{project.priority || 2}
                         </span>
 
-                        {/* Zoom / Focus Project button */}
-                        <button
-                          type="button"
-                          onClick={() => setFocusedProjectId(focusedProjectId === project.id ? null : project.id)}
-                          className={`p-1 rounded-lg border transition-colors cursor-pointer ${
-                            focusedProjectId === project.id
-                              ? 'bg-accent-cyan/20 border-accent-cyan text-accent-cyan'
-                              : 'bg-transparent border-transparent hover:border-dark-600 text-dark-400 hover:text-accent-cyan'
-                          }`}
-                          title={focusedProjectId === project.id ? 'Quitter le zoom focus' : 'Zoomer spécifiquement sur ce projet'}
-                        >
-                          {focusedProjectId === project.id ? <Minimize2 size={13} /> : <ZoomIn size={13} />}
-                        </button>
+                        {/* Zoom / Focus Project button (when multiple projects) */}
+                        {projects.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setInternalFocusedProjectId(focusedProjectId === project.id ? null : project.id)}
+                            className={`p-1 rounded-lg border transition-colors cursor-pointer ${
+                              focusedProjectId === project.id
+                                ? 'bg-accent-cyan/20 border-accent-cyan text-accent-cyan'
+                                : 'bg-transparent border-transparent hover:border-dark-600 text-dark-400 hover:text-accent-cyan'
+                            }`}
+                            title={focusedProjectId === project.id ? 'Quitter le zoom focus' : 'Zoomer spécifiquement sur ce projet'}
+                          >
+                            {focusedProjectId === project.id ? <Minimize2 size={13} /> : <ZoomIn size={13} />}
+                          </button>
+                        )}
                       </div>
                     </div>
 
