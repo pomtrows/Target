@@ -775,19 +775,19 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
               {/* Ligne Actions Objectif : Pièces jointes, Note, Délégué & Bouton Ajouter (+) */}
               <div className="flex items-center gap-2 pt-0.5">
                 {/* Icônes Pièces jointes, Note, Délégué */}
-                <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="flex items-center gap-5 sm:gap-7 flex-1 min-w-0">
                   {/* Pièces jointes */}
                   <button
                     type="button"
                     onClick={() => setShowNewObjAttachmentsModal(true)}
-                    className={`flex items-center justify-center gap-1 h-[32px] px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                    className={`flex items-center justify-center gap-1.5 h-[34px] min-w-[40px] px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
                       newObjAttachments.length > 0
                         ? 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/40 shadow-sm'
                         : 'bg-dark-900/80 text-dark-300 border-dark-600/60 hover:text-dark-100 hover:border-dark-500 hover:bg-dark-800'
                     }`}
                     title={`Pièces jointes ${newObjAttachments.length > 0 ? `(${newObjAttachments.length})` : ''}`}
                   >
-                    <Paperclip size={16} className="shrink-0" />
+                    <Paperclip size={20} className="shrink-0" />
                     {newObjAttachments.length > 0 && (
                       <span className="text-[10px] font-black">{newObjAttachments.length}</span>
                     )}
@@ -797,28 +797,28 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                   <button
                     type="button"
                     onClick={handleOpenNewObjNotes}
-                    className={`flex items-center justify-center h-[32px] px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                    className={`flex items-center justify-center h-[34px] w-[40px] rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
                       hasNewObjNotes
                         ? 'bg-accent-violet/15 text-accent-violet border-accent-violet/40 shadow-sm'
                         : 'bg-dark-900/80 text-dark-300 border-dark-600/60 hover:text-dark-100 hover:border-dark-500 hover:bg-dark-800'
                     }`}
                     title="Note de l'objectif"
                   >
-                    <FileText size={16} className="shrink-0" />
+                    <FileText size={20} className="shrink-0" />
                   </button>
 
                   {/* Délégué */}
                   <button
                     type="button"
                     onClick={() => setShowNewObjDelegateModal(true)}
-                    className={`flex items-center justify-center gap-1 h-[32px] px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                    className={`flex items-center justify-center gap-1.5 h-[34px] min-w-[40px] px-2 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
                       newObjAssignedTo
                         ? 'bg-accent-green/15 text-accent-green border-accent-green/40 shadow-sm'
                         : 'bg-dark-900/80 text-dark-300 border-dark-600/60 hover:text-dark-100 hover:border-dark-500 hover:bg-dark-800'
                     }`}
                     title={newObjAssignedTo ? "Délégué (cliquer pour modifier)" : "Déléguer l'objectif"}
                   >
-                    <UserPlus size={16} className="shrink-0" />
+                    <UserPlus size={20} className="shrink-0" />
                     {newObjAssignedTo && (
                       <span className="w-1.5 h-1.5 rounded-full bg-accent-green shrink-0" />
                     )}
