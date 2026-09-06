@@ -527,33 +527,14 @@ export default function ProjectGantt({
         className="flex flex-wrap items-center justify-between gap-3 border-b border-dark-600/40 bg-dark-800 flex-shrink-0"
         style={{ padding: '10px 14px' }}
       >
-        {/* Left: Mode Title or Focus Indicator */}
+        {/* Left: Mode Title */}
         <div className="flex items-center gap-2">
-          {focusedProject ? (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setFocusedProjectId(null)}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-accent-cyan/15 hover:bg-accent-cyan/25 border border-accent-cyan/40 text-accent-cyan text-xs font-bold transition-all cursor-pointer shadow-sm"
-              >
-                <ArrowLeft size={14} />
-                <span>Tous les projets</span>
-              </button>
-              <div className="flex items-center gap-1.5 text-xs text-dark-200">
-                <span className="text-dark-400 font-normal">Focus :</span>
-                <strong className="text-dark-100 font-bold truncate max-w-[200px]">{focusedProject.name}</strong>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-xl bg-accent-cyan/10 text-accent-cyan border border-accent-cyan/20">
-                <CalendarRange size={16} />
-              </span>
-              <span className="text-xs font-bold text-dark-200">
-                Planning Gantt ({projects.length} projet{projects.length > 1 ? 's' : ''})
-              </span>
-            </div>
-          )}
+          <span className="p-1.5 rounded-xl bg-accent-cyan/10 text-accent-cyan border border-accent-cyan/20">
+            <CalendarRange size={16} />
+          </span>
+          <span className="text-xs font-bold text-dark-200">
+            {focusedProject ? 'Planning Gantt' : `Planning Gantt (${projects.length} projet${projects.length > 1 ? 's' : ''})`}
+          </span>
         </div>
 
         {/* Right: Actions, Expand all & Zoom */}
