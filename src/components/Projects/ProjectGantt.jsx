@@ -77,6 +77,24 @@ export default function ProjectGantt({
   const [dragOverWeekId, setDragOverWeekId] = useState(null);
   const [dragOverObjId, setDragOverObjId] = useState(null);
   const [activePopover, setActivePopover] = useState(null); // { objective, weekId, isBacklog, x, y }
+  const [priorityPopover, setPriorityPopover] = useState(null); // { objective, x, y }
+
+  // Handle changing objective priority directly from Gantt
+  const handleSetPriority = (obj, newPriority) => {
+    if (!obj || !newPriority) return;
+    const currentObj = allObjectives.find(o => o.id === obj.id) || obj;
+    if (currentObj.priority === newPriority) return;
+
+    targetDispatch({
+      type: 'UPDATE_OBJECTIVE',
+      payload: {
+        ...currentObj,
+        priority: newPriority
+      }
+    });
+
+    showToast(`Priorité de "${currentObj.title}" passée à ${newPriority}`, 'info');
+  };
 
   // Handle moving or assigning an objective to a target week (drag-and-drop)
   const handleAssignWeek = (obj, targetWeekId, fromWeekId = null) => {
@@ -832,8 +850,38 @@ export default function ProjectGantt({
                             </span>
                           </div>
 
-                          {/* Checkbox to toggle completed / uncompleted */}
-                          <div className="flex items-center shrink-0">
+                          {/* Right side: Priority Badge + Checkbox */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {/* Priority Badge Button */}
+                            {(() => {
+                              const prio = obj.priority || 'P2';
+                              const prioClass = 
+                                prio === 'P1' || prio === 1 ? 'text-accent-red border-accent-red/40 bg-accent-red/10 hover:bg-accent-red/20' :
+                                prio === 'P2' || prio === 2 ? 'text-accent-violet border-accent-violet/40 bg-accent-violet/10 hover:bg-accent-violet/20' :
+                                'text-accent-cyan border-accent-cyan/40 bg-accent-cyan/10 hover:bg-accent-cyan/20';
+                              const prioLabel = prio === 'P1' || prio === 1 ? 'P1' : prio === 'P2' || prio === 2 ? 'P2' : 'P3';
+
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setPriorityPopover({
+                                      objective: obj,
+                                      x: rect.left,
+                                      y: rect.bottom + 4
+                                    });
+                                  }}
+                                  className={`px-1.5 py-0.5 rounded-md border text-[9px] font-black leading-none transition-all cursor-pointer shadow-xs ${prioClass}`}
+                                  title={`Priorité ${prioLabel} — Cliquer pour modifier`}
+                                >
+                                  {prioLabel}
+                                </button>
+                              );
+                            })()}
+
+                            {/* Checkbox to toggle completed / uncompleted */}
                             <button
                               type="button"
                               onClick={(e) => handleToggleObjective(obj, e)}
@@ -1358,6 +1406,58 @@ export default function ProjectGantt({
                   </button>
                 )}
               </div>
+            </div>
+          </>
+        );
+      })()}
+
+      {/* Mini Popover for Priority Selection */}
+      {priorityPopover && (() => {
+        const popObj = priorityPopover.objective;
+        const currentObj = allObjectives.find(o => o.id === popObj.id) || popObj;
+        const currentPrio = currentObj.priority === 'P1' || currentObj.priority === 1 ? 'P1' :
+                            currentObj.priority === 'P2' || currentObj.priority === 2 ? 'P2' : 'P3';
+
+        return (
+          <>
+            <div
+              className="fixed inset-0 z-50 bg-black/10 backdrop-blur-[0.5px]"
+              onClick={() => setPriorityPopover(null)}
+            />
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="fixed z-50 bg-dark-800 border border-dark-600/90 rounded-xl shadow-2xl p-1.5 text-xs animate-in fade-in zoom-in-95 duration-100 flex flex-col gap-1 min-w-[125px] backdrop-blur-md"
+              style={{
+                left: `${Math.max(8, Math.min(priorityPopover.x - 30, window.innerWidth - 145))}px`,
+                top: `${Math.min(priorityPopover.y, window.innerHeight - 130)}px`
+              }}
+            >
+              <div className="px-2 py-0.5 text-[9px] font-bold text-dark-400 uppercase tracking-wider border-b border-dark-700/60 pb-1">
+                Priorité
+              </div>
+              {[
+                { id: 'P1', label: 'P1 — Haute', color: 'text-accent-red hover:bg-accent-red/15 hover:border-accent-red/30' },
+                { id: 'P2', label: 'P2 — Moyenne', color: 'text-accent-violet hover:bg-accent-violet/15 hover:border-accent-violet/30' },
+                { id: 'P3', label: 'P3 — Basse', color: 'text-accent-cyan hover:bg-accent-cyan/15 hover:border-accent-cyan/30' }
+              ].map(p => {
+                const isSelected = currentPrio === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      handleSetPriority(currentObj, p.id);
+                      setPriorityPopover(null);
+                    }}
+                    className={`flex items-center justify-between px-2 py-1 rounded-lg text-[11px] font-bold border border-transparent transition-all cursor-pointer ${p.color} ${
+                      isSelected ? 'bg-dark-700/80 border-dark-500/80 shadow-xs' : ''
+                    }`}
+                  >
+                    <span>{p.label}</span>
+                    {isSelected && <Check size={12} strokeWidth={3} className="shrink-0" />}
+                  </button>
+                );
+              })}
             </div>
           </>
         );
