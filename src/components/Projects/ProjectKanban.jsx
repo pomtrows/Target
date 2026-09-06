@@ -31,6 +31,13 @@ const COLUMNS = [
   }
 ];
 
+const getPriorityRank = (p) => {
+  if (p === 1 || p === '1' || p === 'P1') return 1;
+  if (p === 2 || p === '2' || p === 'P2') return 2;
+  if (p === 3 || p === '3' || p === 'P3') return 3;
+  return 2;
+};
+
 export default function ProjectKanban({ 
   projects, 
   onEdit, 
@@ -79,7 +86,16 @@ export default function ProjectKanban({
     <DragDropContext onDragEnd={handleDragEnd}>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 md:gap-3.5 items-start">
         {orderedColumns.map((col) => {
-          const colProjects = projects.filter(p => p.status === col.id);
+          const colProjects = projects
+            .filter(p => p.status === col.id)
+            .sort((a, b) => {
+              const rankA = getPriorityRank(a.priority);
+              const rankB = getPriorityRank(b.priority);
+              if (rankA !== rankB) {
+                return rankA - rankB;
+              }
+              return (a.name || '').localeCompare(b.name || '');
+            });
           const ColIcon = col.icon;
 
           return (
