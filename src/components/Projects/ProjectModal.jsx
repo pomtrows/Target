@@ -551,37 +551,19 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                 </div>
               )}
 
-              {/* Titre de l'objectif et Choix de la Priorité sur la même ligne */}
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between pb-0.5">
+              {/* Titre de l'objectif et Choix de la Priorité avec alignement strict */}
+              <div className="flex items-start gap-2">
+                {/* Colonne Objectif (raccourci pour laisser la place à la priorité) */}
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-dark-300 uppercase tracking-wider">
                     Objectif <span className="text-accent-red">*</span>
                   </label>
-                  <div className="flex items-center gap-2">
-                    <label className="text-[11px] font-bold text-dark-300 uppercase tracking-wider mr-4">
-                      Priorité
-                    </label>
-                    {!inlineObjFeedback && (
-                      <button
-                        type="button"
-                        onClick={() => setObjectiveMode(null)}
-                        className="text-dark-400 hover:text-dark-200 text-xs cursor-pointer"
-                        style={{ padding: '2px 4px' }}
-                        title="Fermer"
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
                   <input
                     type="text"
                     value={newObjTitle}
                     onChange={(e) => setNewObjTitle(e.target.value)}
                     placeholder="Ex: Rédiger le cahier des charges, Maquette Figma..."
-                    className="flex-1 min-w-0 bg-dark-900 border border-dark-600/60 rounded-xl text-xs text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan h-[34px] px-2.5"
+                    className="w-full bg-dark-900 border border-dark-600/60 rounded-xl text-xs text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan h-[34px] px-2.5"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -590,11 +572,17 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                     }}
                     autoFocus
                   />
+                </div>
 
+                {/* Colonne Priorité (parfaitement alignée verticalement) */}
+                <div className="w-16 sm:w-20 shrink-0 flex flex-col gap-1">
+                  <label className="text-[11px] font-bold text-dark-300 uppercase tracking-wider text-center">
+                    Priorité
+                  </label>
                   <select
                     value={newObjPriority}
                     onChange={(e) => setNewObjPriority(e.target.value)}
-                    className="w-16 shrink-0 bg-dark-900 border border-dark-600/60 rounded-xl text-xs font-bold focus:outline-none focus:border-accent-cyan cursor-pointer transition-colors h-[34px] px-2 text-center"
+                    className="w-full bg-dark-900 border border-dark-600/60 rounded-xl text-xs font-bold focus:outline-none focus:border-accent-cyan cursor-pointer transition-colors h-[34px] px-1 text-center"
                     style={{
                       textAlignLast: 'center',
                       color: newObjPriority === 'P1' ? 'var(--color-accent-red, #ef4444)' :
@@ -608,6 +596,19 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                     <option value="P3" className="bg-dark-800 text-accent-cyan font-bold">P3</option>
                   </select>
                 </div>
+
+                {/* Bouton fermer */}
+                {!inlineObjFeedback && (
+                  <button
+                    type="button"
+                    onClick={() => setObjectiveMode(null)}
+                    className="text-dark-400 hover:text-dark-200 text-xs cursor-pointer shrink-0 mt-0.5"
+                    style={{ padding: '2px 4px' }}
+                    title="Fermer"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
               </div>
 
               {/* Ligne Planification & Boutons */}
