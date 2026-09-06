@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles, Trash2, Paperclip, FileText, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
+import { Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles, Trash2, Paperclip, FileText, ChevronDown, ChevronUp, Edit2, UserPlus } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useProjects } from '../../contexts/ProjectsContext';
 import { useNotes } from '../../contexts/NotesContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { getObjectiveProjectProgress } from '../../utils/progressUtils';
 import { getCurrentWeekId, getSelectableWeeks, formatWeekLabel } from '../../utils/weekUtils';
 import { getProjectEffectiveDates } from '../../utils/projectUtils';
@@ -13,6 +14,7 @@ import AttachmentManager from '../Attachments/AttachmentManager';
 import NoteEditor from '../Notes/NoteEditor';
 
 export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) {
+  const { user } = useAuth();
   const { state: targetState, dispatch } = useTarget();
   const { createProject, updateProject } = useProjects();
 
@@ -28,7 +30,6 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
   const [selectedObjectiveIds, setSelectedObjectiveIds] = useState([]);
   const [objectiveSearch, setObjectiveSearch] = useState('');
   const [objectiveMode, setObjectiveMode] = useState(null); // 'create' | 'assign' | null
-  const [isAdvancedObjectiveModalOpen, setIsAdvancedObjectiveModalOpen] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [editingObjective, setEditingObjective] = useState(null);
 
@@ -43,6 +44,13 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
   // Inline objective creation state
   const [newObjTitle, setNewObjTitle] = useState('');
   const [newObjPriority, setNewObjPriority] = useState('P2');
+  const [newObjTempId, setNewObjTempId] = useState(() => generateUUID());
+  const [newObjAttachments, setNewObjAttachments] = useState([]);
+  const [showNewObjAttachmentsModal, setShowNewObjAttachmentsModal] = useState(false);
+  const [newObjNoteId, setNewObjNoteId] = useState(null);
+  const [showNewObjNotesModal, setShowNewObjNotesModal] = useState(false);
+  const [newObjAssignedTo, setNewObjAssignedTo] = useState('');
+  const [showNewObjDelegateModal, setShowNewObjDelegateModal] = useState(false);
   const [newObjAssignWeeks, setNewObjAssignWeeks] = useState(() => [getCurrentWeekId()]);
   const [newObjAssignType, setNewObjAssignType] = useState('week'); // 'week' | 'backlog'
   const [isWeekDropdownOpen, setIsWeekDropdownOpen] = useState(false);
@@ -113,9 +121,16 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
     setObjectiveMode(null);
     setNewObjTitle('');
     setNewObjPriority('P2');
+    setNewObjTempId(generateUUID());
+    setNewObjAttachments([]);
+    setNewObjNoteId(null);
+    setNewObjAssignedTo('');
     setNewObjAssignType('week');
     setNewObjAssignWeeks([getCurrentWeekId()]);
     setIsWeekDropdownOpen(false);
+    setShowNewObjAttachmentsModal(false);
+    setShowNewObjNotesModal(false);
+    setShowNewObjDelegateModal(false);
     setInlineObjFeedback('');
     setError('');
   }, [projectToEdit?.id, isOpen]);
@@ -150,6 +165,52 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
     }
     setProjectNoteId(noteId);
     setShowNotesModal(true);
+  };
+
+  const delegatableContacts = useMemo(() => {
+    if (!targetState?.contacts) return [];
+    const seen = new Set();
+    return targetState.contacts.filter(c => {
+      if (c.status !== 'ACCEPTED') return false;
+      if (!c.contact_user_id) return false;
+      if (c.contact_user_id === user?.id) return false;
+      if (c.contact_email && user?.email && c.contact_email.toLowerCase() === user.email.toLowerCase()) return false;
+      if (seen.has(c.contact_user_id)) return false;
+      seen.add(c.contact_user_id);
+      return true;
+    });
+  }, [targetState?.contacts, user]);
+
+  const newObjNotesFolder = notesState?.folders?.find(f => f.name === 'Objectifs');
+  const newObjNote = newObjNotesFolder ? notesState?.notes?.find(n => n.folder_id === newObjNotesFolder.id && n.title === newObjTempId) : null;
+  const hasNewObjNotes = !!(newObjNote && newObjNote.content && newObjNote.content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim() !== '');
+
+  const handleOpenNewObjNotes = async (e) => {
+    e?.preventDefault();
+    let folder = notesState?.folders?.find(f => f.name === 'Objectifs');
+    let folderId = folder?.id;
+    if (!folderId) {
+      try {
+        const newFolder = await createFolder('Objectifs');
+        folderId = newFolder.id;
+      } catch (err) {
+        console.error("Erreur création dossier Objectifs", err);
+        return;
+      }
+    }
+    const existingNote = notesState?.notes?.find(n => n.folder_id === folderId && n.title === newObjTempId);
+    let noteId = existingNote?.id;
+    if (!noteId) {
+      try {
+        const newNote = await createNote(newObjTempId, folderId);
+        noteId = newNote?.id;
+      } catch (err) {
+        console.error("Erreur création note objectif", err);
+        return;
+      }
+    }
+    setNewObjNoteId(noteId);
+    setShowNewObjNotesModal(true);
   };
 
   if (!isOpen) return null;
@@ -197,7 +258,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
     setIsCreatingInlineObj(true);
     setInlineObjFeedback('');
     try {
-      const newId = `obj-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+      const newId = newObjTempId;
       const assignments = newObjAssignType === 'backlog' ? [] : newObjAssignWeeks;
 
       await dispatch({
@@ -211,12 +272,18 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           projectId: projectToEdit?.id || null,
           assignments,
           subObjectives: [],
-          attachments: []
+          attachments: newObjAttachments,
+          note_id: newObjNoteId,
+          assigned_to: newObjAssignedTo || null
         }
       });
 
       setSelectedObjectiveIds(prev => prev.includes(newId) ? prev : [...prev, newId]);
       setNewObjTitle('');
+      setNewObjTempId(generateUUID());
+      setNewObjAttachments([]);
+      setNewObjNoteId(null);
+      setNewObjAssignedTo('');
       setNewObjAssignType('week');
       setNewObjAssignWeeks([getCurrentWeekId()]);
       setIsWeekDropdownOpen(false);
@@ -700,26 +767,72 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                 </button>
               </div>
 
-              {/* Ligne Boutons d'action */}
+              {/* Ligne Actions Objectif : Pièces jointes, Note, Délégué & Bouton Ajouter (+) */}
               <div className="flex items-center justify-between gap-2 pt-0.5">
-                <button
-                  type="button"
-                  onClick={() => setIsAdvancedObjectiveModalOpen(true)}
-                  className="text-[11px] text-dark-400 hover:text-accent-cyan underline transition-colors cursor-pointer flex items-center gap-1"
-                  style={{ padding: '4px 6px' }}
-                >
-                  <Sparkles size={12} />
-                  Formulaire complet...
-                </button>
+                {/* Icônes Pièces jointes, Note, Délégué */}
+                <div className="flex items-center gap-2">
+                  {/* Pièces jointes */}
+                  <button
+                    type="button"
+                    onClick={() => setShowNewObjAttachmentsModal(true)}
+                    className={`flex items-center justify-center gap-1 h-[32px] px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                      newObjAttachments.length > 0
+                        ? 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/40 shadow-sm'
+                        : 'bg-dark-900/80 text-dark-300 border-dark-600/60 hover:text-dark-100 hover:border-dark-500 hover:bg-dark-800'
+                    }`}
+                    title={`Pièces jointes ${newObjAttachments.length > 0 ? `(${newObjAttachments.length})` : ''}`}
+                  >
+                    <Paperclip size={16} className="shrink-0" />
+                    {newObjAttachments.length > 0 && (
+                      <span className="text-[10px] font-black">{newObjAttachments.length}</span>
+                    )}
+                  </button>
+
+                  {/* Note */}
+                  <button
+                    type="button"
+                    onClick={handleOpenNewObjNotes}
+                    className={`flex items-center justify-center h-[32px] px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                      hasNewObjNotes
+                        ? 'bg-accent-violet/15 text-accent-violet border-accent-violet/40 shadow-sm'
+                        : 'bg-dark-900/80 text-dark-300 border-dark-600/60 hover:text-dark-100 hover:border-dark-500 hover:bg-dark-800'
+                    }`}
+                    title="Note de l'objectif"
+                  >
+                    <FileText size={16} className="shrink-0" />
+                  </button>
+
+                  {/* Délégué */}
+                  <button
+                    type="button"
+                    onClick={() => setShowNewObjDelegateModal(true)}
+                    className={`flex items-center justify-center gap-1 h-[32px] px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                      newObjAssignedTo
+                        ? 'bg-accent-green/15 text-accent-green border-accent-green/40 shadow-sm'
+                        : 'bg-dark-900/80 text-dark-300 border-dark-600/60 hover:text-dark-100 hover:border-dark-500 hover:bg-dark-800'
+                    }`}
+                    title={newObjAssignedTo ? "Délégué (cliquer pour modifier)" : "Déléguer l'objectif"}
+                  >
+                    <UserPlus size={16} className="shrink-0" />
+                    {newObjAssignedTo && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent-green shrink-0" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Bouton Ajouter (+) circulaire */}
                 <button
                   type="button"
                   disabled={!newObjTitle.trim() || isCreatingInlineObj}
                   onClick={handleCreateInlineObjective}
-                  className="rounded-xl text-xs font-bold bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 transition-all active:scale-95 disabled:opacity-40 cursor-pointer flex items-center gap-1 ml-auto"
-                  style={{ padding: '5px 12px' }}
+                  className="w-8 h-8 rounded-full bg-dark-800 hover:bg-dark-700 border border-dark-600/60 text-white flex items-center justify-center transition-all active:scale-95 disabled:opacity-30 cursor-pointer shadow-md shrink-0 ml-auto"
+                  title="Ajouter l'objectif"
                 >
-                  <Plus size={13} />
-                  {isCreatingInlineObj ? 'Création...' : 'Ajouter'}
+                  {isCreatingInlineObj ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Plus size={18} strokeWidth={2.5} />
+                  )}
                 </button>
               </div>
             </div>
@@ -830,27 +943,128 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
       </form>
     </Modal>
 
-    {/* Formulaire complet d'objectif si demandé */}
-    {isAdvancedObjectiveModalOpen && (
-      <ObjectiveForm
-        isOpen={isAdvancedObjectiveModalOpen}
-        onClose={() => setIsAdvancedObjectiveModalOpen(false)}
-        initialData={{
-          title: newObjTitle,
-          priority: newObjPriority,
-          categoryId: categoryId,
-          projectId: projectToEdit?.id || tempProjectId,
-          assignments: newObjAssignType === 'backlog' ? [] : newObjAssignWeeks
+    {/* Modale Pièces jointes du nouvel objectif créé inline */}
+    {showNewObjAttachmentsModal && (
+      <AttachmentManager
+        isOpen={showNewObjAttachmentsModal}
+        onClose={() => setShowNewObjAttachmentsModal(false)}
+        objective={{
+          id: newObjTempId,
+          attachments: newObjAttachments
         }}
-        defaultProjectId={projectToEdit?.id || tempProjectId}
-        zIndex={250}
-        onObjectiveCreated={(newId) => {
-          setSelectedObjectiveIds(prev => prev.includes(newId) ? prev : [...prev, newId]);
-          setIsAdvancedObjectiveModalOpen(false);
-          setObjectiveMode(null);
-          setNewObjTitle('');
+        zIndex={240}
+        onUpdate={({ attachments }) => {
+          setNewObjAttachments(attachments);
         }}
       />
+    )}
+
+    {/* Modale Notes du nouvel objectif créé inline */}
+    {showNewObjNotesModal && newObjNoteId && (
+      <Modal
+        isOpen={showNewObjNotesModal}
+        onClose={() => setShowNewObjNotesModal(false)}
+        title={`Notes de l'objectif : ${newObjTitle || 'Nouvel objectif'}`}
+        maxWidth="max-w-4xl"
+        zIndex={240}
+      >
+        <div className="h-[75vh] flex flex-col p-1">
+          <NoteEditor
+            noteId={newObjNoteId}
+            onClose={() => setShowNewObjNotesModal(false)}
+          />
+        </div>
+      </Modal>
+    )}
+
+    {/* Modale Délégation du nouvel objectif créé inline */}
+    {showNewObjDelegateModal && (
+      <Modal
+        isOpen={true}
+        onClose={() => setShowNewObjDelegateModal(false)}
+        title="Déléguer à un contact"
+        maxWidth="max-w-md"
+        closeOnOutsideClick={true}
+        centerTitle={true}
+        zIndex={240}
+      >
+        <div className="flex flex-col gap-2 py-1">
+          <button
+            type="button"
+            onClick={() => {
+              setNewObjAssignedTo('');
+              setShowNewObjDelegateModal(false);
+            }}
+            className={`flex items-center justify-between p-3 rounded-xl transition-all text-left border ${
+              !newObjAssignedTo
+                ? 'bg-accent-cyan/15 border-accent-cyan/40 text-accent-cyan'
+                : 'bg-dark-800/40 border-dark-600/30 text-dark-200 hover:bg-dark-700/50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-dark-700/70 border border-dark-600/50 flex items-center justify-center text-sm font-bold text-dark-300">
+                👤
+              </div>
+              <div>
+                <p className="text-sm font-medium text-dark-100">Tâche personnelle</p>
+                <p className="text-xs text-dark-400">Non assigné à un contact</p>
+              </div>
+            </div>
+            {!newObjAssignedTo && <Check size={18} className="text-accent-cyan shrink-0" />}
+          </button>
+
+          {delegatableContacts.length > 0 && (
+            <div className="mt-2 mb-1 px-1">
+              <p className="text-xs font-bold text-dark-400 uppercase tracking-wider">
+                Contacts ({delegatableContacts.length})
+              </p>
+            </div>
+          )}
+
+          {delegatableContacts.map((c) => {
+            const displayName = (targetState.profiles && targetState.profiles[c.contact_user_id]?.display_name)
+              || (targetState.profiles && targetState.profiles[c.contact_user_id]?.email)
+              || c.contact_name
+              || c.contact_email
+              || 'Contact';
+            const email = (targetState.profiles && targetState.profiles[c.contact_user_id]?.email) || c.contact_email || '';
+            const isSelected = newObjAssignedTo === c.contact_user_id;
+
+            return (
+              <button
+                key={c.contact_user_id}
+                type="button"
+                onClick={() => {
+                  setNewObjAssignedTo(c.contact_user_id);
+                  setShowNewObjDelegateModal(false);
+                }}
+                className={`flex items-center justify-between p-3 rounded-xl transition-all text-left border ${
+                  isSelected
+                    ? 'bg-accent-cyan/15 border-accent-cyan/40 text-accent-cyan'
+                    : 'bg-dark-800/40 border-dark-600/30 text-dark-200 hover:bg-dark-700/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-accent-cyan/10 border border-accent-cyan/20 flex items-center justify-center text-xs font-bold text-accent-cyan uppercase">
+                    {displayName[0] || 'C'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-dark-100">{displayName}</p>
+                    {email && <p className="text-xs text-dark-400">{email}</p>}
+                  </div>
+                </div>
+                {isSelected && <Check size={18} className="text-accent-cyan shrink-0" />}
+              </button>
+            );
+          })}
+
+          {delegatableContacts.length === 0 && (
+            <div className="p-4 text-center text-xs text-dark-400">
+              Aucun contact disponible pour la délégation.
+            </div>
+          )}
+        </div>
+      </Modal>
     )}
 
     {/* Modale d'édition d'un objectif */}
