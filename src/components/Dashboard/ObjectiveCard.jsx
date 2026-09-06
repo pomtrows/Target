@@ -12,7 +12,17 @@ import Modal from '../Shared/Modal';
 import NoteEditor from '../Notes/NoteEditor';
 import AttachmentManager from '../Attachments/AttachmentManager';
 
-export default function ObjectiveCard({ objective, weekId, index, onEdit, onDelete, compactMode = false, isHighlighted = false }) {
+export default function ObjectiveCard({ 
+  objective, 
+  weekId, 
+  index, 
+  onEdit, 
+  onDelete, 
+  compactMode = false, 
+  isHighlighted = false,
+  hideProject = false,
+  disableLayout = false
+}) {
   const { user } = useAuth();
   const { state, dispatch } = useTarget();
   const { sessions } = useSport();
@@ -84,8 +94,8 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
   const weekProgress = state.progress[weekId] || {};
   const current = weekProgress[objective.id] || 0;
   
-  const hasSubObjectives = objective.target === 1 && objective.subObjectives?.length > 0;
-  const isCheckbox = objective.target < 1;
+  const hasSubObjectives = (Number(objective.target) === 1 || !objective.target) && objective.subObjectives?.length > 0;
+  const isCheckbox = Number(objective.target) < 1;
   const isChecked = current >= 1;
   const progress = getObjectiveProgress(objective, weekProgress);
   const isCompleted = progress >= 1;
@@ -151,16 +161,16 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
 
   return (
     <motion.div
-      layout
+      layout={!disableLayout}
       id={`objective-card-${objective.id}`}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ 
+      initial={disableLayout ? false : { opacity: 0, y: 20 }}
+      animate={disableLayout ? undefined : { 
         opacity: 1, 
         y: 0,
         scale: isHighlighted ? [1, 1.05, 1, 1.05, 1] : 1
       }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ 
+      exit={disableLayout ? undefined : { opacity: 0, y: -20 }}
+      transition={disableLayout ? undefined : { 
         delay: index * 0.05,
         scale: isHighlighted ? { duration: 1.2, ease: "easeInOut" } : undefined
       }}
@@ -192,7 +202,7 @@ export default function ObjectiveCard({ objective, weekId, index, onEdit, onDele
 
       <div className="flex-1 w-full">
         {/* Project Badge */}
-        {(() => {
+        {!hideProject && (() => {
           const matchedProject = (projects || []).find(p => 
             (p.objectiveIds || []).includes(objective.id) || p.id === objective.projectId
           );

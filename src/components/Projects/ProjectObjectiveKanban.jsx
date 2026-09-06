@@ -1,9 +1,11 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Circle, Clock, CheckCircle2, Plus, Pencil, Paperclip, FileText, Calendar, Target } from 'lucide-react';
+import { Circle, Clock, CheckCircle2, Plus } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
-import { getObjectiveProjectProgress, getObjectiveCompletedWeeks } from '../../utils/progressUtils';
-import { getCurrentWeekId, formatWeekShort } from '../../utils/weekUtils';
+import { getObjectiveProjectProgress, getObjectiveCompletedWeeks, getObjectiveProgress } from '../../utils/progressUtils';
+import { getCurrentWeekId } from '../../utils/weekUtils';
+import ObjectiveCard from '../Dashboard/ObjectiveCard';
+import Modal from '../Shared/Modal';
 
 const COLUMNS = [
   {
@@ -45,6 +47,7 @@ export default function ProjectObjectiveKanban({
 }) {
   const { state: targetState, dispatch: targetDispatch } = useTarget();
   const currentWeekId = useMemo(() => getCurrentWeekId(), []);
+  const [deleteConfirmObjective, setDeleteConfirmObjective] = useState(null);
 
   // Filter linked objectives
   const linkedObjectiveIds = useMemo(() => new Set(project.objectiveIds || []), [project.objectiveIds]);
@@ -172,53 +175,46 @@ export default function ProjectObjectiveKanban({
     };
   }, [projectObjectives, targetState.progress, targetState.progressTimestamps]);
 
-  // Toggle objective completed / uncompleted
-  const handleToggleObjective = (obj, e) => {
-    e?.stopPropagation();
-    const isDone = getObjectiveProjectProgress(obj, targetState.progress) >= 1;
+  // Determine the most representative weekId for an objective
+  const getEffectiveWeekId = (obj) => {
+    // 1. If completed in any week, use the latest completed week
+    const completedWeeks = getObjectiveCompletedWeeks(obj, targetState.progress);
+    if (completedWeeks.length > 0) return completedWeeks[0];
 
-    if (isDone) {
-      // Uncomplete
-      const completedWeeks = getObjectiveCompletedWeeks(obj, targetState.progress);
-      if (completedWeeks.length > 0) {
-        completedWeeks.forEach(w => {
-          targetDispatch({
-            type: 'TOGGLE_PROGRESS',
-            payload: { weekId: w, objectiveId: obj.id, value: 0 }
-          });
-        });
-      } else {
-        targetDispatch({
-          type: 'TOGGLE_PROGRESS',
-          payload: { weekId: currentWeekId, objectiveId: obj.id, value: 0 }
-        });
-      }
-    } else {
-      // Complete
-      const assignedWeeks = (obj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
-      const isBacklog = assignedWeeks.length === 0 || obj.assignType === 'backlog';
-      const targetWeek = (!isBacklog && assignedWeeks[0]) || currentWeekId;
-
-      if (isBacklog) {
-        const otherAssignments = (obj.assignments || []).filter(a => typeof a === 'string' && !/^\d{4}-S\d{2}$/.test(a));
-        targetDispatch({
-          type: 'UPDATE_OBJECTIVE',
-          payload: {
-            ...obj,
-            assignType: 'week',
-            assignments: [...otherAssignments, currentWeekId]
+    // 2. If has progress recorded in any week in targetState.progress, pick the one with highest progress
+    let bestWeek = null;
+    let maxProgress = 0;
+    if (targetState.progress) {
+      for (const [wId, weekProg] of Object.entries(targetState.progress)) {
+        if (weekProg && weekProg[obj.id] !== undefined) {
+          const prog = getObjectiveProgress(obj, weekProg);
+          if (prog > maxProgress) {
+            maxProgress = prog;
+            bestWeek = wId;
           }
-        });
+        }
       }
+    }
+    if (bestWeek) return bestWeek;
 
-      const completeValue = obj.subObjectives?.length > 0
-        ? (1 << obj.subObjectives.length) - 1
-        : (Number(obj.target) > 1 ? Number(obj.target) : 1);
+    // 3. If assigned to weeks, prefer currentWeekId if in assignments, otherwise earliest assigned week
+    const assignedWeeks = (obj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
+    if (assignedWeeks.includes(currentWeekId)) return currentWeekId;
+    if (assignedWeeks.length > 0) return assignedWeeks[0];
 
-      targetDispatch({
-        type: 'TOGGLE_PROGRESS',
-        payload: { weekId: targetWeek, objectiveId: obj.id, value: completeValue }
-      });
+    // 4. Default to currentWeekId
+    return currentWeekId;
+  };
+
+  const handleDeleteClick = (objectiveId) => {
+    const obj = projectObjectives.find(o => o.id === objectiveId);
+    setDeleteConfirmObjective(obj || { id: objectiveId, title: 'cet objectif' });
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteConfirmObjective) {
+      targetDispatch({ type: 'DELETE_OBJECTIVE', payload: deleteConfirmObjective.id });
+      setDeleteConfirmObjective(null);
     }
   };
 
@@ -261,16 +257,18 @@ export default function ProjectObjectiveKanban({
         payload: { weekId: targetWeek, objectiveId: targetObjective.id, value: completeValue }
       });
     } else if (destCol === 'non_lance') {
-      // Unset progress if was completed
-      if (sourceCol === 'termine') {
-        const completedWeeks = getObjectiveCompletedWeeks(targetObjective, targetState.progress);
-        completedWeeks.forEach(w => {
-          targetDispatch({
-            type: 'TOGGLE_PROGRESS',
-            payload: { weekId: w, objectiveId: targetObjective.id, value: 0 }
-          });
+      // Reset progress from any recorded week
+      const recordedWeeks = Object.keys(targetState.progress || {}).filter(
+        w => (targetState.progress[w]?.[targetObjective.id] || 0) > 0
+      );
+      const weeksToReset = recordedWeeks.length > 0 ? recordedWeeks : [currentWeekId];
+      weeksToReset.forEach(w => {
+        targetDispatch({
+          type: 'TOGGLE_PROGRESS',
+          payload: { weekId: w, objectiveId: targetObjective.id, value: 0 }
         });
-      }
+      });
+
       // Move to Backlog (clear assignments)
       targetDispatch({
         type: 'UPDATE_OBJECTIVE',
@@ -283,8 +281,11 @@ export default function ProjectObjectiveKanban({
     } else if (destCol === 'en_cours') {
       // Unset progress if was completed
       if (sourceCol === 'termine') {
-        const completedWeeks = getObjectiveCompletedWeeks(targetObjective, targetState.progress);
-        completedWeeks.forEach(w => {
+        const recordedWeeks = Object.keys(targetState.progress || {}).filter(
+          w => (targetState.progress[w]?.[targetObjective.id] || 0) > 0
+        );
+        const weeksToReset = recordedWeeks.length > 0 ? recordedWeeks : [currentWeekId];
+        weeksToReset.forEach(w => {
           targetDispatch({
             type: 'TOGGLE_PROGRESS',
             payload: { weekId: w, objectiveId: targetObjective.id, value: 0 }
@@ -357,19 +358,7 @@ export default function ProjectObjectiveKanban({
                       </div>
                     ) : (
                       colObjectives.map((obj, index) => {
-                        const prog = getObjectiveProjectProgress(obj, targetState.progress);
-                        const percent = Math.min(100, Math.round(prog * 100));
-                        const isDone = prog >= 1;
-                        const completedWeeks = getObjectiveCompletedWeeks(obj, targetState.progress);
-                        const assignedWeeks = (obj.assignments || []).filter(a => /^\d{4}-S\d{2}$/.test(a));
-                        const weeks = isDone && completedWeeks.length > 0 ? completedWeeks : assignedWeeks;
-                        const attachmentsCount = (obj.attachments || []).length;
-                        const hasNotes = !!(obj.note && obj.note.trim());
-
-                        const priorityClass = 
-                          obj.priority === 'P1' ? 'text-accent-red border-accent-red/40 bg-accent-red/10' :
-                          obj.priority === 'P2' ? 'text-accent-violet border-accent-violet/40 bg-accent-violet/10' :
-                          'text-accent-cyan border-accent-cyan/40 bg-accent-cyan/10';
+                        const effectiveWeekId = getEffectiveWeekId(obj);
 
                         return (
                           <Draggable key={obj.id} draggableId={obj.id} index={index}>
@@ -378,109 +367,26 @@ export default function ProjectObjectiveKanban({
                                 ref={dragProvided.innerRef}
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
-                                className={`group relative bg-dark-800/90 hover:bg-dark-800 border rounded-xl shadow-md transition-all ${
+                                className={`transition-shadow ${
                                   dragSnapshot.isDragging 
-                                    ? 'shadow-2xl ring-2 ring-accent-cyan z-50 bg-dark-700 border-accent-cyan' 
-                                    : 'border-dark-600/40 hover:border-dark-500/60'
+                                    ? 'shadow-2xl ring-2 ring-accent-cyan rounded-[24px] z-50' 
+                                    : ''
                                 }`}
                                 style={{
                                   ...dragProvided.draggableProps.style,
-                                  padding: '14px 16px',
-                                  marginBottom: '8px'
+                                  marginBottom: '10px'
                                 }}
                               >
-                                {/* Top row: Toggle check & Title & Priority */}
-                                <div className="flex items-start gap-3">
-                                  {/* Checkbox circle */}
-                                  <button
-                                    type="button"
-                                    onClick={(e) => handleToggleObjective(obj, e)}
-                                    className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
-                                      isDone
-                                        ? 'bg-accent-green border-accent-green text-white shadow-sm'
-                                        : 'border-dark-500 hover:border-accent-cyan bg-dark-900/60'
-                                    }`}
-                                    title={isDone ? "Marquer comme non terminé" : "Marquer comme terminé"}
-                                  >
-                                    {isDone && <CheckCircle2 size={13} className="text-white" />}
-                                  </button>
-
-                                  {/* Title */}
-                                  <div className="flex-1 min-w-0">
-                                    <h4
-                                      onClick={() => onEditObjective?.(obj)}
-                                      className={`text-xs font-semibold leading-snug cursor-pointer transition-colors ${
-                                        isDone ? 'text-dark-200 hover:text-accent-cyan' : 'text-dark-100 hover:text-accent-cyan'
-                                      }`}
-                                    >
-                                      {obj.title}
-                                    </h4>
-
-                                    {/* Sub-objectives counter if any */}
-                                    {obj.subObjectives?.length > 0 && (
-                                      <div className="flex items-center gap-1 mt-1 text-[10px] text-dark-400">
-                                        <Target size={11} className="text-dark-400 shrink-0" />
-                                        <span>{obj.subObjectives.length} sous-objectifs ({percent}%)</span>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                   {/* Priority Badge */}
-                                   <span className={`text-[10px] font-bold rounded-md border px-1.5 py-0.5 shrink-0 leading-none ${priorityClass}`}>
-                                     {obj.priority || 'P2'}
-                                   </span>
-                                 </div>
-
-                                 {/* Bottom row: Week badges & Notes/PJ & Edit button */}
-                                 <div className="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-dark-700/30 text-xs">
-                                  {/* Left: Weeks badges or Backlog */}
-                                  <div className="flex items-center gap-1 flex-wrap min-w-0">
-                                    {weeks.length > 0 ? (
-                                      weeks.slice(0, 2).map(wId => (
-                                        <span
-                                          key={wId}
-                                          className="inline-flex items-center gap-1 text-[10px] font-medium text-dark-300 bg-dark-700/60 border border-dark-600/40 rounded px-1.5 py-0.5"
-                                        >
-                                          <Calendar size={10} className="text-dark-400" />
-                                          {formatWeekShort(wId)}
-                                        </span>
-                                      ))
-                                    ) : (
-                                      <span className="text-[10px] font-medium text-accent-violet bg-accent-violet/10 border border-accent-violet/25 rounded px-1.5 py-0.5">
-                                        📋 Backlog
-                                      </span>
-                                    )}
-                                    {weeks.length > 2 && (
-                                      <span className="text-[10px] text-dark-400 font-bold">
-                                        +{weeks.length - 2}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {/* Right: Notes, PJ indicators & Edit */}
-                                  <div className="flex items-center gap-1.5 shrink-0">
-                                    {hasNotes && (
-                                      <span className="text-accent-violet" title="Contient des notes">
-                                        <FileText size={12} />
-                                      </span>
-                                    )}
-                                    {attachmentsCount > 0 && (
-                                      <span className="text-accent-cyan flex items-center gap-0.5" title={`${attachmentsCount} pièce(s) jointe(s)`}>
-                                        <Paperclip size={12} />
-                                        <span className="text-[9px] font-bold">{attachmentsCount}</span>
-                                      </span>
-                                    )}
-
-                                    <button
-                                      type="button"
-                                      onClick={() => onEditObjective?.(obj)}
-                                      className="text-dark-400 hover:text-dark-200 p-1 rounded hover:bg-dark-700 transition-colors cursor-pointer"
-                                      title="Modifier l'objectif"
-                                    >
-                                      <Pencil size={12} />
-                                    </button>
-                                  </div>
-                                </div>
+                                <ObjectiveCard
+                                  objective={obj}
+                                  weekId={effectiveWeekId}
+                                  index={index}
+                                  onEdit={onEditObjective}
+                                  onDelete={handleDeleteClick}
+                                  compactMode={true}
+                                  hideProject={true}
+                                  disableLayout={true}
+                                />
                               </div>
                             )}
                           </Draggable>
@@ -509,6 +415,38 @@ export default function ProjectObjectiveKanban({
           );
         })}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmObjective && (
+        <Modal
+          isOpen={!!deleteConfirmObjective}
+          onClose={() => setDeleteConfirmObjective(null)}
+          title="Supprimer l'objectif ?"
+          maxWidth="max-w-sm"
+        >
+          <div className="flex flex-col gap-4 text-dark-200">
+            <p className="text-sm">
+              Êtes-vous sûr de vouloir supprimer l'objectif <strong className="text-dark-100">« {deleteConfirmObjective.title} »</strong> ?
+            </p>
+            <div className="flex justify-end gap-3 mt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmObjective(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-dark-300 hover:bg-dark-700 transition-colors cursor-pointer"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-accent-red text-white hover:bg-accent-red/90 transition-colors shadow-lg shadow-accent-red/20 cursor-pointer"
+              >
+                Supprimer définitivement
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </DragDropContext>
   );
 }
