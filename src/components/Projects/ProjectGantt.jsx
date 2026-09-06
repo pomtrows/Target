@@ -15,7 +15,10 @@ import {
   Layers, 
   ArrowLeft,
   Filter,
-  Circle
+  Circle,
+  Inbox,
+  Pencil,
+  X
 } from 'lucide-react';
 import { 
   parseISO, 
@@ -32,6 +35,7 @@ import {
 import { fr } from 'date-fns/locale';
 import { useTarget } from '../../contexts/TargetContext';
 import { useProjects } from '../../contexts/ProjectsContext';
+import { useToast } from '../../contexts/ToastContext';
 import { getObjectiveProgress, getObjectiveProjectProgress, getObjectiveCompletedWeeks } from '../../utils/progressUtils';
 import { 
   getCurrentWeekId, 
@@ -55,14 +59,141 @@ export default function ProjectGantt({
   onEdit, 
   onOpenDetails,
   onFocusProject,
+  onEditObjective,
   focusedProjectId: externalFocusedProjectId
 }) {
-  const { state: targetState } = useTarget();
+  const { state: targetState, dispatch: targetDispatch } = useTarget();
   const { changeProjectStatus } = useProjects();
+  const { showToast } = useToast();
   
   const allObjectives = targetState.objectives || [];
   const categories = targetState.categories || [];
   const allProgress = targetState.progress || {};
+
+  // Drag & drop & week assignment state
+  const [draggingInfo, setDraggingInfo] = useState(null); // { objective, fromWeekId }
+  const [dragOverWeekId, setDragOverWeekId] = useState(null);
+  const [dragOverObjId, setDragOverObjId] = useState(null);
+  const [activePopover, setActivePopover] = useState(null); // { objective, weekId, isBacklog, x, y }
+
+  // Handle moving or assigning an objective to a target week
+  const handleAssignWeek = (obj, targetWeekId, fromWeekId = null) => {
+    if (!obj || !targetWeekId) return;
+    if (fromWeekId === targetWeekId) return;
+
+    const currentWeeks = (obj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
+    const otherAssignments = (obj.assignments || []).filter(a => typeof a === 'string' && !/^\d{4}-S\d{2}$/.test(a));
+
+    let newWeeks;
+    if (!fromWeekId || currentWeeks.length <= 1) {
+      newWeeks = [targetWeekId];
+    } else {
+      newWeeks = currentWeeks.filter(w => w !== fromWeekId);
+      if (!newWeeks.includes(targetWeekId)) {
+        newWeeks.push(targetWeekId);
+      }
+      newWeeks.sort();
+    }
+
+    // 1. Update objective
+    targetDispatch({
+      type: 'UPDATE_OBJECTIVE',
+      payload: {
+        ...obj,
+        assignType: 'week',
+        assignments: [...otherAssignments, ...newWeeks]
+      }
+    });
+
+    // 2. Transfer or maintain progress
+    if (fromWeekId) {
+      const prevProg = allProgress[fromWeekId]?.[obj.id];
+      if (prevProg !== undefined && prevProg > 0) {
+        targetDispatch({
+          type: 'TOGGLE_PROGRESS',
+          payload: { weekId: targetWeekId, objectiveId: obj.id, value: prevProg }
+        });
+        targetDispatch({
+          type: 'TOGGLE_PROGRESS',
+          payload: { weekId: fromWeekId, objectiveId: obj.id, value: 0 }
+        });
+      }
+    } else {
+      const isDone = getObjectiveProjectProgress(obj, allProgress) >= 1;
+      if (isDone) {
+        const completeValue = obj.subObjectives?.length > 0
+          ? (1 << obj.subObjectives.length) - 1
+          : (Number(obj.target) > 1 ? Number(obj.target) : 1);
+        targetDispatch({
+          type: 'TOGGLE_PROGRESS',
+          payload: { weekId: targetWeekId, objectiveId: obj.id, value: completeValue }
+        });
+      }
+    }
+
+    showToast(`"${obj.title}" affecté à ${formatWeekShort(targetWeekId)}`, 'success');
+  };
+
+  // Handle clicking on an empty week cell in an objective's row
+  const handleCellClick = (obj, targetWeekId) => {
+    const currentWeeks = (obj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
+    const fromWeekId = currentWeeks.length === 1 ? currentWeeks[0] : null;
+
+    handleAssignWeek(obj, targetWeekId, fromWeekId);
+  };
+
+  // Handle moving an objective back to the backlog
+  const handleMoveToBacklog = (obj, specificWeekId = null) => {
+    if (!obj) return;
+
+    const currentWeeks = (obj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
+    const otherAssignments = (obj.assignments || []).filter(a => typeof a === 'string' && !/^\d{4}-S\d{2}$/.test(a));
+
+    let newWeeks = [];
+    if (specificWeekId && currentWeeks.length > 1) {
+      newWeeks = currentWeeks.filter(w => w !== specificWeekId);
+    }
+
+    if (newWeeks.length > 0) {
+      // Still has other weeks
+      targetDispatch({
+        type: 'UPDATE_OBJECTIVE',
+        payload: {
+          ...obj,
+          assignType: 'week',
+          assignments: [...otherAssignments, ...newWeeks]
+        }
+      });
+      if (specificWeekId) {
+        targetDispatch({
+          type: 'TOGGLE_PROGRESS',
+          payload: { weekId: specificWeekId, objectiveId: obj.id, value: 0 }
+        });
+      }
+      showToast(`Semaine ${formatWeekShort(specificWeekId)} retirée de "${obj.title}"`, 'info');
+    } else {
+      // Move completely to backlog
+      const completedWeeks = getObjectiveCompletedWeeks(obj, allProgress);
+      completedWeeks.forEach(w => {
+        targetDispatch({
+          type: 'TOGGLE_PROGRESS',
+          payload: { weekId: w, objectiveId: obj.id, value: 0 }
+        });
+      });
+
+      targetDispatch({
+        type: 'UPDATE_OBJECTIVE',
+        payload: {
+          ...obj,
+          assignType: 'backlog',
+          assignments: otherAssignments
+        }
+      });
+      showToast(`"${obj.title}" remis dans le Backlog`, 'info');
+    }
+
+    setActivePopover(null);
+  };
 
   // Zoom & Views (default: 'compact')
   const [zoomLevel, setZoomLevel] = useState(() => localStorage.getItem('target_gantt_zoom') || 'compact');
@@ -600,7 +731,11 @@ export default function ProjectGantt({
                           style={{ height: `${OBJECTIVE_ROW_HEIGHT}px`, minHeight: `${OBJECTIVE_ROW_HEIGHT}px`, maxHeight: `${OBJECTIVE_ROW_HEIGHT}px`, boxSizing: 'border-box' }}
                         >
                           <div className="flex items-center min-w-0 flex-1">
-                            <span className="text-[11px] text-dark-200 truncate font-medium leading-none" title={obj.title}>
+                            <span 
+                              onClick={() => onEditObjective?.(obj)}
+                              className="text-[11px] text-dark-200 hover:text-accent-cyan truncate font-medium leading-none cursor-pointer transition-colors" 
+                              title={`${obj.title} (Cliquer pour modifier)`}
+                            >
                               {obj.title}
                             </span>
                           </div>
@@ -702,8 +837,10 @@ export default function ProjectGantt({
                 {weeks.map((w) => (
                   <div
                     key={w.weekId}
-                    className={`h-full border-r ${
-                      w.isCurrent 
+                    className={`h-full border-r transition-colors ${
+                      dragOverWeekId === w.weekId
+                        ? 'border-accent-cyan/60 bg-accent-cyan/15'
+                        : w.isCurrent 
                         ? 'border-accent-cyan/40 bg-accent-cyan/[0.04]' 
                         : 'border-dark-500/25'
                     }`}
@@ -780,24 +917,104 @@ export default function ProjectGantt({
                           className="relative flex items-center border-b border-dark-500/20 hover:bg-dark-500/10 transition-colors even:bg-dark-500/[0.02] odd:bg-transparent shrink-0 overflow-hidden"
                           style={{ height: `${OBJECTIVE_ROW_HEIGHT}px`, minHeight: `${OBJECTIVE_ROW_HEIGHT}px`, maxHeight: `${OBJECTIVE_ROW_HEIGHT}px`, boxSizing: 'border-box' }}
                         >
+                          {/* 1. Interactive Week drop & click zones */}
+                          <div className="absolute inset-0 flex">
+                            {weeks.map((w) => {
+                              const isHovered = dragOverObjId === obj.id && dragOverWeekId === w.weekId;
+                              const isAssigned = segments.some(s => s.weekId === w.weekId);
+
+                              return (
+                                <div
+                                  key={w.weekId}
+                                  onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.dataTransfer.dropEffect = 'move';
+                                    if (dragOverWeekId !== w.weekId || dragOverObjId !== obj.id) {
+                                      setDragOverWeekId(w.weekId);
+                                      setDragOverObjId(obj.id);
+                                    }
+                                  }}
+                                  onDragLeave={() => {
+                                    if (dragOverWeekId === w.weekId && dragOverObjId === obj.id) {
+                                      setDragOverWeekId(null);
+                                      setDragOverObjId(null);
+                                    }
+                                  }}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (draggingInfo) {
+                                      handleAssignWeek(draggingInfo.objective, w.weekId, draggingInfo.fromWeekId);
+                                      setDraggingInfo(null);
+                                      setDragOverWeekId(null);
+                                      setDragOverObjId(null);
+                                    }
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCellClick(obj, w.weekId);
+                                  }}
+                                  className={`h-full group/cell relative cursor-pointer transition-colors ${
+                                    isHovered ? 'bg-accent-cyan/30 ring-2 ring-inset ring-accent-cyan' : ''
+                                  }`}
+                                  style={{ width: `${colWidth}px`, minWidth: `${colWidth}px`, maxWidth: `${colWidth}px` }}
+                                  title={`Cliquer pour affecter "${obj.title}" à ${w.shortLabel} ou glisser-déposer`}
+                                >
+                                  {/* Ghost preview icon on hover when not assigned and not dragging */}
+                                  {!isAssigned && !draggingInfo && (
+                                    <div className="opacity-0 group-hover/cell:opacity-80 absolute inset-x-0.5 inset-y-1 rounded border border-dashed border-accent-cyan/40 bg-accent-cyan/5 flex items-center justify-center pointer-events-none transition-opacity">
+                                      <span className="text-[8px] text-accent-cyan font-bold leading-none">+</span>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* 2. Placed Segments */}
                           {segments.length > 0 ? (
                             segments.map((seg, sIdx) => (
                               <div
                                 key={sIdx}
+                                draggable={true}
+                                onDragStart={(e) => {
+                                  e.stopPropagation();
+                                  e.dataTransfer.setData('text/plain', obj.id);
+                                  e.dataTransfer.effectAllowed = 'move';
+                                  setDraggingInfo({
+                                    objective: obj,
+                                    fromWeekId: seg.weekId
+                                  });
+                                }}
+                                onDragEnd={() => {
+                                  setDraggingInfo(null);
+                                  setDragOverWeekId(null);
+                                  setDragOverObjId(null);
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setActivePopover({
+                                    objective: obj,
+                                    weekId: seg.weekId,
+                                    x: Math.min(rect.left, window.innerWidth - 270),
+                                    y: rect.bottom + 6
+                                  });
+                                }}
                                 style={{
                                   left: `${seg.left}px`,
                                   width: `${seg.width}px`
                                 }}
-                                className={`absolute h-[18px] rounded-md flex items-center justify-center text-[10px] font-bold shadow-sm transition-transform hover:scale-105 border ${
+                                className={`absolute h-[18px] rounded-md flex items-center justify-center text-[10px] font-bold shadow-sm transition-transform hover:scale-105 cursor-grab active:cursor-grabbing border select-none z-10 ${
                                   seg.isDone 
                                     ? 'bg-accent-green text-dark-950 border-accent-green/80' 
                                     : seg.prog > 0 
                                     ? 'bg-accent-cyan text-dark-950 border-accent-cyan/80' 
                                     : 'bg-dark-700/90 text-dark-200 border-dark-600/60'
-                                }`}
-                                title={`${obj.title} [${seg.weekId}] : ${seg.isDone ? 'Complété ✓' : seg.prog > 0 ? `${Math.round(seg.prog * 100)}% réalisé` : 'Affecté à cette semaine'}`}
+                                } ${draggingInfo?.objective?.id === obj.id && draggingInfo?.fromWeekId === seg.weekId ? 'opacity-40 scale-95' : ''}`}
+                                title={`${obj.title} [${seg.weekId}] : ${seg.isDone ? 'Complété ✓' : seg.prog > 0 ? `${Math.round(seg.prog * 100)}% réalisé` : 'Affecté à cette semaine'} — Glisser pour déplacer ou cliquer pour options`}
                               >
-                                <span className="truncate px-0.5 leading-none">
+                                <span className="truncate px-0.5 leading-none pointer-events-none">
                                   {seg.isDone ? '✓' : formatWeekShort(seg.weekId)}
                                 </span>
                               </div>
@@ -805,9 +1022,35 @@ export default function ProjectGantt({
                           ) : (
                             /* Non-assigned objective pill */
                             <div 
+                              draggable={true}
+                              onDragStart={(e) => {
+                                e.stopPropagation();
+                                e.dataTransfer.setData('text/plain', obj.id);
+                                e.dataTransfer.effectAllowed = 'move';
+                                setDraggingInfo({
+                                  objective: obj,
+                                  fromWeekId: null
+                                });
+                              }}
+                              onDragEnd={() => {
+                                setDraggingInfo(null);
+                                setDragOverWeekId(null);
+                                setDragOverObjId(null);
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setActivePopover({
+                                  objective: obj,
+                                  weekId: null,
+                                  isBacklog: true,
+                                  x: Math.min(rect.left, window.innerWidth - 270),
+                                  y: rect.bottom + 6
+                                });
+                              }}
                               style={{ left: `${Math.max(4, coords.left)}px` }}
-                              className="absolute h-[18px] rounded-md border border-dashed border-dark-600 bg-dark-800/60 text-dark-400 text-[9px] px-1.5 flex items-center gap-1 italic leading-none"
-                              title="Aucune semaine d'affectation : cet objectif est dans le backlog"
+                              className="absolute h-[18px] rounded-md border border-dashed border-dark-600 bg-dark-800/80 hover:border-accent-cyan text-dark-400 hover:text-accent-cyan text-[9px] px-1.5 flex items-center gap-1 italic leading-none cursor-grab active:cursor-grabbing shadow-sm transition-all select-none z-10"
+                              title="Glisser vers une semaine ou cliquer pour planifier"
                             >
                               <span>Non planifié (Backlog)</span>
                             </div>
@@ -850,9 +1093,100 @@ export default function ProjectGantt({
         </div>
 
         <div className="text-[11px] text-dark-400">
-          💡 Astuce : Cliquez sur <strong className="text-dark-200">▶</strong> pour révéler les barres par semaine, ou sur <strong className="text-accent-cyan">🔍</strong> pour zoomer au sein d'un projet.
+          💡 <strong className="text-accent-cyan">Planification interactive</strong> : Glissez-déposez une pastille ou cliquez sur une semaine pour changer l'affectation.
         </div>
       </div>
+
+      {/* Floating Popover for Quick Week Assignment & Backlog Actions */}
+      {activePopover && (
+        <>
+          <div 
+            className="fixed inset-0 z-50 bg-black/20 backdrop-blur-[1px]" 
+            onClick={() => setActivePopover(null)} 
+          />
+          <div
+            className="fixed z-50 bg-dark-800 border border-dark-600/90 rounded-2xl shadow-2xl p-3.5 min-w-[240px] max-w-[300px] text-xs animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-2.5 backdrop-blur-md"
+            style={{
+              left: `${Math.max(12, Math.min(activePopover.x, window.innerWidth - 300))}px`,
+              top: `${Math.min(activePopover.y, window.innerHeight - 230)}px`
+            }}
+          >
+            {/* Popover Header */}
+            <div className="flex items-start justify-between gap-2 pb-2 border-b border-dark-700/60">
+              <div className="min-w-0 flex-1">
+                <h4 className="font-bold text-dark-100 truncate text-xs" title={activePopover.objective.title}>
+                  {activePopover.objective.title}
+                </h4>
+                <span className="text-[10px] text-dark-400 font-medium flex items-center gap-1 mt-0.5">
+                  <Calendar size={11} className="text-accent-cyan" />
+                  {activePopover.weekId ? `Affecté à ${formatWeekShort(activePopover.weekId)}` : '📋 Actuellement en Backlog'}
+                </span>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setActivePopover(null)} 
+                className="text-dark-400 hover:text-dark-100 p-1 rounded-lg hover:bg-dark-700 transition-colors cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="flex flex-col gap-2">
+              {/* Backlog button if assigned */}
+              {activePopover.weekId && (
+                <button
+                  type="button"
+                  onClick={() => handleMoveToBacklog(activePopover.objective, activePopover.weekId)}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-accent-violet hover:bg-accent-violet/15 border border-accent-violet/30 transition-colors cursor-pointer shadow-sm"
+                >
+                  <Inbox size={14} />
+                  <span>Remettre dans le backlog</span>
+                </button>
+              )}
+
+              {/* Quick select week */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-dark-400 font-semibold uppercase tracking-wider">
+                  {activePopover.weekId ? 'Déplacer vers :' : 'Planifier pour :'}
+                </label>
+                <select
+                  value={activePopover.weekId || ''}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleAssignWeek(activePopover.objective, e.target.value, activePopover.weekId);
+                      setActivePopover(null);
+                    }
+                  }}
+                  className="w-full bg-dark-900/90 border border-dark-600 rounded-xl px-2.5 py-1.5 text-xs text-dark-100 focus:border-accent-cyan outline-none cursor-pointer"
+                >
+                  <option value="" disabled>Choisir une semaine...</option>
+                  {weeks.map(w => (
+                    <option key={w.weekId} value={w.weekId}>
+                      {w.shortLabel} {w.isCurrent ? "— (Cette semaine)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Edit objective modal button */}
+              {onEditObjective && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onEditObjective(activePopover.objective);
+                    setActivePopover(null);
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-dark-300 hover:text-dark-100 hover:bg-dark-700/80 border border-dark-600/50 transition-colors cursor-pointer mt-0.5"
+                >
+                  <Pencil size={13} />
+                  <span>Modifier les détails</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
