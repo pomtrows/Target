@@ -249,11 +249,13 @@ export default function ProjectObjectiveKanban({
 
       return (
         <span 
-          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-accent-green bg-accent-green/10 border border-accent-green/30 rounded-md px-2 py-0.5 leading-tight"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-dark-100 p-0 bg-transparent border-none text-left"
           title={`Semaine de réalisation : ${doneLabel}`}
         >
-          <CheckCircle2 size={12} className="text-accent-green shrink-0" />
-          <span>Réalisé : {doneLabel}</span>
+          <CheckCircle2 size={13} className="text-accent-green shrink-0" />
+          <span>
+            Réalisé : <span className="font-bold">{doneLabel}</span>
+          </span>
         </span>
       );
     }
