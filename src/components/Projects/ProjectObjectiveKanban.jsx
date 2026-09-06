@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Circle, Clock, CheckCircle2, Plus } from 'lucide-react';
+import { Circle, Clock, CheckCircle2, Plus, Calendar } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { getObjectiveProjectProgress, getObjectiveCompletedWeeks, getObjectiveProgress } from '../../utils/progressUtils';
-import { getCurrentWeekId } from '../../utils/weekUtils';
+import { getCurrentWeekId, formatWeekShort } from '../../utils/weekUtils';
 import ObjectiveCard from '../Dashboard/ObjectiveCard';
 import Modal from '../Shared/Modal';
 
@@ -206,6 +206,51 @@ export default function ProjectObjectiveKanban({
     return currentWeekId;
   };
 
+  // Get week badge for the card: assignment week for "En cours", completion week for "Terminé"
+  const getWeekBadge = (obj, columnId) => {
+    if (columnId === 'en_cours') {
+      const assignedWeeks = (obj.assignments || [])
+        .filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a))
+        .sort();
+      
+      if (assignedWeeks.length === 0) return null;
+
+      const label = assignedWeeks.length === 1
+        ? formatWeekShort(assignedWeeks[0])
+        : assignedWeeks.length === 2
+        ? `${formatWeekShort(assignedWeeks[0])}, ${formatWeekShort(assignedWeeks[1])}`
+        : `${formatWeekShort(assignedWeeks[0])}, ${formatWeekShort(assignedWeeks[1])} +${assignedWeeks.length - 2}`;
+
+      return (
+        <span 
+          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/30 rounded-md px-2 py-0.5 leading-tight"
+          title={`Affecté à : ${assignedWeeks.map(formatWeekShort).join(', ')}`}
+        >
+          <Calendar size={12} className="text-accent-cyan shrink-0" />
+          <span>Affecté : {label}</span>
+        </span>
+      );
+    }
+
+    if (columnId === 'termine') {
+      const completedWeeks = getObjectiveCompletedWeeks(obj, targetState.progress);
+      const doneWeek = (completedWeeks.length > 0 && completedWeeks[0]) || getEffectiveWeekId(obj);
+      const doneLabel = formatWeekShort(doneWeek);
+
+      return (
+        <span 
+          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-accent-green bg-accent-green/10 border border-accent-green/30 rounded-md px-2 py-0.5 leading-tight"
+          title={`Semaine de réalisation : ${doneLabel}`}
+        >
+          <CheckCircle2 size={12} className="text-accent-green shrink-0" />
+          <span>Réalisé : {doneLabel}</span>
+        </span>
+      );
+    }
+
+    return null;
+  };
+
   const handleDeleteClick = (objectiveId) => {
     const obj = projectObjectives.find(o => o.id === objectiveId);
     setDeleteConfirmObjective(obj || { id: objectiveId, title: 'cet objectif' });
@@ -386,6 +431,7 @@ export default function ProjectObjectiveKanban({
                                   compactMode={true}
                                   hideProject={true}
                                   disableLayout={true}
+                                  weekBadge={getWeekBadge(obj, col.id)}
                                 />
                               </div>
                             )}

@@ -21,7 +21,8 @@ export default function ObjectiveCard({
   compactMode = false, 
   isHighlighted = false,
   hideProject = false,
-  disableLayout = false
+  disableLayout = false,
+  weekBadge = null
 }) {
   const { user } = useAuth();
   const { state, dispatch } = useTarget();
@@ -218,6 +219,13 @@ export default function ObjectiveCard({
             </div>
           );
         })()}
+
+        {/* Custom Week / Status Badge */}
+        {weekBadge && (
+          <div className="mb-1.5 pl-1 flex items-center gap-1.5 flex-wrap">
+            {weekBadge}
+          </div>
+        )}
 
         {/* Title */}
         <h3 
