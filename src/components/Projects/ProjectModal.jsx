@@ -442,21 +442,23 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           <button
             type="button"
             onClick={() => setShowDescriptionMobile(prev => !prev)}
-            className="flex items-center justify-between w-full py-0.5 text-left cursor-pointer sm:cursor-default"
+            className="flex items-center gap-2 w-fit py-0.5 text-left cursor-pointer sm:cursor-default group"
           >
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-dark-300 hover:text-dark-100 sm:hover:text-dark-300 uppercase tracking-wider transition-colors">
-                Description
-              </span>
-              {description.trim() && !showDescriptionMobile && (
-                <span className="sm:hidden text-[10px] font-semibold text-accent-cyan/80 bg-accent-cyan/10 border border-accent-cyan/25 rounded-md px-1.5 py-0.5">
-                  Remplie
-                </span>
-              )}
-            </div>
-            <span className="sm:hidden text-dark-400 hover:text-dark-200 transition-colors p-0.5">
-              {showDescriptionMobile ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+            <span className="text-xs font-bold text-dark-300 group-hover:text-dark-100 sm:group-hover:text-dark-300 uppercase tracking-wider transition-colors">
+              Description
             </span>
+            <span className="sm:hidden text-dark-400 group-hover:text-dark-200 transition-colors flex items-center">
+              {showDescriptionMobile ? (
+                <ChevronUp size={18} strokeWidth={2.5} />
+              ) : (
+                <ChevronDown size={18} strokeWidth={2.5} />
+              )}
+            </span>
+            {description.trim() && !showDescriptionMobile && (
+              <span className="sm:hidden text-[10px] font-semibold text-accent-cyan/80 bg-accent-cyan/10 border border-accent-cyan/25 rounded-md px-1.5 py-0.5">
+                Remplie
+              </span>
+            )}
           </button>
 
           <div className={`${showDescriptionMobile ? 'block' : 'hidden sm:block'}`}>
