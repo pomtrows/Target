@@ -175,7 +175,6 @@ export default function ProjectsPage() {
 
   // Calculs pour le graphique compact mobile
   const totalProjects = stats.total || 0;
-  const completionRate = totalProjects > 0 ? Math.round((stats.termines / totalProjects) * 100) : 0;
   const donutRadius = 15;
   const donutCircumference = 2 * Math.PI * donutRadius;
   const terminesDash = totalProjects > 0 ? (stats.termines / totalProjects) * donutCircumference : 0;
@@ -726,11 +725,6 @@ export default function ProjectsPage() {
                   />
                 )}
               </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-[11px] font-black text-dark-100 leading-none">
-                  {completionRate}%
-                </span>
-              </div>
             </div>
 
             {/* Détails & Barre multi-segments */}
