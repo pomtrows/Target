@@ -63,7 +63,8 @@ export default function ObjectiveForm({
   const { sessions } = useSport();
   const { state: notesState, createFolder, createNote } = useNotes();
   const { projects, updateProject } = useProjects();
-  const [selectedProjectId, setSelectedProjectId] = useState(defaultProjectId || initialData?.projectId || '');
+  const initialProjId = defaultProjectId || initialData?.projectId || '';
+  const [selectedProjectId, setSelectedProjectId] = useState(initialProjId);
 
   const delegatableContacts = useMemo(() => {
     if (!state.contacts) return [];
@@ -135,7 +136,15 @@ export default function ObjectiveForm({
 
   const [title, setTitle] = useState(editObjective?.title || initialData?.title || '');
   const [target, setTarget] = useState(editObjective?.target || initialData?.target || 1);
-  const [categoryId, setCategoryId] = useState(editObjective?.categoryId || initialData?.categoryId || 'autre');
+  const [categoryId, setCategoryId] = useState(() => {
+    if (editObjective?.categoryId) return editObjective.categoryId;
+    if (initialData?.categoryId) return initialData.categoryId;
+    if (initialProjId) {
+      const p = (projects || []).find(item => item.id === initialProjId);
+      if (p && (p.categoryId || p.category_id)) return p.categoryId || p.category_id;
+    }
+    return state.categories?.[0]?.id || 'autre';
+  });
   const [priority, setPriority] = useState(editObjective?.priority || initialData?.priority || 'P3');
   const [sportSessionId, setSportSessionId] = useState(editObjective?.sportSessionId || '');
   const [assignedTo, setAssignedTo] = useState(editObjective?.assigned_to || '');
@@ -273,11 +282,21 @@ export default function ObjectiveForm({
       setFormAttachments(data?.attachments || []);
       setTitle(data?.title || '');
       setTarget(data?.target || 1);
-      setCategoryId(data?.categoryId || 'autre');
+      const matchedProj = (projects || []).find(p => (p.objectiveIds || []).includes(data?.id) || p.id === data?.projectId);
+      const targetProjId = matchedProj ? matchedProj.id : (data?.projectId || defaultProjectId || '');
+      setSelectedProjectId(targetProjId);
+
+      let initialCat = data?.categoryId;
+      if (!initialCat && targetProjId) {
+        const foundProj = (projects || []).find(p => p.id === targetProjId);
+        if (foundProj && (foundProj.categoryId || foundProj.category_id)) {
+          initialCat = foundProj.categoryId || foundProj.category_id;
+        }
+      }
+      setCategoryId(initialCat || state.categories?.[0]?.id || 'autre');
+
       setPriority(data?.priority || 'P3');
       setSportSessionId(data?.sportSessionId || '');
-      const matchedProj = (projects || []).find(p => (p.objectiveIds || []).includes(data?.id) || p.id === data?.projectId);
-      setSelectedProjectId(matchedProj ? matchedProj.id : (data?.projectId || defaultProjectId || ''));
       setAssignedTo(data?.assigned_to || '');
       setSubObjectives(data?.subObjectives || []);
       setAssignType(
@@ -295,7 +314,7 @@ export default function ObjectiveForm({
       setEndTime(initSched.endTime);
       setShowPlanningSection(initSched.days.length > 0 || !!initSched.startTime || !!initSched.endTime);
     }
-  }, [isOpen, editObjective, initialData, weekId, defaultProjectId]);
+  }, [isOpen, editObjective, initialData, weekId, defaultProjectId, projects]);
 
   const addSubObjective = () => {
     setSubObjectives([...subObjectives, { id: `sub-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`, title: '' }]);
@@ -351,6 +370,7 @@ export default function ObjectiveForm({
           title: title.trim(),
           target: Number(target),
           categoryId,
+          projectId: selectedProjectId || null,
           priority,
           sportSessionId: sportSessionId || null,
           assignments,
@@ -368,6 +388,7 @@ export default function ObjectiveForm({
           title: title.trim(),
           target: Number(target),
           categoryId,
+          projectId: selectedProjectId || null,
           priority,
           sportSessionId: sportSessionId || null,
           assignments,
@@ -602,7 +623,16 @@ export default function ObjectiveForm({
               </label>
               <select
                 value={selectedProjectId}
-                onChange={(e) => setSelectedProjectId(e.target.value)}
+                onChange={(e) => {
+                  const newProjId = e.target.value;
+                  setSelectedProjectId(newProjId);
+                  if (!editObjective && newProjId) {
+                    const foundProj = (projects || []).find(p => p.id === newProjId);
+                    if (foundProj && (foundProj.categoryId || foundProj.category_id)) {
+                      setCategoryId(foundProj.categoryId || foundProj.category_id);
+                    }
+                  }
+                }}
                 className="w-full bg-dark-800 border border-dark-600/50 rounded-xl py-2 px-3 text-xs text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer"
               >
                 <option value="">-- Aucun projet (objectif autonome) --</option>

@@ -1026,6 +1026,10 @@ export default function ProjectsPage() {
           }}
           editObjective={objectiveToEdit}
           defaultProjectId={focusedProject?.id || ''}
+          initialData={!objectiveToEdit && focusedProject ? { 
+            projectId: focusedProject.id, 
+            categoryId: focusedProject.categoryId || focusedProject.category_id 
+          } : null}
           zIndex={220}
         />
       )}
