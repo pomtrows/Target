@@ -777,11 +777,11 @@ export default function ProjectGantt({
         {/* SCROLLABLE WRAPPER (Horizontal + Vertical) */}
         <div 
           ref={scrollContainerRef}
-          className="flex-1 min-h-0 overflow-auto custom-scrollbar relative flex items-stretch"
+          className="flex-1 min-h-0 overflow-auto custom-scrollbar relative flex items-start"
         >
           {/* A. LEFT FROZEN COLUMN: PROJECTS & OBJECTIVES TREE */}
           <div 
-            className="sticky left-0 z-30 flex flex-col bg-dark-800 border-r border-dark-600/60 shrink-0 shadow-lg min-h-full relative"
+            className="sticky left-0 z-30 flex flex-col bg-dark-800 border-r border-dark-600/60 shrink-0 self-start min-h-full relative"
             style={{ width: `${leftColWidth}px`, minWidth: `${leftColWidth}px` }}
           >
             {/* Header matching height and 2-level structure of timeline header (65px total: 30px + 35px) */}
@@ -978,7 +978,7 @@ export default function ProjectGantt({
 
           {/* B. RIGHT TIMELINE CANVAS */}
           <div 
-            className="flex flex-col relative bg-dark-900/30 min-h-full shrink-0"
+            className="flex flex-col relative bg-dark-900/30 min-h-full self-start shrink-0"
             style={{ width: `${totalTimelineWidth}px`, minWidth: `${totalTimelineWidth}px` }}
           >
             {/* Header: Months (Level 1) + Weeks (Level 2) */}
