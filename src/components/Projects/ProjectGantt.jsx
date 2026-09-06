@@ -815,7 +815,6 @@ export default function ProjectGantt({
                     {isExpanded && linkedObjectives.map((obj) => {
                       const objProg = getObjectiveProjectProgress(obj, allProgress);
                       const isDone = objProg >= 1;
-                      const assignmentsCount = (obj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a)).length;
 
                       return (
                         <div 
@@ -831,14 +830,6 @@ export default function ProjectGantt({
                             >
                               {obj.title}
                             </span>
-                            {assignmentsCount > 1 && (
-                              <span 
-                                className="text-[9px] text-accent-cyan/90 bg-accent-cyan/10 border border-accent-cyan/20 rounded px-1 py-0.5 ml-1.5 font-semibold shrink-0" 
-                                title={`Affecté à ${assignmentsCount} semaines`}
-                              >
-                                {assignmentsCount} sem.
-                              </span>
-                            )}
                           </div>
 
                           {/* Checkbox to toggle completed / uncompleted */}
