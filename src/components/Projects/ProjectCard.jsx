@@ -65,13 +65,13 @@ export default function ProjectCard({
 
   // Priority metadata
   const priorityConfig = {
-    1: { label: 'P1', badgeBg: 'bg-accent-red/15 text-accent-red border-accent-red/30', dot: 'bg-accent-red' },
-    2: { label: 'P2', badgeBg: 'bg-accent-violet/15 text-accent-violet border-accent-violet/30', dot: 'bg-accent-violet' },
-    3: { label: 'P3', badgeBg: 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/30', dot: 'bg-accent-cyan' },
-    'P1': { label: 'P1', badgeBg: 'bg-accent-red/15 text-accent-red border-accent-red/30', dot: 'bg-accent-red' },
-    'P2': { label: 'P2', badgeBg: 'bg-accent-violet/15 text-accent-violet border-accent-violet/30', dot: 'bg-accent-violet' },
-    'P3': { label: 'P3', badgeBg: 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/30', dot: 'bg-accent-cyan' }
-  }[project.priority] || { label: 'P2', badgeBg: 'bg-accent-violet/15 text-accent-violet border-accent-violet/30', dot: 'bg-accent-violet' };
+    1: { label: 'P1', color: 'text-accent-red', badgeBg: 'bg-accent-red/15 text-accent-red border-accent-red/30', dot: 'bg-accent-red' },
+    2: { label: 'P2', color: 'text-accent-violet', badgeBg: 'bg-accent-violet/15 text-accent-violet border-accent-violet/30', dot: 'bg-accent-violet' },
+    3: { label: 'P3', color: 'text-accent-cyan', badgeBg: 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/30', dot: 'bg-accent-cyan' },
+    'P1': { label: 'P1', color: 'text-accent-red', badgeBg: 'bg-accent-red/15 text-accent-red border-accent-red/30', dot: 'bg-accent-red' },
+    'P2': { label: 'P2', color: 'text-accent-violet', badgeBg: 'bg-accent-violet/15 text-accent-violet border-accent-violet/30', dot: 'bg-accent-violet' },
+    'P3': { label: 'P3', color: 'text-accent-cyan', badgeBg: 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/30', dot: 'bg-accent-cyan' }
+  }[project.priority] || { label: 'P2', color: 'text-accent-violet', badgeBg: 'bg-accent-violet/15 text-accent-violet border-accent-violet/30', dot: 'bg-accent-violet' };
 
   // Status metadata
   const statusConfig = {
@@ -154,6 +154,18 @@ export default function ProjectCard({
 
     setProjectNoteId(noteId);
     setShowNotesModal(true);
+  };
+
+  // Cycle priority P1 -> P2 -> P3 -> P1
+  const handlePriorityClick = (e) => {
+    e?.stopPropagation();
+    const current = project.priority;
+    let nextPriority;
+    if (current === 1 || current === 'P1') nextPriority = 2;
+    else if (current === 2 || current === 'P2') nextPriority = 3;
+    else nextPriority = 1;
+
+    updateProject(project.id, { priority: nextPriority });
   };
 
   const notesFolder = notesState.folders.find(f => f.name === 'Projets');
@@ -298,47 +310,60 @@ export default function ProjectCard({
           </div>
         </div>
 
-        {/* Objectives Progress Bar */}
-        <div 
-          className="flex flex-col gap-1.5 bg-dark-900/50 rounded-xl border border-dark-700/30"
-          style={{ padding: '6px 8px' }}
-        >
-          <div className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-1.5 text-dark-300 font-medium">
-              Objectifs :
-              <strong className="text-dark-100">
-                {linkedObjectives.length > 0 ? `${completedObjectivesCount}/${linkedObjectives.length}` : '0'}
-              </strong>
-            </span>
-            <span className="font-bold text-accent-cyan text-[11px]">
-              {linkedObjectives.length > 0 ? `${progressPercent}%` : 'Aucun lié'}
-            </span>
+        {/* Objectives Progress Bar & Priority */}
+        <div className="flex items-center gap-2.5">
+          <div 
+            className="flex-1 min-w-0 flex flex-col gap-1.5 bg-dark-900/50 rounded-xl border border-dark-700/30"
+            style={{ padding: '6px 8px' }}
+          >
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 text-dark-300 font-medium">
+                Objectifs :
+                <strong className="text-dark-100">
+                  {linkedObjectives.length > 0 ? `${completedObjectivesCount}/${linkedObjectives.length}` : '0'}
+                </strong>
+              </span>
+              <span className="font-bold text-accent-cyan text-[11px]">
+                {linkedObjectives.length > 0 ? `${progressPercent}%` : 'Aucun lié'}
+              </span>
+            </div>
+
+            <div className="w-full bg-dark-700 h-2 rounded-full overflow-hidden">
+              <motion.div
+                className={`h-full rounded-full ${
+                  progressPercent === 100 
+                    ? 'bg-accent-green' 
+                    : progressPercent > 0 
+                    ? 'bg-gradient-to-r from-accent-cyan to-accent-violet' 
+                    : 'bg-dark-600'
+                }`}
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPercent}%` }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+              />
+            </div>
           </div>
 
-          <div className="w-full bg-dark-700 h-2 rounded-full overflow-hidden">
-            <motion.div
-              className={`h-full rounded-full ${
-                progressPercent === 100 
-                  ? 'bg-accent-green' 
-                  : progressPercent > 0 
-                  ? 'bg-gradient-to-r from-accent-cyan to-accent-violet' 
-                  : 'bg-dark-600'
-              }`}
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPercent}%` }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-            />
-          </div>
+          {/* Priority */}
+          <button 
+            type="button"
+            onClick={handlePriorityClick}
+            className="flex-shrink-0 w-[38px] flex justify-center items-center font-black text-lg cursor-pointer hover:scale-110 transition-transform bg-transparent border-none p-0"
+            title={`Priorité ${priorityConfig.label} — Cliquer pour changer`}
+          >
+            <span className={priorityConfig.color}>
+              {priorityConfig.label}
+            </span>
+          </button>
         </div>
 
-        {/* Bottom Actions: Status selector, Priority & Badges (Attachments, Notes, Details) */}
+        {/* Bottom Actions: Status selector (optional) & Badges (Attachments, Notes, Details) */}
         <div 
-          className="flex items-center justify-between gap-2 border-t border-dark-700/40"
+          className="flex items-center justify-end gap-1.5 border-t border-dark-700/40"
           style={{ paddingTop: '6px' }}
         >
-          {/* Priority Badge & optional Status dropdown */}
-          <div className="flex items-center gap-2">
-            {showStatus && (
+          {showStatus && (
+            <div className="mr-auto">
               <select
                 value={project.status}
                 onChange={(e) => changeProjectStatus(project.id, e.target.value)}
@@ -350,17 +375,8 @@ export default function ProjectCard({
                 <option value="1-En cours" className="bg-dark-800 text-accent-cyan">🔵 1-En cours</option>
                 <option value="2-Terminé" className="bg-dark-800 text-accent-green">🟢 2-Terminé</option>
               </select>
-            )}
-
-            {/* Priority Badge */}
-            <span 
-              className={`text-[11px] font-bold rounded-md border flex items-center gap-1.5 ${priorityConfig.badgeBg}`}
-              style={{ padding: '2px 6px' }}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${priorityConfig.dot}`} />
-              {priorityConfig.label}
-            </span>
-          </div>
+            </div>
+          )}
 
           {/* Attachments & Notes buttons */}
           <div className="flex items-center gap-1.5">
