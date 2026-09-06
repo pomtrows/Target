@@ -564,8 +564,7 @@ export default function ProjectGantt({
                           key={obj.id}
                           className="flex items-center justify-between gap-2 pl-8 pr-6 py-1.5 hover:bg-dark-500/10 transition-colors h-[38px] border-b border-dark-500/20 even:bg-dark-500/[0.02] odd:bg-transparent"
                         >
-                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                            <span className="text-dark-500 text-xs">└</span>
+                          <div className="flex items-center min-w-0 flex-1">
                             <span className="text-xs text-dark-200 truncate font-medium" title={obj.title}>
                               {obj.title}
                             </span>
