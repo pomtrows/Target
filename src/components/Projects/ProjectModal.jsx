@@ -649,7 +649,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                     value={newObjTitle}
                     onChange={(e) => setNewObjTitle(e.target.value)}
                     placeholder="Ex: Rédiger le cahier des charges, Maquette Figma..."
-                    className="w-full bg-dark-900 border border-dark-600/60 rounded-xl text-xs text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan h-[34px] pl-3.5 pr-3"
+                    className="w-full bg-dark-900 border border-dark-600/60 rounded-xl text-xs text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan h-[34px]"
+                    style={{ paddingLeft: '14px', paddingRight: '12px' }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
