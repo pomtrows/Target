@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles, Trash2, Paperclip, FileText, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useProjects } from '../../contexts/ProjectsContext';
 import { useNotes } from '../../contexts/NotesContext';
 import { getObjectiveProjectProgress } from '../../utils/progressUtils';
-import { getCurrentWeekId } from '../../utils/weekUtils';
+import { getCurrentWeekId, getSelectableWeeks, formatWeekLabel } from '../../utils/weekUtils';
 import { getProjectEffectiveDates } from '../../utils/projectUtils';
 import { generateUUID } from '../../utils/offlineSync';
 import Modal from '../Shared/Modal';
@@ -43,11 +43,23 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
   // Inline objective creation state
   const [newObjTitle, setNewObjTitle] = useState('');
   const [newObjPriority, setNewObjPriority] = useState('P2');
-  const [newObjAssignCurrentWeek, setNewObjAssignCurrentWeek] = useState(true);
+  const [newObjAssignWeeks, setNewObjAssignWeeks] = useState(() => [getCurrentWeekId()]);
+  const [isWeekDropdownOpen, setIsWeekDropdownOpen] = useState(false);
+  const weekDropdownRef = useRef(null);
   const [isCreatingInlineObj, setIsCreatingInlineObj] = useState(false);
   const [inlineObjFeedback, setInlineObjFeedback] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (weekDropdownRef.current && !weekDropdownRef.current.contains(event.target)) {
+        setIsWeekDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -100,6 +112,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
     setObjectiveMode(null);
     setNewObjTitle('');
     setNewObjPriority('P2');
+    setNewObjAssignWeeks([getCurrentWeekId()]);
+    setIsWeekDropdownOpen(false);
     setInlineObjFeedback('');
     setError('');
   }, [projectToEdit?.id, isOpen]);
@@ -182,7 +196,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
     setInlineObjFeedback('');
     try {
       const newId = `obj-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
-      const assignments = newObjAssignCurrentWeek ? [getCurrentWeekId()] : [];
+      const assignments = newObjAssignWeeks;
 
       await dispatch({
         type: 'ADD_OBJECTIVE',
@@ -201,6 +215,8 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
 
       setSelectedObjectiveIds(prev => prev.includes(newId) ? prev : [...prev, newId]);
       setNewObjTitle('');
+      setNewObjAssignWeeks([getCurrentWeekId()]);
+      setIsWeekDropdownOpen(false);
       setInlineObjFeedback('✓ Objectif créé et rattaché !');
       setTimeout(() => setInlineObjFeedback(''), 3000);
     } catch (err) {
@@ -613,16 +629,47 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
 
               {/* Ligne Planification & Boutons */}
               <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
-                {/* Planifier pour cette semaine */}
-                <label className="flex items-center gap-1.5 text-xs text-dark-300 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={newObjAssignCurrentWeek}
-                    onChange={(e) => setNewObjAssignCurrentWeek(e.target.checked)}
-                    className="rounded border-dark-600 text-accent-cyan focus:ring-0 cursor-pointer"
-                  />
-                  <span>Planifier pour cette semaine</span>
-                </label>
+                {/* Sélecteur de semaines */}
+                <div className="relative w-full sm:w-auto" ref={weekDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsWeekDropdownOpen(!isWeekDropdownOpen)}
+                    className="w-full sm:w-auto flex items-center justify-between gap-2 bg-dark-700/50 hover:bg-dark-700/80 border border-dark-600/50 rounded-xl py-1.5 px-3 text-xs text-dark-100 focus:outline-none focus:border-accent-cyan/50 transition-colors cursor-pointer sm:min-w-[240px] sm:max-w-[300px]"
+                  >
+                    <span className="truncate">
+                      {newObjAssignWeeks.length === 0
+                        ? "Sélectionner des semaines..."
+                        : newObjAssignWeeks.length === 1
+                          ? formatWeekLabel(newObjAssignWeeks[0])
+                          : `${newObjAssignWeeks.length} semaines sélectionnées`}
+                    </span>
+                    <span className="text-dark-400 text-xs shrink-0">▼</span>
+                  </button>
+
+                  {isWeekDropdownOpen && (
+                    <div className="absolute z-30 bottom-full left-0 mb-1.5 w-full sm:w-80 max-h-56 overflow-y-auto custom-scrollbar bg-dark-800 border border-dark-600/50 rounded-xl shadow-xl p-2 space-y-1">
+                      {getSelectableWeeks(4, 52).map(week => (
+                        <label key={week} className="flex items-center gap-3 p-2 rounded-lg hover:bg-dark-700/50 cursor-pointer transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={newObjAssignWeeks.includes(week)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setNewObjAssignWeeks([...newObjAssignWeeks, week]);
+                              } else {
+                                setNewObjAssignWeeks(newObjAssignWeeks.filter(w => w !== week));
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-dark-500 bg-dark-700 text-accent-cyan focus:ring-accent-cyan/50 focus:ring-offset-dark-800 cursor-pointer"
+                          />
+                          <span className={`text-xs sm:text-sm ${newObjAssignWeeks.includes(week) ? 'text-accent-cyan font-medium' : 'text-dark-200'}`}>
+                            {formatWeekLabel(week)}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <div className="flex items-center gap-2 ml-auto">
                   <button
@@ -764,7 +811,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           priority: newObjPriority,
           categoryId: categoryId,
           projectId: projectToEdit?.id || tempProjectId,
-          assignments: newObjAssignCurrentWeek ? [getCurrentWeekId()] : []
+          assignments: newObjAssignWeeks
         }}
         defaultProjectId={projectToEdit?.id || tempProjectId}
         zIndex={250}
