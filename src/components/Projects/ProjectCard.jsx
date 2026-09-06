@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Paperclip, FileText, Calendar, AlertTriangle, Clock, 
@@ -15,7 +15,7 @@ import AttachmentManager from '../Attachments/AttachmentManager';
 import NoteEditor from '../Notes/NoteEditor';
 import Modal from '../Shared/Modal';
 
-export default function ProjectCard({ 
+function ProjectCard({ 
   project, 
   onEdit, 
   onOpenDetails,
@@ -41,27 +41,30 @@ export default function ProjectCard({
     color: '#94a3b8'
   };
 
-  // Linked objectives
-  const linkedObjectiveIds = new Set(project.objectiveIds || []);
-  const linkedObjectives = (targetState.objectives || []).filter(
-    obj => linkedObjectiveIds.has(obj.id) || obj.projectId === project.id
-  );
+  // Memoized progress calculation based on linked objectives
+  const { completedObjectivesCount, progressPercent, linkedObjectives } = useMemo(() => {
+    const linkedObjectiveIds = new Set(project.objectiveIds || []);
+    const objs = (targetState.objectives || []).filter(
+      obj => linkedObjectiveIds.has(obj.id) || obj.projectId === project.id
+    );
 
-  // Calculate progress based on all recorded weeks for linked objectives
-  let completedObjectivesCount = 0;
-  let totalProgressRatio = 0;
+    let count = 0;
+    let totalRatio = 0;
 
-  if (linkedObjectives.length > 0) {
-    linkedObjectives.forEach(obj => {
-      const prog = getObjectiveProjectProgress(obj, targetState.progress);
-      totalProgressRatio += prog;
-      if (prog >= 1) completedObjectivesCount++;
-    });
-  }
+    if (objs.length > 0) {
+      objs.forEach(obj => {
+        const prog = getObjectiveProjectProgress(obj, targetState.progress);
+        totalRatio += prog;
+        if (prog >= 1) count++;
+      });
+    }
 
-  const progressPercent = linkedObjectives.length > 0
-    ? Math.round((totalProgressRatio / linkedObjectives.length) * 100)
-    : 0;
+    const percent = objs.length > 0
+      ? Math.round((totalRatio / objs.length) * 100)
+      : 0;
+
+    return { completedObjectivesCount: count, progressPercent: percent, linkedObjectives: objs };
+  }, [project.id, project.objectiveIds, targetState.objectives, targetState.progress]);
 
   // Priority metadata
   const priorityConfig = {
@@ -485,3 +488,5 @@ export default function ProjectCard({
     </>
   );
 }
+
+export default memo(ProjectCard);

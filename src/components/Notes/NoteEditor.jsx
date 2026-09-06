@@ -10,7 +10,6 @@ import {
   Clock, Type, AlignLeft, AlignCenter, AlignRight,
   Undo2, Redo2, Image
 } from 'lucide-react';
-import { exportNoteToDocx } from '../../utils/docxExport';
 
 const WordIcon = ({ size = 20 }) => (
   <svg 
@@ -369,6 +368,7 @@ export default function NoteEditor({ noteId }) {
       updated_at: new Date().toISOString()
     };
     try {
+      const { exportNoteToDocx } = await import('../../utils/docxExport');
       await exportNoteToDocx(currentNote);
     } catch (err) {
       alert("Erreur lors de l'exportation : " + err.message);

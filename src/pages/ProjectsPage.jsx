@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FolderKanban, Plus, Search, Filter, TrendingUp, Columns, CalendarRange,
@@ -13,13 +13,24 @@ import { getProjectEffectiveDates } from '../utils/projectUtils';
 import { getObjectiveProjectProgress } from '../utils/progressUtils';
 import { getCurrentWeekId } from '../utils/weekUtils';
 import ProjectKanban from '../components/Projects/ProjectKanban';
-import ProjectGantt from '../components/Projects/ProjectGantt';
 import ProjectObjectiveKanban from '../components/Projects/ProjectObjectiveKanban';
-import ProjectVelocity from '../components/Projects/ProjectVelocity';
-import ProjectModal from '../components/Projects/ProjectModal';
-import ProjectDetailModal from '../components/Projects/ProjectDetailModal';
 import ObjectiveForm from '../components/Dashboard/ObjectiveForm';
 import Modal from '../components/Shared/Modal';
+
+// Code Splitting / Lazy Loading for heavy views and modals
+const ProjectGantt = lazy(() => import('../components/Projects/ProjectGantt'));
+const ProjectVelocity = lazy(() => import('../components/Projects/ProjectVelocity'));
+const ProjectModal = lazy(() => import('../components/Projects/ProjectModal'));
+const ProjectDetailModal = lazy(() => import('../components/Projects/ProjectDetailModal'));
+
+function ViewLoader() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center min-h-[350px] gap-3">
+      <div className="w-8 h-8 border-3 border-accent-cyan border-t-transparent rounded-full animate-spin" />
+      <span className="text-xs text-dark-400 font-medium animate-pulse">Chargement...</span>
+    </div>
+  );
+}
 
 const SQL_SCRIPT = `-- 1. Création de la table projects
 CREATE TABLE IF NOT EXISTS public.projects (
@@ -143,7 +154,7 @@ export default function ProjectsPage() {
   const categories = targetState.categories || [];
 
   // KPIs
-  const today = startOfDay(new Date());
+  const today = useMemo(() => startOfDay(new Date()), []);
   const stats = useMemo(() => {
     let nonLances = 0;
     let enCours = 0;
@@ -945,22 +956,26 @@ export default function ProjectsPage() {
             onAddObjective={handleOpenAddObjective}
           />
         ) : viewMode === 'gantt' ? (
-          <ProjectGantt
-            key={focusedProject.id}
-            projects={[focusedProject]}
-            focusedProjectId={focusedProject.id}
-            onEdit={handleOpenEdit}
-            onOpenDetails={handleOpenDetails}
-            onFocusProject={handleFocusProject}
-            onEditObjective={handleOpenEditObjective}
-          />
+          <Suspense fallback={<ViewLoader />}>
+            <ProjectGantt
+              key={focusedProject.id}
+              projects={[focusedProject]}
+              focusedProjectId={focusedProject.id}
+              onEdit={handleOpenEdit}
+              onOpenDetails={handleOpenDetails}
+              onFocusProject={handleFocusProject}
+              onEditObjective={handleOpenEditObjective}
+            />
+          </Suspense>
         ) : (
-          <ProjectVelocity
-            project={focusedProject}
-            onEditObjective={handleOpenEditObjective}
-            onAddObjective={handleOpenAddObjective}
-            onOpenDetails={handleOpenDetails}
-          />
+          <Suspense fallback={<ViewLoader />}>
+            <ProjectVelocity
+              project={focusedProject}
+              onEditObjective={handleOpenEditObjective}
+              onAddObjective={handleOpenAddObjective}
+              onOpenDetails={handleOpenDetails}
+            />
+          </Suspense>
         )
       ) : filteredProjects.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center min-h-[350px] p-8 text-center bg-dark-800/40 border border-dashed border-dark-700 rounded-3xl gap-4">
@@ -1007,40 +1022,48 @@ export default function ProjectsPage() {
           onFocusProject={handleFocusProject}
         />
       ) : viewMode === 'gantt' ? (
-        <ProjectGantt
-          projects={filteredProjects}
-          onEdit={handleOpenEdit}
-          onOpenDetails={handleOpenDetails}
-          onFocusProject={handleFocusProject}
-          onEditObjective={handleOpenEditObjective}
-        />
+        <Suspense fallback={<ViewLoader />}>
+          <ProjectGantt
+            projects={filteredProjects}
+            onEdit={handleOpenEdit}
+            onOpenDetails={handleOpenDetails}
+            onFocusProject={handleFocusProject}
+            onEditObjective={handleOpenEditObjective}
+          />
+        </Suspense>
       ) : (
-        <ProjectVelocity
-          projects={filteredProjects}
-          onEditObjective={handleOpenEditObjective}
-          onAddObjective={handleOpenAddObjective}
-          onOpenDetails={handleOpenDetails}
-          onFocusProject={handleFocusProject}
-        />
+        <Suspense fallback={<ViewLoader />}>
+          <ProjectVelocity
+            projects={filteredProjects}
+            onEditObjective={handleOpenEditObjective}
+            onAddObjective={handleOpenAddObjective}
+            onOpenDetails={handleOpenDetails}
+            onFocusProject={handleFocusProject}
+          />
+        </Suspense>
       )}
 
       {/* Project Create / Edit Modal */}
       {showProjectModal && (
-        <ProjectModal
-          isOpen={showProjectModal}
-          onClose={() => setShowProjectModal(false)}
-          projectToEdit={projectToEdit}
-        />
+        <Suspense fallback={null}>
+          <ProjectModal
+            isOpen={showProjectModal}
+            onClose={() => setShowProjectModal(false)}
+            projectToEdit={projectToEdit}
+          />
+        </Suspense>
       )}
 
       {/* Project Detail Modal */}
       {activeDetailProject && (
-        <ProjectDetailModal
-          isOpen={!!activeDetailProject}
-          onClose={() => setDetailProject(null)}
-          project={activeDetailProject}
-          onEdit={handleOpenEdit}
-        />
+        <Suspense fallback={null}>
+          <ProjectDetailModal
+            isOpen={!!activeDetailProject}
+            onClose={() => setDetailProject(null)}
+            project={activeDetailProject}
+            onEdit={handleOpenEdit}
+          />
+        </Suspense>
       )}
 
       {/* Objective Create / Edit Modal (from project focus mode) */}

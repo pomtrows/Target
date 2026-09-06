@@ -81,6 +81,12 @@ export default defineConfig({
             if (id.includes('date-fns') || id.includes('canvas-confetti')) {
               return 'utils';
             }
+            if (id.includes('@hello-pangea/dnd')) {
+              return 'dnd';
+            }
+            if (id.includes('docx')) {
+              return 'docx';
+            }
             return 'vendor';
           }
         }

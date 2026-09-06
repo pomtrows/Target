@@ -85,6 +85,28 @@ export default function ProjectVelocity({
     return map;
   }, [scopedObjectives, scopedProjects, project, projects]);
 
+  // Index optimisé des timestamps de progression par ID d'objectif
+  const timestampsByObjId = useMemo(() => {
+    const map = new Map();
+    if (!targetState.progressTimestamps) return map;
+    for (const [key, ts] of Object.entries(targetState.progressTimestamps)) {
+      const lastHyphen = key.lastIndexOf('-');
+      if (lastHyphen !== -1) {
+        const objId = key.substring(lastHyphen + 1);
+        let list = map.get(objId);
+        if (!list) {
+          list = [];
+          map.set(objId, list);
+        }
+        try {
+          const ms = new Date(ts).getTime();
+          if (!isNaN(ms)) list.push(ms);
+        } catch {}
+      }
+    }
+    return map;
+  }, [targetState.progressTimestamps]);
+
   // ==========================================
   // 1. Définition des bornes temporelles
   // ==========================================
@@ -203,16 +225,14 @@ export default function ProjectVelocity({
       }
     }
 
-    // 2. Vérification par timestamp de progression exact
-    if (targetState.progressTimestamps) {
-      for (const [key, ts] of Object.entries(targetState.progressTimestamps)) {
-        if (key.endsWith(`-${obj.id}`)) {
-          try {
-            const d = new Date(ts);
-            if (d >= interval.start && d <= interval.end) {
-              return true;
-            }
-          } catch {}
+    // 2. Vérification rapide par timestamp de progression indexé
+    const tsList = timestampsByObjId.get(obj.id);
+    if (tsList && tsList.length > 0) {
+      const startMs = interval.start.getTime();
+      const endMs = interval.end.getTime();
+      for (const ms of tsList) {
+        if (ms >= startMs && ms <= endMs) {
+          return true;
         }
       }
     }

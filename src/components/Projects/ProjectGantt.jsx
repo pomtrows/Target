@@ -414,11 +414,20 @@ export default function ProjectGantt({
   const { timelineStart, timelineEnd, weeks } = useMemo(() => {
     let minDate = today;
     let maxDate = addWeeks(today, 8);
-
     const relevantProjects = focusedProject ? [focusedProject] : projects;
+    let foundValidDate = false;
 
     if (relevantProjects.length > 0) {
-      let foundValidDate = false;
+      // Fast indexing of objectives
+      const objByProject = new Map();
+      const objById = new Map();
+      allObjectives.forEach(o => {
+        objById.set(o.id, o);
+        if (o.projectId) {
+          if (!objByProject.has(o.projectId)) objByProject.set(o.projectId, []);
+          objByProject.get(o.projectId).push(o);
+        }
+      });
 
       relevantProjects.forEach(p => {
         if (p.startDate) {
@@ -436,10 +445,14 @@ export default function ProjectGantt({
           }
         }
 
-        // Also check linked objectives assignments
-        const pObjIds = new Set(p.objectiveIds || []);
-        const pObjs = allObjectives.filter(o => pObjIds.has(o.id) || o.projectId === p.id);
-        pObjs.forEach(o => {
+        // Also check linked objectives assignments via fast index
+        const seenObjs = new Set(objByProject.get(p.id) || []);
+        (p.objectiveIds || []).forEach(id => {
+          const o = objById.get(id);
+          if (o) seenObjs.add(o);
+        });
+
+        seenObjs.forEach(o => {
           (o.assignments || []).forEach(wId => {
             const wDates = getWeekDates(wId);
             if (wDates) {

@@ -82,20 +82,40 @@ export default function ProjectKanban({
     changeProjectStatus(draggableId, newStatus);
   };
 
+  const projectsByColumn = useMemo(() => {
+    const map = {
+      '0-Non lancé': [],
+      '1-En cours': [],
+      '2-Terminé': []
+    };
+    (projects || []).forEach(p => {
+      const status = p.status || '0-Non lancé';
+      if (map[status]) {
+        map[status].push(p);
+      } else {
+        map['0-Non lancé'].push(p);
+      }
+    });
+
+    Object.keys(map).forEach(status => {
+      map[status].sort((a, b) => {
+        const rankA = getPriorityRank(a.priority);
+        const rankB = getPriorityRank(b.priority);
+        if (rankA !== rankB) {
+          return rankA - rankB;
+        }
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    });
+
+    return map;
+  }, [projects]);
+
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 md:gap-3.5 items-start">
         {orderedColumns.map((col) => {
-          const colProjects = projects
-            .filter(p => p.status === col.id)
-            .sort((a, b) => {
-              const rankA = getPriorityRank(a.priority);
-              const rankB = getPriorityRank(b.priority);
-              if (rankA !== rankB) {
-                return rankA - rankB;
-              }
-              return (a.name || '').localeCompare(b.name || '');
-            });
+          const colProjects = projectsByColumn[col.id] || [];
           const ColIcon = col.icon;
 
           return (
