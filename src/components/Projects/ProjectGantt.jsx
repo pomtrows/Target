@@ -468,19 +468,35 @@ export default function ProjectGantt({
         >
           {/* A. LEFT FROZEN COLUMN: PROJECTS & OBJECTIVES TREE */}
           <div 
-            className="sticky left-0 z-30 flex flex-col bg-dark-800 border-r border-dark-600/60 flex-shrink-0 shadow-lg min-h-full"
+            className="sticky left-0 z-30 flex flex-col bg-dark-800 border-r border-dark-600/60 shrink-0 shadow-lg min-h-full"
             style={{ width: '310px', minWidth: '310px' }}
           >
-            {/* Header placeholder matching height of timeline header */}
+            {/* Header matching height and 2-level structure of timeline header (65px total: 30px + 35px) */}
             <div 
-              className="sticky top-0 z-40 h-[65px] border-b border-dark-500/30 bg-dark-800 flex items-center justify-between pl-3.5 pr-6 text-xs font-bold text-dark-300 uppercase tracking-wider"
+              className="sticky top-0 z-40 flex flex-col bg-dark-800 shrink-0"
+              style={{ height: '65px', minHeight: '65px', maxHeight: '65px', boxSizing: 'border-box' }}
             >
-              <span>Projets & Objectifs</span>
-              <span className="text-[10px] text-dark-400 font-normal">Arborescence</span>
+              {/* Level 1: Matches Month header line (30px) */}
+              <div 
+                className="flex items-center justify-between pl-3.5 pr-6 border-b border-dark-500/30 text-xs font-bold text-dark-300 uppercase tracking-wider shrink-0 bg-dark-800"
+                style={{ height: '30px', minHeight: '30px', maxHeight: '30px', boxSizing: 'border-box' }}
+              >
+                <span>Projets & Objectifs</span>
+                <span className="text-[10px] text-dark-400 font-normal">Arborescence</span>
+              </div>
+
+              {/* Level 2: Matches Week header line (35px) */}
+              <div 
+                className="flex items-center justify-between pl-3.5 pr-6 border-b border-dark-500/30 text-[10px] text-dark-400 font-medium tracking-wider shrink-0 bg-dark-800/80"
+                style={{ height: '35px', minHeight: '35px', maxHeight: '35px', boxSizing: 'border-box' }}
+              >
+                <span>Titre / Catégorie</span>
+                <span>Priorité</span>
+              </div>
             </div>
 
             {/* Tree Rows List */}
-            <div className="flex flex-col">
+            <div className="flex flex-col shrink-0">
               {displayedProjects.map((project) => {
                 const isExpanded = expandedProjectIds.has(project.id);
                 const linkedObjectives = getProjectObjectives(project);
@@ -492,7 +508,8 @@ export default function ProjectGantt({
                   <React.Fragment key={project.id}>
                     {/* Project Row Header in Tree */}
                     <div 
-                      className="group flex items-center justify-between gap-2 pl-3.5 pr-6 hover:bg-dark-500/10 transition-colors h-[48px] border-b border-dark-500/30 bg-dark-800/90"
+                      className="group flex items-center justify-between gap-2 pl-3.5 pr-6 hover:bg-dark-500/10 transition-colors border-b border-dark-500/30 bg-dark-800/90 shrink-0 overflow-hidden"
+                      style={{ height: '48px', minHeight: '48px', maxHeight: '48px', boxSizing: 'border-box' }}
                     >
                       <div className="flex items-center gap-1.5 min-w-0 flex-1">
                         {/* Expand Button */}
@@ -565,7 +582,8 @@ export default function ProjectGantt({
                       return (
                         <div 
                           key={obj.id}
-                          className="flex items-center justify-between gap-2 pl-8 pr-6 py-1.5 hover:bg-dark-500/10 transition-colors h-[38px] border-b border-dark-500/20 even:bg-dark-500/[0.02] odd:bg-transparent"
+                          className="flex items-center justify-between gap-2 pl-8 pr-6 hover:bg-dark-500/10 transition-colors border-b border-dark-500/20 even:bg-dark-500/[0.02] odd:bg-transparent shrink-0 overflow-hidden"
+                          style={{ height: '38px', minHeight: '38px', maxHeight: '38px', boxSizing: 'border-box' }}
                         >
                           <div className="flex items-center min-w-0 flex-1">
                             <span className="text-xs text-dark-200 truncate font-medium" title={obj.title}>
@@ -599,16 +617,20 @@ export default function ProjectGantt({
 
           {/* B. RIGHT TIMELINE CANVAS */}
           <div 
-            className="flex flex-col relative bg-dark-900/30 min-h-full flex-shrink-0"
+            className="flex flex-col relative bg-dark-900/30 min-h-full shrink-0"
             style={{ width: `${totalTimelineWidth}px`, minWidth: `${totalTimelineWidth}px` }}
           >
             {/* Header: Months (Level 1) + Weeks (Level 2) */}
             <div 
               onWheel={handleTimelineWheel}
-              className="sticky top-0 z-20 flex flex-col bg-dark-800/95 border-b border-dark-500/30 backdrop-blur-md h-[65px]"
+              className="sticky top-0 z-20 flex flex-col bg-dark-800/95 backdrop-blur-md shrink-0"
+              style={{ height: '65px', minHeight: '65px', maxHeight: '65px', boxSizing: 'border-box' }}
             >
               {/* Level 1: Month Headers */}
-              <div className="flex border-b border-dark-500/30 h-[30px] text-xs font-bold text-dark-200">
+              <div 
+                className="flex border-b border-dark-500/30 text-xs font-bold text-dark-200 shrink-0"
+                style={{ height: '30px', minHeight: '30px', maxHeight: '30px', boxSizing: 'border-box' }}
+              >
                 {monthGroups.map((group, idx) => (
                   <div
                     key={idx}
@@ -621,7 +643,10 @@ export default function ProjectGantt({
               </div>
 
               {/* Level 2: Week Columns Header */}
-              <div className="relative flex h-[35px] text-[11px] text-dark-300">
+              <div 
+                className="relative flex text-[11px] text-dark-300 border-b border-dark-500/30 shrink-0"
+                style={{ height: '35px', minHeight: '35px', maxHeight: '35px', boxSizing: 'border-box' }}
+              >
                 {weeks.map((w) => (
                   <div
                     key={w.weekId}
@@ -657,7 +682,7 @@ export default function ProjectGantt({
             </div>
 
             {/* Timeline Rows Container with Full-Height Vertical Grid */}
-            <div className="relative flex-1">
+            <div className="relative flex-1 shrink-0">
               {/* Full-Height Background Grid Columns Lines */}
               <div className="absolute inset-0 pointer-events-none flex">
                 {weeks.map((w) => (
@@ -683,7 +708,7 @@ export default function ProjectGantt({
               </div>
 
               {/* Timeline Rows: Project Bars & Objective Sub-Bars */}
-              <div className="flex flex-col relative z-10">
+              <div className="flex flex-col relative z-10 shrink-0">
               {displayedProjects.map((project) => {
                 const isExpanded = expandedProjectIds.has(project.id);
                 const linkedObjectives = getProjectObjectives(project);
@@ -694,7 +719,10 @@ export default function ProjectGantt({
                 return (
                   <React.Fragment key={project.id}>
                     {/* Project Gantt Row */}
-                    <div className="relative h-[48px] flex items-center border-b border-dark-500/30 hover:bg-dark-500/5 transition-colors">
+                    <div 
+                      className="relative flex items-center border-b border-dark-500/30 hover:bg-dark-500/5 transition-colors shrink-0 overflow-hidden"
+                      style={{ height: '48px', minHeight: '48px', maxHeight: '48px', boxSizing: 'border-box' }}
+                    >
                       {/* Project Horizontal Bar */}
                       <div
                         onClick={() => onOpenDetails?.(project)}
@@ -733,7 +761,11 @@ export default function ProjectGantt({
                       const segments = getObjectiveSegments(obj);
 
                       return (
-                        <div key={obj.id} className="relative h-[38px] flex items-center border-b border-dark-500/20 hover:bg-dark-500/10 transition-colors even:bg-dark-500/[0.02] odd:bg-transparent">
+                        <div 
+                          key={obj.id} 
+                          className="relative flex items-center border-b border-dark-500/20 hover:bg-dark-500/10 transition-colors even:bg-dark-500/[0.02] odd:bg-transparent shrink-0 overflow-hidden"
+                          style={{ height: '38px', minHeight: '38px', maxHeight: '38px', boxSizing: 'border-box' }}
+                        >
                           {segments.length > 0 ? (
                             segments.map((seg, sIdx) => (
                               <div
