@@ -19,7 +19,8 @@ import {
   Inbox,
   Pencil,
   X,
-  Check
+  Check,
+  RefreshCw
 } from 'lucide-react';
 import { 
   parseISO, 
@@ -558,17 +559,19 @@ export default function ProjectGantt({
     setExpandedProjectIds(new Set());
   };
 
-  // Helper to get linked objectives for a project, sorted by realization date:
+  // Helper to compute freshly sorted objectives for a project:
   // - Oldest planned weeks at the top
   // - Furthest planned weeks below
   // - Backlog objectives at the very bottom
-  const getProjectObjectives = (project) => {
+  // - Priority P1 > P2 > P3
+  // - Alphabetical fallback
+  const sortProjectObjectivesList = (project, objectives, progress) => {
     const pObjIds = new Set(project.objectiveIds || []);
-    const list = allObjectives.filter(o => pObjIds.has(o.id) || o.projectId === project.id);
+    const list = (objectives || []).filter(o => pObjIds.has(o.id) || o.projectId === project.id);
 
     const getEarliestRealizationWeek = (obj) => {
-      const isDone = getObjectiveProjectProgress(obj, allProgress) >= 1;
-      const completedWeeks = getObjectiveCompletedWeeks(obj, allProgress).sort();
+      const isDone = getObjectiveProjectProgress(obj, progress) >= 1;
+      const completedWeeks = getObjectiveCompletedWeeks(obj, progress).sort();
       if (isDone && completedWeeks.length > 0) {
         return completedWeeks[0];
       }
@@ -618,6 +621,75 @@ export default function ProjectGantt({
       }
 
       // 4. Repli alphabétique par titre
+      return (a.title || '').localeCompare(b.title || '');
+    });
+  };
+
+  // Frozen order of objective IDs per project to prevent rows from jumping while editing
+  const [frozenObjectiveOrder, setFrozenObjectiveOrder] = useState(() => {
+    const initialMap = {};
+    const relevantProjects = projects || [];
+    relevantProjects.forEach(p => {
+      const sorted = sortProjectObjectivesList(p, allObjectives, allProgress);
+      initialMap[p.id] = sorted.map(o => o.id);
+    });
+    return initialMap;
+  });
+  const [isRefreshingSort, setIsRefreshingSort] = useState(false);
+
+  // Initialize sort on mount or when arriving on this page with objectives
+  const hasInitializedSortRef = useRef(false);
+  useEffect(() => {
+    if (!hasInitializedSortRef.current && allObjectives.length > 0) {
+      hasInitializedSortRef.current = true;
+      const newMap = {};
+      const relevantProjects = focusedProject ? [focusedProject] : (projects || []);
+      relevantProjects.forEach(p => {
+        const sorted = sortProjectObjectivesList(p, allObjectives, allProgress);
+        newMap[p.id] = sorted.map(o => o.id);
+      });
+      setFrozenObjectiveOrder(newMap);
+    }
+  }, [allObjectives, projects, focusedProject, allProgress]);
+
+  // Handler for explicit refresh of objective sort
+  const handleRefreshSort = () => {
+    setIsRefreshingSort(true);
+    const relevantProjects = focusedProject ? [focusedProject] : (projects || []);
+    const newMap = {};
+    relevantProjects.forEach(p => {
+      const sorted = sortProjectObjectivesList(p, allObjectives, allProgress);
+      newMap[p.id] = sorted.map(o => o.id);
+    });
+    setFrozenObjectiveOrder(newMap);
+    showToast('Tri des objectifs actualisé', 'info');
+
+    setTimeout(() => {
+      setIsRefreshingSort(false);
+    }, 500);
+  };
+
+  // Helper to get linked objectives for a project using frozen order to keep rows stable
+  const getProjectObjectives = (project) => {
+    const pObjIds = new Set(project.objectiveIds || []);
+    const currentList = allObjectives.filter(o => pObjIds.has(o.id) || o.projectId === project.id);
+
+    const savedOrder = frozenObjectiveOrder[project.id];
+    if (!savedOrder || savedOrder.length === 0) {
+      return sortProjectObjectivesList(project, allObjectives, allProgress);
+    }
+
+    const orderLookup = new Map();
+    savedOrder.forEach((id, index) => {
+      orderLookup.set(id, index);
+    });
+
+    return [...currentList].sort((a, b) => {
+      const idxA = orderLookup.has(a.id) ? orderLookup.get(a.id) : 9999;
+      const idxB = orderLookup.has(b.id) ? orderLookup.get(b.id) : 9999;
+      if (idxA !== idxB) {
+        return idxA - idxB;
+      }
       return (a.title || '').localeCompare(b.title || '');
     });
   };
@@ -726,6 +798,22 @@ export default function ProjectGantt({
 
         {/* Right: Actions, Expand all & Zoom */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Bouton Actualiser le tri */}
+          <button
+            type="button"
+            onClick={handleRefreshSort}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-dark-700/70 hover:bg-dark-700 border border-dark-600/50 text-dark-200 hover:text-accent-cyan text-xs font-semibold transition-all cursor-pointer group shadow-sm active:scale-95"
+            title="Actualiser le tri des objectifs (priorité & dates)"
+          >
+            <RefreshCw 
+              size={13} 
+              className={`text-accent-cyan transition-transform duration-500 ${
+                isRefreshingSort ? 'animate-spin' : 'group-hover:rotate-180'
+              }`} 
+            />
+            <span>Actualiser</span>
+          </button>
+
           {/* Bouton Aujourd'hui */}
           <button
             type="button"
@@ -794,7 +882,17 @@ export default function ProjectGantt({
                 className="flex items-center justify-between pl-3.5 pr-6 border-b border-dark-500/30 text-xs font-bold text-dark-300 uppercase tracking-wider shrink-0 bg-dark-800"
                 style={{ height: '30px', minHeight: '30px', maxHeight: '30px', boxSizing: 'border-box' }}
               >
-                <span>Projets & Objectifs</span>
+                <div className="flex items-center gap-1.5">
+                  <span>Projets & Objectifs</span>
+                  <button
+                    type="button"
+                    onClick={handleRefreshSort}
+                    className="p-1 rounded-md text-dark-400 hover:text-accent-cyan hover:bg-dark-700 transition-all cursor-pointer border-none bg-transparent flex items-center justify-center"
+                    title="Actualiser le tri des objectifs"
+                  >
+                    <RefreshCw size={11} className={`text-accent-cyan transition-transform duration-500 ${isRefreshingSort ? 'animate-spin' : 'hover:rotate-180'}`} />
+                  </button>
+                </div>
                 <span className="text-[10px] text-dark-400 font-normal">Arborescence</span>
               </div>
 
