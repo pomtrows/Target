@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FolderKanban, Plus, Search, Filter, LayoutGrid, Columns, CalendarRange,
+  FolderKanban, Plus, Search, Filter, TrendingUp, Columns, CalendarRange,
   CheckCircle2, Clock, AlertTriangle, Circle, Eye, EyeOff,
   Database, Copy, Check, Info, X, ArrowLeft, Pencil, Calendar
 } from 'lucide-react';
@@ -12,11 +12,10 @@ import { useTarget } from '../contexts/TargetContext';
 import { getProjectEffectiveDates } from '../utils/projectUtils';
 import { getObjectiveProjectProgress } from '../utils/progressUtils';
 import { getCurrentWeekId } from '../utils/weekUtils';
-import ProjectCard from '../components/Projects/ProjectCard';
 import ProjectKanban from '../components/Projects/ProjectKanban';
 import ProjectGantt from '../components/Projects/ProjectGantt';
 import ProjectObjectiveKanban from '../components/Projects/ProjectObjectiveKanban';
-import ProjectObjectiveGrid from '../components/Projects/ProjectObjectiveGrid';
+import ProjectVelocity from '../components/Projects/ProjectVelocity';
 import ProjectModal from '../components/Projects/ProjectModal';
 import ProjectDetailModal from '../components/Projects/ProjectDetailModal';
 import ObjectiveForm from '../components/Dashboard/ObjectiveForm';
@@ -110,7 +109,11 @@ export default function ProjectsPage() {
     });
   }, [rawProjects, targetState.objectives, targetState.progress, loading, updateProject]);
 
-  const [viewMode, setViewMode] = useState(() => localStorage.getItem('target_projects_view_mode') || 'kanban');
+  const [viewMode, setViewMode] = useState(() => {
+    const saved = localStorage.getItem('target_projects_view_mode');
+    if (saved === 'grid') return 'velocity';
+    return saved || 'kanban';
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedPriority, setSelectedPriority] = useState('all');
@@ -500,16 +503,16 @@ export default function ProjectsPage() {
           </button>
           <button
             type="button"
-            onClick={() => handleViewModeChange('grid')}
+            onClick={() => handleViewModeChange('velocity')}
             className={`flex items-center gap-1 rounded-full text-[11px] font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
-              viewMode === 'grid'
+              viewMode === 'velocity'
                 ? 'bg-accent-cyan/15 text-accent-cyan'
                 : 'text-dark-400 hover:text-dark-200'
             }`}
             style={{ padding: '3px 8px' }}
           >
-            <LayoutGrid size={12} />
-            <span>Grille</span>
+            <TrendingUp size={12} />
+            <span>Vélocité</span>
           </button>
           <button
             type="button"
@@ -958,10 +961,11 @@ export default function ProjectsPage() {
             onEditObjective={handleOpenEditObjective}
           />
         ) : (
-          <ProjectObjectiveGrid
+          <ProjectVelocity
             project={focusedProject}
             onEditObjective={handleOpenEditObjective}
             onAddObjective={handleOpenAddObjective}
+            onOpenDetails={handleOpenDetails}
           />
         )
       ) : filteredProjects.length === 0 ? (
@@ -1017,17 +1021,13 @@ export default function ProjectsPage() {
           onEditObjective={handleOpenEditObjective}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredProjects.map((project) => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              onEdit={handleOpenEdit}
-              onOpenDetails={handleOpenDetails}
-              onFocusProject={handleFocusProject}
-            />
-          ))}
-        </div>
+        <ProjectVelocity
+          projects={filteredProjects}
+          onEditObjective={handleOpenEditObjective}
+          onAddObjective={handleOpenAddObjective}
+          onOpenDetails={handleOpenDetails}
+          onFocusProject={handleFocusProject}
+        />
       )}
 
       {/* Project Create / Edit Modal */}
