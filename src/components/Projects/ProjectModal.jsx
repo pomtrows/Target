@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles, Trash2, Paperclip, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, AlertCircle, Check, Search, Plus, X, Link2, Sparkles, Trash2, Paperclip, FileText, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
 import { useTarget } from '../../contexts/TargetContext';
 import { useProjects } from '../../contexts/ProjectsContext';
 import { useNotes } from '../../contexts/NotesContext';
@@ -30,6 +30,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
   const [objectiveMode, setObjectiveMode] = useState(null); // 'create' | 'assign' | null
   const [isAdvancedObjectiveModalOpen, setIsAdvancedObjectiveModalOpen] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [editingObjective, setEditingObjective] = useState(null);
 
   // Attachments and Notes states
   const [tempProjectId, setTempProjectId] = useState(() => projectToEdit?.id || generateUUID());
@@ -95,6 +96,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
     setProjectNoteId(null);
     setShowDescriptionMobile(false);
     setShowAssignModal(false);
+    setEditingObjective(null);
     setObjectiveMode(null);
     setNewObjTitle('');
     setNewObjPriority('P2');
@@ -692,6 +694,15 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                         </span>
                         <button
                           type="button"
+                          onClick={() => setEditingObjective(obj)}
+                          className="text-dark-400 hover:text-accent-cyan hover:bg-accent-cyan/10 rounded-lg transition-colors cursor-pointer"
+                          style={{ padding: '3px 5px' }}
+                          title="Modifier cet objectif"
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => toggleObjective(obj.id)}
                           className="text-dark-400 hover:text-dark-100 hover:bg-dark-700/60 rounded-lg transition-colors cursor-pointer"
                           style={{ padding: '3px 5px' }}
@@ -762,6 +773,17 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           setObjectiveMode(null);
           setNewObjTitle('');
         }}
+      />
+    )}
+
+    {/* Modale d'édition d'un objectif */}
+    {editingObjective && (
+      <ObjectiveForm
+        isOpen={!!editingObjective}
+        onClose={() => setEditingObjective(null)}
+        editObjective={editingObjective}
+        defaultProjectId={projectToEdit?.id || tempProjectId}
+        zIndex={250}
       />
     )}
 
