@@ -77,23 +77,29 @@ export default function ProjectGantt({
   const [dragOverWeekId, setDragOverWeekId] = useState(null);
   const [dragOverObjId, setDragOverObjId] = useState(null);
   const [activePopover, setActivePopover] = useState(null); // { objective, weekId, isBacklog, x, y }
-  const [priorityPopover, setPriorityPopover] = useState(null); // { objective, x, y }
 
-  // Handle changing objective priority directly from Gantt
-  const handleSetPriority = (obj, newPriority) => {
-    if (!obj || !newPriority) return;
+  // Handle cycling objective priority directly from Gantt (P3 -> P2 -> P1 -> P3)
+  const handleCyclePriority = (obj, e) => {
+    e?.stopPropagation();
+    if (!obj) return;
     const currentObj = allObjectives.find(o => o.id === obj.id) || obj;
-    if (currentObj.priority === newPriority) return;
+    const p = currentObj.priority;
+    const currentPrio = (p === 'P1' || p === 1) ? 'P1' : (p === 'P2' || p === 2) ? 'P2' : 'P3';
+
+    let nextPrio = 'P3';
+    if (currentPrio === 'P3') nextPrio = 'P2';
+    else if (currentPrio === 'P2') nextPrio = 'P1';
+    else if (currentPrio === 'P1') nextPrio = 'P3';
 
     targetDispatch({
       type: 'UPDATE_OBJECTIVE',
       payload: {
         ...currentObj,
-        priority: newPriority
+        priority: nextPrio
       }
     });
 
-    showToast(`Priorité de "${currentObj.title}" passée à ${newPriority}`, 'info');
+    showToast(`Priorité passée à ${nextPrio}`, 'info');
   };
 
   // Handle moving or assigning an objective to a target week (drag-and-drop)
@@ -917,17 +923,9 @@ export default function ProjectGantt({
                               return (
                                 <button
                                   type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    setPriorityPopover({
-                                      objective: obj,
-                                      x: rect.left,
-                                      y: rect.bottom + 4
-                                    });
-                                  }}
-                                  className={`inline-flex items-center justify-center px-2 py-0.5 min-w-[28px] h-[19px] rounded-md border text-[10px] font-black leading-none transition-all cursor-pointer shadow-xs ${prioClass}`}
-                                  title={`Priorité ${prioLabel} — Cliquer pour modifier`}
+                                  onClick={(e) => handleCyclePriority(obj, e)}
+                                  className={`inline-flex items-center justify-center px-2 py-0.5 min-w-[28px] h-[19px] rounded-md border text-[10px] font-black leading-none transition-all cursor-pointer shadow-xs active:scale-95 ${prioClass}`}
+                                  title={`Priorité ${prioLabel} — Cliquer pour changer (${prioLabel === 'P3' ? 'P2' : prioLabel === 'P2' ? 'P1' : 'P3'})`}
                                 >
                                   {prioLabel}
                                 </button>
@@ -1489,57 +1487,6 @@ export default function ProjectGantt({
         );
       })()}
 
-      {/* Mini Popover for Priority Selection */}
-      {priorityPopover && (() => {
-        const popObj = priorityPopover.objective;
-        const currentObj = allObjectives.find(o => o.id === popObj.id) || popObj;
-        const currentPrio = currentObj.priority === 'P1' || currentObj.priority === 1 ? 'P1' :
-                            currentObj.priority === 'P2' || currentObj.priority === 2 ? 'P2' : 'P3';
-
-        return (
-          <>
-            <div
-              className="fixed inset-0 z-50 bg-black/10 backdrop-blur-[0.5px]"
-              onClick={() => setPriorityPopover(null)}
-            />
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="fixed z-50 bg-dark-800 border border-dark-600/90 rounded-xl shadow-2xl p-1.5 text-xs animate-in fade-in zoom-in-95 duration-100 flex flex-col gap-1 min-w-[125px] backdrop-blur-md"
-              style={{
-                left: `${Math.max(8, Math.min(priorityPopover.x - 30, window.innerWidth - 145))}px`,
-                top: `${Math.min(priorityPopover.y, window.innerHeight - 130)}px`
-              }}
-            >
-              <div className="px-2 py-0.5 text-[9px] font-bold text-dark-400 uppercase tracking-wider border-b border-dark-700/60 pb-1">
-                Priorité
-              </div>
-              {[
-                { id: 'P1', label: 'P1 — Haute', color: 'text-accent-red hover:bg-accent-red/15 hover:border-accent-red/30' },
-                { id: 'P2', label: 'P2 — Moyenne', color: 'text-accent-violet hover:bg-accent-violet/15 hover:border-accent-violet/30' },
-                { id: 'P3', label: 'P3 — Basse', color: 'text-accent-cyan hover:bg-accent-cyan/15 hover:border-accent-cyan/30' }
-              ].map(p => {
-                const isSelected = currentPrio === p.id;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => {
-                      handleSetPriority(currentObj, p.id);
-                      setPriorityPopover(null);
-                    }}
-                    className={`flex items-center justify-between px-2 py-1 rounded-lg text-[11px] font-bold border border-transparent transition-all cursor-pointer ${p.color} ${
-                      isSelected ? 'bg-dark-700/80 border-dark-500/80 shadow-xs' : ''
-                    }`}
-                  >
-                    <span>{p.label}</span>
-                    {isSelected && <Check size={12} strokeWidth={3} className="shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        );
-      })()}
     </div>
   );
 }
