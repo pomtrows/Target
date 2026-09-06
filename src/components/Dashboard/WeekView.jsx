@@ -962,7 +962,7 @@ export default function WeekView() {
               </button>
 
               {isCategoryDropdownOpen && (
-                <div className="absolute z-[100] top-full mt-2 left-1/2 sm:left-0 -translate-x-1/2 sm:translate-x-0 min-w-[200px] bg-dark-800 border border-dark-600/50 rounded-xl shadow-xl p-2 space-y-1">
+                <div className="absolute z-[100] top-full mt-2 left-0 min-w-[200px] max-w-[calc(100vw-32px)] max-h-[70vh] overflow-y-auto custom-scrollbar bg-dark-800 border border-dark-600/50 rounded-xl shadow-xl p-2 space-y-1">
                   <button
                     onClick={() => {
                       setFilterCategory(null);
