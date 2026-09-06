@@ -54,10 +54,10 @@ export default function ProjectObjectiveKanban({
     );
   }, [targetState.objectives, linkedObjectiveIds, project.id]);
 
-  // Distribute into 3 columns:
-  // 1. "termine" : progress >= 1
-  // 2. "non_lance" : progress < 1 AND (no weeks OR assignType === 'backlog')
-  // 3. "en_cours" : progress < 1 AND has weeks AND assignType !== 'backlog'
+  // Distribute into 3 columns and sort each column:
+  // 1. "termine" : progress >= 1 -> most recently completed to oldest completed
+  // 2. "en_cours" : planned weeks ascending (oldest weeks first), ties broken by P1 > P2 > P3
+  // 3. "non_lance" : progress < 1 AND backlog -> priority P1 > P2 > P3
   const categorizedObjectives = useMemo(() => {
     const nonLance = [];
     const enCours = [];
@@ -78,12 +78,99 @@ export default function ProjectObjectiveKanban({
       }
     });
 
+    const getPriorityRank = (p) => {
+      if (p === 'P1' || p === 1 || p === '1') return 1;
+      if (p === 'P2' || p === 2 || p === '2') return 2;
+      if (p === 'P3' || p === 3 || p === '3') return 3;
+      return 4;
+    };
+
+    // 1. Terminé : du plus récemment terminé au plus ancien
+    const getObjectiveCompletionInfo = (obj) => {
+      const completedWeeks = getObjectiveCompletedWeeks(obj, targetState.progress);
+      let latestTimestamp = 0;
+      let latestWeek = '';
+
+      completedWeeks.forEach(wId => {
+        if (!latestWeek || wId > latestWeek) {
+          latestWeek = wId;
+        }
+        const ts = targetState.progressTimestamps?.[`${wId}-${obj.id}`];
+        if (ts) {
+          const t = new Date(ts).getTime();
+          if (t > latestTimestamp) {
+            latestTimestamp = t;
+          }
+        }
+      });
+
+      if (!latestTimestamp) {
+        if (obj.completedAt) latestTimestamp = new Date(obj.completedAt).getTime();
+        else if (obj.updatedAt) latestTimestamp = new Date(obj.updatedAt).getTime();
+      }
+
+      return { latestTimestamp, latestWeek };
+    };
+
+    termine.sort((a, b) => {
+      const infoA = getObjectiveCompletionInfo(a);
+      const infoB = getObjectiveCompletionInfo(b);
+
+      if (infoA.latestTimestamp && infoB.latestTimestamp && infoA.latestTimestamp !== infoB.latestTimestamp) {
+        return infoB.latestTimestamp - infoA.latestTimestamp;
+      }
+      if (infoA.latestTimestamp && !infoB.latestTimestamp) return -1;
+      if (!infoA.latestTimestamp && infoB.latestTimestamp) return 1;
+
+      if (infoA.latestWeek !== infoB.latestWeek) {
+        return infoB.latestWeek.localeCompare(infoA.latestWeek);
+      }
+
+      return (a.title || '').localeCompare(b.title || '');
+    });
+
+    // 2. En cours : ordre de planification (semaines anciennes d'abord, futur après), puis P1 > P2 > P3
+    const getEarliestWeek = (obj) => {
+      const weeks = (obj.assignments || [])
+        .filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a))
+        .sort();
+      return weeks.length > 0 ? weeks[0] : '9999-S99';
+    };
+
+    enCours.sort((a, b) => {
+      const weekA = getEarliestWeek(a);
+      const weekB = getEarliestWeek(b);
+
+      if (weekA !== weekB) {
+        return weekA.localeCompare(weekB);
+      }
+
+      const rankA = getPriorityRank(a.priority);
+      const rankB = getPriorityRank(b.priority);
+      if (rankA !== rankB) {
+        return rankA - rankB;
+      }
+
+      return (a.title || '').localeCompare(b.title || '');
+    });
+
+    // 3. Non lancé : ordre de priorisation P1 > P2 > P3
+    nonLance.sort((a, b) => {
+      const rankA = getPriorityRank(a.priority);
+      const rankB = getPriorityRank(b.priority);
+      if (rankA !== rankB) {
+        return rankA - rankB;
+      }
+
+      return (a.title || '').localeCompare(b.title || '');
+    });
+
     return {
       non_lance: nonLance,
       en_cours: enCours,
       termine: termine
     };
-  }, [projectObjectives, targetState.progress]);
+  }, [projectObjectives, targetState.progress, targetState.progressTimestamps]);
 
   // Toggle objective completed / uncompleted
   const handleToggleObjective = (obj, e) => {
