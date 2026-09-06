@@ -555,7 +555,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-bold text-dark-300 uppercase tracking-wider">
-                    Intitulé de l'objectif <span className="text-accent-red">*</span>
+                    Objectif <span className="text-accent-red">*</span>
                   </label>
                   {!inlineObjFeedback && (
                     <button
