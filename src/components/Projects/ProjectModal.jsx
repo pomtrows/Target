@@ -319,7 +319,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            className="w-36 sm:w-44 bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer h-[34px] px-2 truncate"
+            className="w-32 sm:w-36 bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer h-[34px] px-2 truncate"
           >
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id} className="bg-dark-800 text-dark-100">
@@ -329,7 +329,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           </select>
 
           {/* Boutons Pièces jointes et Notes à droite */}
-          <div className="flex items-center gap-1.5 ml-auto shrink-0">
+          <div className="flex items-center gap-2 ml-auto shrink-0 pl-3 sm:pl-4">
             <button
               type="button"
               onClick={() => setShowAttachmentsModal(true)}
@@ -340,7 +340,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
               }`}
               title={`Pièces jointes ${formAttachments.length > 0 ? `(${formAttachments.length})` : ''}`}
             >
-              <Paperclip size={15} className="shrink-0" />
+              <Paperclip size={18} className="shrink-0" />
               {formAttachments.length > 0 && (
                 <span className="text-[11px] font-black">{formAttachments.length}</span>
               )}
@@ -356,7 +356,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
               }`}
               title="Notes du projet"
             >
-              <FileText size={15} className="shrink-0" />
+              <FileText size={18} className="shrink-0" />
             </button>
           </div>
         </div>
