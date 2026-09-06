@@ -346,9 +346,10 @@ export default function ProjectObjectiveKanban({
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`flex-1 flex flex-col gap-2.5 transition-colors rounded-xl p-1 ${
+                    className={`flex-1 flex flex-col gap-2.5 transition-colors rounded-xl ${
                       snapshot.isDraggingOver ? 'bg-dark-800/60 ring-2 ring-accent-cyan/30' : ''
                     }`}
+                    style={{ padding: '6px 8px' }}
                   >
                     {colObjectives.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-8 text-center text-dark-400 border border-dashed border-dark-700/40 rounded-xl">
@@ -377,14 +378,19 @@ export default function ProjectObjectiveKanban({
                                 ref={dragProvided.innerRef}
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
-                                className={`group relative bg-dark-800/90 hover:bg-dark-800 border rounded-xl p-3 shadow-md transition-all ${
+                                className={`group relative bg-dark-800/90 hover:bg-dark-800 border rounded-xl shadow-md transition-all ${
                                   dragSnapshot.isDragging 
                                     ? 'shadow-2xl ring-2 ring-accent-cyan z-50 bg-dark-700 border-accent-cyan' 
                                     : 'border-dark-600/40 hover:border-dark-500/60'
                                 }`}
+                                style={{
+                                  ...dragProvided.draggableProps.style,
+                                  padding: '14px 16px',
+                                  marginBottom: '8px'
+                                }}
                               >
                                 {/* Top row: Toggle check & Title & Priority */}
-                                <div className="flex items-start gap-2.5">
+                                <div className="flex items-start gap-3">
                                   {/* Checkbox circle */}
                                   <button
                                     type="button"
@@ -419,14 +425,14 @@ export default function ProjectObjectiveKanban({
                                     )}
                                   </div>
 
-                                  {/* Priority Badge */}
-                                  <span className={`text-[9px] font-black rounded border px-1 shrink-0 ${priorityClass}`}>
-                                    {obj.priority || 'P2'}
-                                  </span>
-                                </div>
+                                   {/* Priority Badge */}
+                                   <span className={`text-[10px] font-bold rounded-md border px-1.5 py-0.5 shrink-0 leading-none ${priorityClass}`}>
+                                     {obj.priority || 'P2'}
+                                   </span>
+                                 </div>
 
-                                {/* Bottom row: Week badges & Notes/PJ & Edit button */}
-                                <div className="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t border-dark-700/30 text-xs">
+                                 {/* Bottom row: Week badges & Notes/PJ & Edit button */}
+                                 <div className="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-dark-700/30 text-xs">
                                   {/* Left: Weeks badges or Backlog */}
                                   <div className="flex items-center gap-1 flex-wrap min-w-0">
                                     {weeks.length > 0 ? (
