@@ -873,7 +873,7 @@ export default function ProjectGantt({
                                       y: rect.bottom + 4
                                     });
                                   }}
-                                  className={`px-1.5 py-0.5 rounded-md border text-[9px] font-black leading-none transition-all cursor-pointer shadow-xs ${prioClass}`}
+                                  className={`inline-flex items-center justify-center px-2 py-0.5 min-w-[28px] h-[19px] rounded-md border text-[10px] font-black leading-none transition-all cursor-pointer shadow-xs ${prioClass}`}
                                   title={`Priorité ${prioLabel} — Cliquer pour modifier`}
                                 >
                                   {prioLabel}
