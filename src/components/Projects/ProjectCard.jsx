@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Paperclip, FileText, Calendar, AlertTriangle, Clock, 
-  MoreVertical, Edit2, Trash2, CheckCircle2, ChevronRight,
+  MoreVertical, Edit2, Trash2, CheckCircle2,
   Target, AlertCircle, Info
 } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore, differenceInCalendarDays, startOfDay } from 'date-fns';
@@ -327,19 +327,6 @@ export default function ProjectCard({
               >
                 <FileText size={13} />
                 {hasNotes && <span className="w-1.5 h-1.5 rounded-full bg-accent-violet" />}
-              </button>
-
-              {/* Details trigger */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenDetails?.(project);
-                }}
-                className="rounded-lg bg-dark-700/40 border border-dark-600/30 text-dark-300 hover:text-accent-cyan hover:border-accent-cyan/40 transition-all cursor-pointer flex items-center justify-center"
-                style={{ padding: '2px 4px' }}
-                title="Ouvrir la fiche complète"
-              >
-                <ChevronRight size={14} />
               </button>
             </div>
           </div>
