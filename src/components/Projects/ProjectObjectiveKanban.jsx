@@ -195,7 +195,22 @@ export default function ProjectObjectiveKanban({
       }
     } else {
       // Complete
-      const targetWeek = (obj.assignments && obj.assignments.find(a => /^\d{4}-S\d{2}$/.test(a))) || currentWeekId;
+      const assignedWeeks = (obj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
+      const isBacklog = assignedWeeks.length === 0 || obj.assignType === 'backlog';
+      const targetWeek = (!isBacklog && assignedWeeks[0]) || currentWeekId;
+
+      if (isBacklog) {
+        const otherAssignments = (obj.assignments || []).filter(a => typeof a === 'string' && !/^\d{4}-S\d{2}$/.test(a));
+        targetDispatch({
+          type: 'UPDATE_OBJECTIVE',
+          payload: {
+            ...obj,
+            assignType: 'week',
+            assignments: [...otherAssignments, currentWeekId]
+          }
+        });
+      }
+
       const completeValue = obj.subObjectives?.length > 0
         ? (1 << obj.subObjectives.length) - 1
         : (Number(obj.target) > 1 ? Number(obj.target) : 1);
@@ -221,7 +236,22 @@ export default function ProjectObjectiveKanban({
 
     if (destCol === 'termine') {
       // Mark as 100% completed
-      const targetWeek = (targetObjective.assignments && targetObjective.assignments.find(a => /^\d{4}-S\d{2}$/.test(a))) || currentWeekId;
+      const assignedWeeks = (targetObjective.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
+      const isBacklog = assignedWeeks.length === 0 || targetObjective.assignType === 'backlog';
+      const targetWeek = (!isBacklog && assignedWeeks[0]) || currentWeekId;
+
+      if (isBacklog) {
+        const otherAssignments = (targetObjective.assignments || []).filter(a => typeof a === 'string' && !/^\d{4}-S\d{2}$/.test(a));
+        targetDispatch({
+          type: 'UPDATE_OBJECTIVE',
+          payload: {
+            ...targetObjective,
+            assignType: 'week',
+            assignments: [...otherAssignments, currentWeekId]
+          }
+        });
+      }
+
       const completeValue = targetObjective.subObjectives?.length > 0
         ? (1 << targetObjective.subObjectives.length) - 1
         : (Number(targetObjective.target) > 1 ? Number(targetObjective.target) : 1);
@@ -328,8 +358,9 @@ export default function ProjectObjectiveKanban({
                       colObjectives.map((obj, index) => {
                         const prog = getObjectiveProjectProgress(obj, targetState.progress);
                         const isDone = prog >= 1;
-                        const percent = Math.round(prog * 100);
-                        const weeks = (obj.assignments || []).filter(a => /^\d{4}-S\d{2}$/.test(a));
+                        const completedWeeks = getObjectiveCompletedWeeks(obj, targetState.progress);
+                        const assignedWeeks = (obj.assignments || []).filter(a => /^\d{4}-S\d{2}$/.test(a));
+                        const weeks = isDone && completedWeeks.length > 0 ? completedWeeks : assignedWeeks;
                         const attachmentsCount = (obj.attachments || []).length;
                         const hasNotes = !!(obj.note && obj.note.trim());
 

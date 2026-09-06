@@ -46,7 +46,22 @@ export default function ProjectObjectiveGrid({
       }
     } else {
       // Complete
-      const targetWeek = (obj.assignments && obj.assignments.find(a => /^\d{4}-S\d{2}$/.test(a))) || currentWeekId;
+      const assignedWeeks = (obj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
+      const isBacklog = assignedWeeks.length === 0 || obj.assignType === 'backlog';
+      const targetWeek = (!isBacklog && assignedWeeks[0]) || currentWeekId;
+
+      if (isBacklog) {
+        const otherAssignments = (obj.assignments || []).filter(a => typeof a === 'string' && !/^\d{4}-S\d{2}$/.test(a));
+        targetDispatch({
+          type: 'UPDATE_OBJECTIVE',
+          payload: {
+            ...obj,
+            assignType: 'week',
+            assignments: [...otherAssignments, currentWeekId]
+          }
+        });
+      }
+
       const completeValue = obj.subObjectives?.length > 0
         ? (1 << obj.subObjectives.length) - 1
         : (Number(obj.target) > 1 ? Number(obj.target) : 1);
@@ -67,8 +82,10 @@ export default function ProjectObjectiveGrid({
         const prog = getObjectiveProjectProgress(obj, targetState.progress);
         const isDone = prog >= 1;
         const percent = Math.round(prog * 100);
-        const weeks = (obj.assignments || []).filter(a => /^\d{4}-S\d{2}$/.test(a));
-        const isBacklog = (!weeks || weeks.length === 0 || obj.assignType === 'backlog');
+        const completedWeeks = getObjectiveCompletedWeeks(obj, targetState.progress);
+        const assignedWeeks = (obj.assignments || []).filter(a => /^\d{4}-S\d{2}$/.test(a));
+        const weeks = isDone && completedWeeks.length > 0 ? completedWeeks : assignedWeeks;
+        const isBacklog = !isDone && (!weeks || weeks.length === 0 || obj.assignType === 'backlog');
         const attachmentsCount = (obj.attachments || []).length;
         const hasNotes = !!(obj.note && obj.note.trim());
         const cat = categories.find(c => c.id === obj.categoryId);
@@ -157,7 +174,7 @@ export default function ProjectObjectiveGrid({
               <div>
                 {isDone ? (
                   <span className="inline-flex items-center gap-1 text-[11px] font-bold text-accent-green bg-accent-green/10 border border-accent-green/30 rounded-lg px-2 py-0.5">
-                    <CheckCircle2 size={12} /> Terminé
+                    <CheckCircle2 size={12} /> Terminé {weeks.length > 0 && `(${weeks.map(formatWeekShort).join(', ')})`}
                   </span>
                 ) : !isBacklog ? (
                   <span className="inline-flex items-center gap-1 text-[11px] font-bold text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/30 rounded-lg px-2 py-0.5">

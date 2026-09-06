@@ -246,6 +246,11 @@ export default function ProjectGantt({
     const list = allObjectives.filter(o => pObjIds.has(o.id) || o.projectId === project.id);
 
     const getEarliestRealizationWeek = (obj) => {
+      const isDone = getObjectiveProjectProgress(obj, allProgress) >= 1;
+      const completedWeeks = getObjectiveCompletedWeeks(obj, allProgress).sort();
+      if (isDone && completedWeeks.length > 0) {
+        return completedWeeks[0];
+      }
       if (obj.assignType === 'backlog') return null;
       const assignedWeeks = (obj.assignments || [])
         .filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a))
@@ -253,7 +258,6 @@ export default function ProjectGantt({
       if (assignedWeeks.length > 0) {
         return assignedWeeks[0];
       }
-      const completedWeeks = getObjectiveCompletedWeeks(obj, allProgress).sort();
       if (completedWeeks.length > 0) {
         return completedWeeks[0];
       }
@@ -345,8 +349,15 @@ export default function ProjectGantt({
 
   // Calculate objective segments for Gantt
   const getObjectiveSegments = (objective) => {
-    const assignments = (objective.assignments || []).filter(a => typeof a === 'string' && a.match(/^\d{4}-S\d{2}$/));
-    if (assignments.length === 0) return [];
+    let assignments = (objective.assignments || []).filter(a => typeof a === 'string' && a.match(/^\d{4}-S\d{2}$/));
+    if (assignments.length === 0) {
+      const completedWeeks = getObjectiveCompletedWeeks(objective, allProgress);
+      if (completedWeeks.length > 0) {
+        assignments = completedWeeks;
+      } else {
+        return [];
+      }
+    }
 
     // Group assigned weeks that are present in the timeline
     const segments = [];

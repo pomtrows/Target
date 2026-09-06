@@ -90,7 +90,22 @@ export default function ProjectDetailModal({
         });
       }
     } else {
-      const targetWeek = (obj.assignments && obj.assignments.find(a => /^\d{4}-S\d{2}$/.test(a))) || currentWeekId;
+      const assignedWeeks = (obj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
+      const isBacklog = assignedWeeks.length === 0 || obj.assignType === 'backlog';
+      const targetWeek = (!isBacklog && assignedWeeks[0]) || currentWeekId;
+
+      if (isBacklog) {
+        const otherAssignments = (obj.assignments || []).filter(a => typeof a === 'string' && !/^\d{4}-S\d{2}$/.test(a));
+        targetDispatch({
+          type: 'UPDATE_OBJECTIVE',
+          payload: {
+            ...obj,
+            assignType: 'week',
+            assignments: [...otherAssignments, currentWeekId]
+          }
+        });
+      }
+
       const completeValue = obj.subObjectives?.length > 0 
         ? (1 << obj.subObjectives.length) - 1 
         : (Number(obj.target) > 1 ? Number(obj.target) : 1);
