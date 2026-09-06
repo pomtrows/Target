@@ -220,16 +220,9 @@ export default function ObjectiveCard({
           );
         })()}
 
-        {/* Custom Week / Status Badge */}
-        {weekBadge && (
-          <div className="mb-1.5 pl-1 flex items-center gap-1.5 flex-wrap">
-            {weekBadge}
-          </div>
-        )}
-
         {/* Title */}
         <h3 
-          className="font-bold text-lg text-dark-100 mb-2 pl-1"
+          className={`font-bold text-lg text-dark-100 pl-1 ${weekBadge ? 'mb-1' : 'mb-2'}`}
           style={{ 
             paddingRight: '100px',
             wordBreak: 'break-word',
@@ -238,6 +231,13 @@ export default function ObjectiveCard({
         >
           {objective.title}
         </h3>
+
+        {/* Custom Week / Status Badge */}
+        {weekBadge && (
+          <div className="mb-2 pl-1 flex items-center gap-1.5 flex-wrap">
+            {weekBadge}
+          </div>
+        )}
 
         {/* Assignment Badge */}
         {objective.assigned_to && (
