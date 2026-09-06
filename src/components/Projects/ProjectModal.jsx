@@ -474,14 +474,11 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
         </div>
 
         {/* Section Objectifs avec 2 boutons : Créer et Attribuer */}
-        <div 
-          className="flex flex-col gap-2.5 bg-dark-900/50 rounded-2xl border border-dark-600/40"
-          style={{ padding: '8px 6px' }}
-        >
+        <div className="flex flex-col gap-2.5">
           {/* Header de la section avec les 2 boutons Créer et Attribuer */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-dark-700/50 px-1">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-dark-200 uppercase tracking-wider">
+              <span className="text-xs font-bold text-dark-300 uppercase tracking-wider">
                 Objectifs
               </span>
               <span 
