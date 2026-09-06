@@ -451,17 +451,19 @@ export default function ProjectObjectiveKanban({
                     )}
                     {provided.placeholder}
 
-                    {/* Quick Add button inside Non lancé column */}
-                    {col.id === 'non_lance' && (
-                      <button
-                        type="button"
-                        onClick={onAddObjective}
-                        className="mt-1 flex items-center justify-center gap-1.5 py-2 px-3 border border-dashed border-dark-600/50 hover:border-accent-cyan/60 rounded-xl text-xs font-semibold text-dark-300 hover:text-accent-cyan hover:bg-accent-cyan/5 transition-all cursor-pointer"
-                      >
-                        <Plus size={14} />
-                        <span>Ajouter un objectif</span>
-                      </button>
-                    )}
+                    {/* Quick Add button inside each status column */}
+                    <button
+                      type="button"
+                      onClick={() => onAddObjective?.(col.id)}
+                      className={`mt-1 flex items-center justify-center gap-1.5 py-2 px-3 border border-dashed border-dark-600/50 rounded-xl text-xs font-semibold text-dark-300 transition-all cursor-pointer ${
+                        col.id === 'termine' 
+                          ? 'hover:border-accent-green/60 hover:text-accent-green hover:bg-accent-green/5' 
+                          : 'hover:border-accent-cyan/60 hover:text-accent-cyan hover:bg-accent-cyan/5'
+                      }`}
+                    >
+                      <Plus size={14} />
+                      <span>Ajouter un objectif</span>
+                    </button>
                   </div>
                 )}
               </Droppable>

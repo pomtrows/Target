@@ -11,6 +11,7 @@ import { useProjects } from '../contexts/ProjectsContext';
 import { useTarget } from '../contexts/TargetContext';
 import { getProjectEffectiveDates } from '../utils/projectUtils';
 import { getObjectiveProjectProgress } from '../utils/progressUtils';
+import { getCurrentWeekId } from '../utils/weekUtils';
 import ProjectCard from '../components/Projects/ProjectCard';
 import ProjectKanban from '../components/Projects/ProjectKanban';
 import ProjectGantt from '../components/Projects/ProjectGantt';
@@ -54,7 +55,7 @@ ADD COLUMN IF NOT EXISTS project_id UUID REFERENCES public.projects(id) ON DELET
 
 export default function ProjectsPage() {
   const { projects: rawProjects, loading, isLocalFallback, updateProject } = useProjects();
-  const { state: targetState } = useTarget();
+  const { state: targetState, dispatch: targetDispatch } = useTarget();
 
   // Calcul dynamique des dates effectives selon les objectifs rattachés et leurs semaines
   const projects = useMemo(() => {
@@ -284,8 +285,38 @@ export default function ProjectsPage() {
     setFocusedProjectId(null);
   };
 
-  const handleOpenAddObjective = () => {
+  const [objectiveInitialData, setObjectiveInitialData] = useState(null);
+
+  const handleOpenAddObjective = (colStatus) => {
     setObjectiveToEdit(null);
+    const baseData = focusedProject ? {
+      projectId: focusedProject.id,
+      categoryId: focusedProject.categoryId || focusedProject.category_id
+    } : {};
+
+    if (colStatus === 'termine') {
+      setObjectiveInitialData({
+        ...baseData,
+        assignType: 'week',
+        assignments: [getCurrentWeekId()],
+        markCompleted: true
+      });
+    } else if (colStatus === 'en_cours') {
+      setObjectiveInitialData({
+        ...baseData,
+        assignType: 'week',
+        assignments: [getCurrentWeekId()]
+      });
+    } else if (colStatus === 'non_lance') {
+      setObjectiveInitialData({
+        ...baseData,
+        assignType: 'backlog',
+        assignments: []
+      });
+    } else {
+      setObjectiveInitialData(baseData);
+    }
+
     setShowObjectiveModal(true);
   };
 
@@ -1023,13 +1054,23 @@ export default function ProjectsPage() {
           onClose={() => {
             setShowObjectiveModal(false);
             setObjectiveToEdit(null);
+            setObjectiveInitialData(null);
           }}
           editObjective={objectiveToEdit}
           defaultProjectId={focusedProject?.id || ''}
-          initialData={!objectiveToEdit && focusedProject ? { 
+          initialData={objectiveInitialData || (!objectiveToEdit && focusedProject ? { 
             projectId: focusedProject.id, 
             categoryId: focusedProject.categoryId || focusedProject.category_id 
-          } : null}
+          } : null)}
+          onObjectiveCreated={(savedObjId) => {
+            if (objectiveInitialData?.markCompleted) {
+              const targetWeek = getCurrentWeekId();
+              targetDispatch({
+                type: 'TOGGLE_PROGRESS',
+                payload: { weekId: targetWeek, objectiveId: savedObjId, value: 1 }
+              });
+            }
+          }}
           zIndex={220}
         />
       )}
