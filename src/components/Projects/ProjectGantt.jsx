@@ -461,11 +461,11 @@ export default function ProjectGantt({
         {/* SCROLLABLE WRAPPER (Horizontal + Vertical) */}
         <div 
           ref={scrollContainerRef}
-          className="flex-1 min-h-0 overflow-auto custom-scrollbar relative flex"
+          className="flex-1 min-h-0 overflow-auto custom-scrollbar relative flex items-stretch"
         >
           {/* A. LEFT FROZEN COLUMN: PROJECTS & OBJECTIVES TREE */}
           <div 
-            className="sticky left-0 z-30 flex flex-col bg-dark-800 border-r border-dark-600/60 flex-shrink-0 shadow-lg"
+            className="sticky left-0 z-30 flex flex-col bg-dark-800 border-r border-dark-600/60 flex-shrink-0 shadow-lg min-h-full"
             style={{ width: '310px', minWidth: '310px' }}
           >
             {/* Header placeholder matching height of timeline header */}
@@ -596,7 +596,7 @@ export default function ProjectGantt({
 
           {/* B. RIGHT TIMELINE CANVAS */}
           <div 
-            className="flex-1 flex flex-col relative bg-dark-900/30"
+            className="flex flex-col relative bg-dark-900/30 min-h-full flex-shrink-0"
             style={{ width: `${totalTimelineWidth}px`, minWidth: `${totalTimelineWidth}px` }}
           >
             {/* Header: Months (Level 1) + Weeks (Level 2) */}
@@ -618,7 +618,7 @@ export default function ProjectGantt({
               </div>
 
               {/* Level 2: Week Columns Header */}
-              <div className="flex h-[35px] text-[11px] text-dark-300">
+              <div className="relative flex h-[35px] text-[11px] text-dark-300">
                 {weeks.map((w) => (
                   <div
                     key={w.weekId}
@@ -638,39 +638,49 @@ export default function ProjectGantt({
                     )}
                   </div>
                 ))}
+
+                {/* Sticky "Aujourd'hui" Marker on Header */}
+                {todayPosition !== null && (
+                  <div
+                    className="absolute top-0 bottom-0 pointer-events-none z-30"
+                    style={{ left: `${todayPosition}px` }}
+                  >
+                    <div className="absolute top-1 -left-7 px-1.5 py-0.5 rounded-full bg-accent-cyan text-dark-950 font-black text-[9px] uppercase tracking-wider shadow-md whitespace-nowrap">
+                      Aujourd'hui
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Background Grid Columns Lines */}
-            <div className="absolute top-[65px] bottom-0 left-0 right-0 pointer-events-none flex">
-              {weeks.map((w) => (
-                <div
-                  key={w.weekId}
-                  className={`h-full border-r ${
-                    w.isCurrent 
-                      ? 'border-accent-cyan/40 bg-accent-cyan/[0.04]' 
-                      : 'border-dark-500/25'
-                  }`}
-                  style={{ width: `${colWidth}px`, minWidth: `${colWidth}px`, maxWidth: `${colWidth}px` }}
-                />
-              ))}
+            {/* Timeline Rows Container with Full-Height Vertical Grid */}
+            <div className="relative flex-1">
+              {/* Full-Height Background Grid Columns Lines */}
+              <div className="absolute inset-0 pointer-events-none flex">
+                {weeks.map((w) => (
+                  <div
+                    key={w.weekId}
+                    className={`h-full border-r ${
+                      w.isCurrent 
+                        ? 'border-accent-cyan/40 bg-accent-cyan/[0.04]' 
+                        : 'border-dark-500/25'
+                    }`}
+                    style={{ width: `${colWidth}px`, minWidth: `${colWidth}px`, maxWidth: `${colWidth}px` }}
+                  />
+                ))}
 
-              {/* Red/Cyan Vertical Indicator Line for Today */}
-              {todayPosition !== null && (
-                <div
-                  ref={todayMarkerRef}
-                  className="absolute top-0 bottom-0 z-20 w-[2px] bg-accent-cyan shadow-[0_0_8px_rgba(6,182,212,0.8)] pointer-events-none"
-                  style={{ left: `${todayPosition}px` }}
-                >
-                  <div className="absolute -top-6 -left-8 px-1.5 py-0.5 rounded-full bg-accent-cyan text-dark-950 font-black text-[9px] uppercase tracking-wider shadow-md whitespace-nowrap">
-                    Aujourd'hui
-                  </div>
-                </div>
-              )}
-            </div>
+                {/* Red/Cyan Vertical Indicator Line for Today (covers entire height of all rows) */}
+                {todayPosition !== null && (
+                  <div
+                    ref={todayMarkerRef}
+                    className="absolute top-0 bottom-0 z-20 w-[2px] bg-accent-cyan shadow-[0_0_8px_rgba(6,182,212,0.8)] pointer-events-none"
+                    style={{ left: `${todayPosition}px` }}
+                  />
+                )}
+              </div>
 
-            {/* Timeline Rows: Project Bars & Objective Sub-Bars */}
-            <div className="flex flex-col relative z-10">
+              {/* Timeline Rows: Project Bars & Objective Sub-Bars */}
+              <div className="flex flex-col relative z-10">
               {displayedProjects.map((project) => {
                 const isExpanded = expandedProjectIds.has(project.id);
                 const linkedObjectives = getProjectObjectives(project);
@@ -763,6 +773,7 @@ export default function ProjectGantt({
           </div>
         </div>
       </div>
+    </div>
 
       {/* 3. BOTTOM LEGEND */}
       <div 
