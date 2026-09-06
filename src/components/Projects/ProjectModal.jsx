@@ -826,11 +826,11 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                     type="button"
                     disabled={!newObjTitle.trim() || isCreatingInlineObj}
                     onClick={handleCreateInlineObjective}
-                    className="w-8 h-8 rounded-full bg-dark-800 hover:bg-dark-700 border border-dark-600/60 text-white flex items-center justify-center transition-all active:scale-95 disabled:opacity-30 cursor-pointer shadow-md"
+                    className="w-8 h-8 rounded-full bg-dark-100 text-dark-900 hover:opacity-90 flex items-center justify-center transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-md"
                     title="Ajouter l'objectif"
                   >
                     {isCreatingInlineObj ? (
-                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <Plus size={18} strokeWidth={2.5} />
                     )}
