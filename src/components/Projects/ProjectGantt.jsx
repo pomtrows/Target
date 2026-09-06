@@ -18,7 +18,8 @@ import {
   Circle,
   Inbox,
   Pencil,
-  X
+  X,
+  Check
 } from 'lucide-react';
 import { 
   parseISO, 
@@ -193,6 +194,59 @@ export default function ProjectGantt({
     }
 
     setActivePopover(null);
+  };
+
+  // Toggle objective completed / uncompleted directly from Gantt
+  const handleToggleObjective = (obj, e) => {
+    e?.stopPropagation();
+    const isDone = getObjectiveProjectProgress(obj, allProgress) >= 1;
+
+    if (isDone) {
+      // Uncomplete
+      const completedWeeks = getObjectiveCompletedWeeks(obj, allProgress);
+      if (completedWeeks.length > 0) {
+        completedWeeks.forEach(w => {
+          targetDispatch({
+            type: 'TOGGLE_PROGRESS',
+            payload: { weekId: w, objectiveId: obj.id, value: 0 }
+          });
+        });
+      } else {
+        targetDispatch({
+          type: 'TOGGLE_PROGRESS',
+          payload: { weekId: currentWeekId, objectiveId: obj.id, value: 0 }
+        });
+      }
+      showToast(`"${obj.title}" marqué comme non terminé`, 'info');
+    } else {
+      // Complete
+      const assignedWeeks = (obj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
+      const isBacklog = assignedWeeks.length === 0 || obj.assignType === 'backlog';
+      const targetWeek = (!isBacklog && assignedWeeks[0]) || currentWeekId;
+
+      if (isBacklog) {
+        const otherAssignments = (obj.assignments || []).filter(a => typeof a === 'string' && !/^\d{4}-S\d{2}$/.test(a));
+        targetDispatch({
+          type: 'UPDATE_OBJECTIVE',
+          payload: {
+            ...obj,
+            assignType: 'week',
+            assignments: [...otherAssignments, currentWeekId]
+          }
+        });
+      }
+
+      const completeValue = obj.subObjectives?.length > 0
+        ? (1 << obj.subObjectives.length) - 1
+        : (Number(obj.target) > 1 ? Number(obj.target) : 1);
+
+      targetDispatch({
+        type: 'TOGGLE_PROGRESS',
+        payload: { weekId: targetWeek, objectiveId: obj.id, value: completeValue }
+      });
+
+      showToast(`"${obj.title}" marqué comme réalisé !`, 'success');
+    }
   };
 
   // Zoom & Views (default: 'compact')
@@ -617,7 +671,7 @@ export default function ProjectGantt({
                 style={{ height: '35px', minHeight: '35px', maxHeight: '35px', boxSizing: 'border-box' }}
               >
                 <span>Titre / Catégorie</span>
-                <span>Priorité</span>
+                <span>Priorité / Fait</span>
               </div>
             </div>
 
@@ -721,20 +775,20 @@ export default function ProjectGantt({
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
-                            {isDone ? (
-                              <span className="text-[9px] font-bold text-accent-green bg-accent-green/10 border border-accent-green/30 rounded px-1.5 py-0.5 leading-none">
-                                ✓ Fait
-                              </span>
-                            ) : assignmentsCount > 0 ? (
-                              <span className="text-[9px] text-dark-400 bg-dark-800 border border-dark-700 rounded px-1.5 py-0.5 leading-none">
-                                {assignmentsCount} sem.
-                              </span>
-                            ) : (
-                              <span className="text-[9px] text-dark-500 italic leading-none">
-                                Non planifié
-                              </span>
-                            )}
+                          {/* Checkbox to toggle completed / uncompleted */}
+                          <div className="flex items-center shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => handleToggleObjective(obj, e)}
+                              className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all cursor-pointer ${
+                                isDone
+                                  ? 'bg-accent-green border-accent-green text-white shadow-sm hover:bg-accent-green/80'
+                                  : 'border-dark-500 hover:border-accent-cyan bg-dark-900/60 hover:bg-accent-cyan/10'
+                              }`}
+                              title={isDone ? "Objectif réalisé (Cliquer pour décocher)" : "Cliquer pour marquer comme réalisé"}
+                            >
+                              {isDone && <Check size={11} strokeWidth={3} className="text-white" />}
+                            </button>
                           </div>
                         </div>
                       );
