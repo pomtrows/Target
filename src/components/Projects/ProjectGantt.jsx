@@ -61,8 +61,8 @@ export default function ProjectGantt({
   const categories = targetState.categories || [];
   const allProgress = targetState.progress || {};
 
-  // Zoom & Views
-  const [zoomLevel, setZoomLevel] = useState('normal'); // 'compact' | 'normal' | 'detailed'
+  // Zoom & Views (default: 'compact')
+  const [zoomLevel, setZoomLevel] = useState(() => localStorage.getItem('target_gantt_zoom') || 'compact');
   const [internalFocusedProjectId, setInternalFocusedProjectId] = useState(null);
   const focusedProjectId = externalFocusedProjectId || internalFocusedProjectId;
 
@@ -442,7 +442,10 @@ export default function ProjectGantt({
               <button
                 key={lvl}
                 type="button"
-                onClick={() => setZoomLevel(lvl)}
+                onClick={() => {
+                  setZoomLevel(lvl);
+                  localStorage.setItem('target_gantt_zoom', lvl);
+                }}
                 className={`px-3 py-1 rounded-full text-xs font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
                   zoomLevel === lvl
                     ? 'bg-accent-cyan text-slate-950 shadow-sm'
