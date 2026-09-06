@@ -32,7 +32,7 @@ import {
 import { fr } from 'date-fns/locale';
 import { useTarget } from '../../contexts/TargetContext';
 import { useProjects } from '../../contexts/ProjectsContext';
-import { getObjectiveProgress, getObjectiveProjectProgress } from '../../utils/progressUtils';
+import { getObjectiveProgress, getObjectiveProjectProgress, getObjectiveCompletedWeeks } from '../../utils/progressUtils';
 import { 
   getCurrentWeekId, 
   getWeekIdFromDate, 
@@ -237,10 +237,64 @@ export default function ProjectGantt({
     setExpandedProjectIds(new Set());
   };
 
-  // Helper to get linked objectives for a project
+  // Helper to get linked objectives for a project, sorted by realization date:
+  // - Oldest planned weeks at the top
+  // - Furthest planned weeks below
+  // - Backlog objectives at the very bottom
   const getProjectObjectives = (project) => {
     const pObjIds = new Set(project.objectiveIds || []);
-    return allObjectives.filter(o => pObjIds.has(o.id) || o.projectId === project.id);
+    const list = allObjectives.filter(o => pObjIds.has(o.id) || o.projectId === project.id);
+
+    const getEarliestRealizationWeek = (obj) => {
+      if (obj.assignType === 'backlog') return null;
+      const assignedWeeks = (obj.assignments || [])
+        .filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a))
+        .sort();
+      if (assignedWeeks.length > 0) {
+        return assignedWeeks[0];
+      }
+      const completedWeeks = getObjectiveCompletedWeeks(obj, allProgress).sort();
+      if (completedWeeks.length > 0) {
+        return completedWeeks[0];
+      }
+      return null;
+    };
+
+    const getPriorityRank = (p) => {
+      if (p === 'P1' || p === 1 || p === '1') return 1;
+      if (p === 'P2' || p === 2 || p === '2') return 2;
+      if (p === 'P3' || p === 3 || p === '3') return 3;
+      return 4;
+    };
+
+    return [...list].sort((a, b) => {
+      const weekA = getEarliestRealizationWeek(a);
+      const weekB = getEarliestRealizationWeek(b);
+
+      const isBacklogA = !weekA;
+      const isBacklogB = !weekB;
+
+      // 1. Les objectifs en backlog vont tout en dernier
+      if (isBacklogA && !isBacklogB) return 1;
+      if (!isBacklogA && isBacklogB) return -1;
+
+      // 2. Si tous les deux sont planifiés : les plus anciens en premier, les plus dans le futur plus bas
+      if (!isBacklogA && !isBacklogB) {
+        if (weekA !== weekB) {
+          return weekA.localeCompare(weekB);
+        }
+      }
+
+      // 3. À semaine équivalente (ou tous deux en backlog) : priorité P1 > P2 > P3
+      const rankA = getPriorityRank(a.priority);
+      const rankB = getPriorityRank(b.priority);
+      if (rankA !== rankB) {
+        return rankA - rankB;
+      }
+
+      // 4. Repli alphabétique par titre
+      return (a.title || '').localeCompare(b.title || '');
+    });
   };
 
   // Calculate project bar position
