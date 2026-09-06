@@ -503,19 +503,6 @@ export default function ProjectsPage() {
           </button>
           <button
             type="button"
-            onClick={() => handleViewModeChange('velocity')}
-            className={`flex items-center gap-1 rounded-full text-[11px] font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
-              viewMode === 'velocity'
-                ? 'bg-accent-cyan/15 text-accent-cyan'
-                : 'text-dark-400 hover:text-dark-200'
-            }`}
-            style={{ padding: '3px 8px' }}
-          >
-            <TrendingUp size={12} />
-            <span>Vélocité</span>
-          </button>
-          <button
-            type="button"
             onClick={() => handleViewModeChange('gantt')}
             className={`flex items-center gap-1 rounded-full text-[11px] font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
               viewMode === 'gantt'
@@ -526,6 +513,19 @@ export default function ProjectsPage() {
           >
             <CalendarRange size={12} />
             <span>Gantt</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleViewModeChange('velocity')}
+            className={`flex items-center gap-1 rounded-full text-[11px] font-bold transition-all border-none cursor-pointer flex-shrink-0 ${
+              viewMode === 'velocity'
+                ? 'bg-accent-cyan/15 text-accent-cyan'
+                : 'text-dark-400 hover:text-dark-200'
+            }`}
+            style={{ padding: '3px 8px' }}
+          >
+            <TrendingUp size={12} />
+            <span>Vélocité</span>
           </button>
         </div>
       </div>
