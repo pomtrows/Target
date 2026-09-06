@@ -43,7 +43,8 @@ import {
   getWeekIdFromDate, 
   parseWeekId, 
   getWeekDates, 
-  formatWeekShort 
+  formatWeekShort,
+  getSelectableWeeks
 } from '../../utils/weekUtils';
 
 const ZOOM_CONFIGS = {
@@ -77,17 +78,18 @@ export default function ProjectGantt({
   const [dragOverObjId, setDragOverObjId] = useState(null);
   const [activePopover, setActivePopover] = useState(null); // { objective, weekId, isBacklog, x, y }
 
-  // Handle moving or assigning an objective to a target week
+  // Handle moving or assigning an objective to a target week (drag-and-drop)
   const handleAssignWeek = (obj, targetWeekId, fromWeekId = null) => {
     if (!obj || !targetWeekId) return;
     if (fromWeekId === targetWeekId) return;
 
-    const currentWeeks = (obj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
-    const otherAssignments = (obj.assignments || []).filter(a => typeof a === 'string' && !/^\d{4}-S\d{2}$/.test(a));
+    const currentObj = allObjectives.find(o => o.id === obj.id) || obj;
+    const currentWeeks = (currentObj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
+    const otherAssignments = (currentObj.assignments || []).filter(a => typeof a === 'string' && !/^\d{4}-S\d{2}$/.test(a));
 
     let newWeeks;
-    if (!fromWeekId || currentWeeks.length <= 1) {
-      newWeeks = [targetWeekId];
+    if (!fromWeekId) {
+      newWeeks = currentWeeks.includes(targetWeekId) ? currentWeeks : [...currentWeeks, targetWeekId].sort();
     } else {
       newWeeks = currentWeeks.filter(w => w !== fromWeekId);
       if (!newWeeks.includes(targetWeekId)) {
@@ -100,7 +102,7 @@ export default function ProjectGantt({
     targetDispatch({
       type: 'UPDATE_OBJECTIVE',
       payload: {
-        ...obj,
+        ...currentObj,
         assignType: 'week',
         assignments: [...otherAssignments, ...newWeeks]
       }
@@ -108,47 +110,103 @@ export default function ProjectGantt({
 
     // 2. Transfer or maintain progress
     if (fromWeekId) {
-      const prevProg = allProgress[fromWeekId]?.[obj.id];
+      const prevProg = allProgress[fromWeekId]?.[currentObj.id];
       if (prevProg !== undefined && prevProg > 0) {
         targetDispatch({
           type: 'TOGGLE_PROGRESS',
-          payload: { weekId: targetWeekId, objectiveId: obj.id, value: prevProg }
+          payload: { weekId: targetWeekId, objectiveId: currentObj.id, value: prevProg }
         });
         targetDispatch({
           type: 'TOGGLE_PROGRESS',
-          payload: { weekId: fromWeekId, objectiveId: obj.id, value: 0 }
+          payload: { weekId: fromWeekId, objectiveId: currentObj.id, value: 0 }
         });
       }
     } else {
-      const isDone = getObjectiveProjectProgress(obj, allProgress) >= 1;
+      const isDone = getObjectiveProjectProgress(currentObj, allProgress) >= 1;
       if (isDone) {
-        const completeValue = obj.subObjectives?.length > 0
-          ? (1 << obj.subObjectives.length) - 1
-          : (Number(obj.target) > 1 ? Number(obj.target) : 1);
+        const completeValue = currentObj.subObjectives?.length > 0
+          ? (1 << currentObj.subObjectives.length) - 1
+          : (Number(currentObj.target) > 1 ? Number(currentObj.target) : 1);
         targetDispatch({
           type: 'TOGGLE_PROGRESS',
-          payload: { weekId: targetWeekId, objectiveId: obj.id, value: completeValue }
+          payload: { weekId: targetWeekId, objectiveId: currentObj.id, value: completeValue }
         });
       }
     }
 
-    showToast(`"${obj.title}" affecté à ${formatWeekShort(targetWeekId)}`, 'success');
+    showToast(`"${currentObj.title}" affecté à ${formatWeekShort(targetWeekId)}`, 'success');
   };
 
-  // Handle clicking on an empty week cell in an objective's row
-  const handleCellClick = (obj, targetWeekId) => {
-    const currentWeeks = (obj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
-    const fromWeekId = currentWeeks.length === 1 ? currentWeeks[0] : null;
+  // Toggle or add a week assignment for an objective (multi-week support)
+  const handleToggleWeek = (obj, targetWeekId) => {
+    if (!obj || !targetWeekId) return;
 
-    handleAssignWeek(obj, targetWeekId, fromWeekId);
+    const currentObj = allObjectives.find(o => o.id === obj.id) || obj;
+    const currentWeeks = (currentObj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
+    const otherAssignments = (currentObj.assignments || []).filter(a => typeof a === 'string' && !/^\d{4}-S\d{2}$/.test(a));
+    const isAlreadyAssigned = currentWeeks.includes(targetWeekId);
+
+    if (isAlreadyAssigned) {
+      if (currentWeeks.length > 1) {
+        const newWeeks = currentWeeks.filter(w => w !== targetWeekId);
+        targetDispatch({
+          type: 'UPDATE_OBJECTIVE',
+          payload: {
+            ...currentObj,
+            assignType: 'week',
+            assignments: [...otherAssignments, ...newWeeks]
+          }
+        });
+        targetDispatch({
+          type: 'TOGGLE_PROGRESS',
+          payload: { weekId: targetWeekId, objectiveId: currentObj.id, value: 0 }
+        });
+        showToast(`Semaine ${formatWeekShort(targetWeekId)} retirée de "${currentObj.title}"`, 'info');
+      } else {
+        handleMoveToBacklog(currentObj);
+      }
+    } else {
+      const newWeeks = [...currentWeeks, targetWeekId].sort();
+      targetDispatch({
+        type: 'UPDATE_OBJECTIVE',
+        payload: {
+          ...currentObj,
+          assignType: 'week',
+          assignments: [...otherAssignments, ...newWeeks]
+        }
+      });
+
+      const isDone = getObjectiveProjectProgress(currentObj, allProgress) >= 1;
+      if (isDone) {
+        const completeValue = currentObj.subObjectives?.length > 0
+          ? (1 << currentObj.subObjectives.length) - 1
+          : (Number(currentObj.target) > 1 ? Number(currentObj.target) : 1);
+        targetDispatch({
+          type: 'TOGGLE_PROGRESS',
+          payload: { weekId: targetWeekId, objectiveId: currentObj.id, value: completeValue }
+        });
+      }
+
+      if (currentWeeks.length === 0 || currentObj.assignType === 'backlog') {
+        showToast(`"${currentObj.title}" affecté à ${formatWeekShort(targetWeekId)}`, 'success');
+      } else {
+        showToast(`"${currentObj.title}" également affecté à ${formatWeekShort(targetWeekId)}`, 'success');
+      }
+    }
+  };
+
+  // Handle clicking on an empty week cell in an objective's row (adds week)
+  const handleCellClick = (obj, targetWeekId) => {
+    handleToggleWeek(obj, targetWeekId);
   };
 
   // Handle moving an objective back to the backlog
   const handleMoveToBacklog = (obj, specificWeekId = null) => {
     if (!obj) return;
+    const currentObj = allObjectives.find(o => o.id === obj.id) || obj;
 
-    const currentWeeks = (obj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
-    const otherAssignments = (obj.assignments || []).filter(a => typeof a === 'string' && !/^\d{4}-S\d{2}$/.test(a));
+    const currentWeeks = (currentObj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a));
+    const otherAssignments = (currentObj.assignments || []).filter(a => typeof a === 'string' && !/^\d{4}-S\d{2}$/.test(a));
 
     let newWeeks = [];
     if (specificWeekId && currentWeeks.length > 1) {
@@ -160,7 +218,7 @@ export default function ProjectGantt({
       targetDispatch({
         type: 'UPDATE_OBJECTIVE',
         payload: {
-          ...obj,
+          ...currentObj,
           assignType: 'week',
           assignments: [...otherAssignments, ...newWeeks]
         }
@@ -168,29 +226,29 @@ export default function ProjectGantt({
       if (specificWeekId) {
         targetDispatch({
           type: 'TOGGLE_PROGRESS',
-          payload: { weekId: specificWeekId, objectiveId: obj.id, value: 0 }
+          payload: { weekId: specificWeekId, objectiveId: currentObj.id, value: 0 }
         });
       }
-      showToast(`Semaine ${formatWeekShort(specificWeekId)} retirée de "${obj.title}"`, 'info');
+      showToast(`Semaine ${formatWeekShort(specificWeekId)} retirée de "${currentObj.title}"`, 'info');
     } else {
       // Move completely to backlog
-      const completedWeeks = getObjectiveCompletedWeeks(obj, allProgress);
+      const completedWeeks = getObjectiveCompletedWeeks(currentObj, allProgress);
       completedWeeks.forEach(w => {
         targetDispatch({
           type: 'TOGGLE_PROGRESS',
-          payload: { weekId: w, objectiveId: obj.id, value: 0 }
+          payload: { weekId: w, objectiveId: currentObj.id, value: 0 }
         });
       });
 
       targetDispatch({
         type: 'UPDATE_OBJECTIVE',
         payload: {
-          ...obj,
+          ...currentObj,
           assignType: 'backlog',
           assignments: otherAssignments
         }
       });
-      showToast(`"${obj.title}" remis dans le Backlog`, 'info');
+      showToast(`"${currentObj.title}" remis dans le Backlog`, 'info');
     }
 
     setActivePopover(null);
@@ -757,7 +815,7 @@ export default function ProjectGantt({
                     {isExpanded && linkedObjectives.map((obj) => {
                       const objProg = getObjectiveProjectProgress(obj, allProgress);
                       const isDone = objProg >= 1;
-                      const assignmentsCount = (obj.assignments || []).length;
+                      const assignmentsCount = (obj.assignments || []).filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a)).length;
 
                       return (
                         <div 
@@ -773,6 +831,14 @@ export default function ProjectGantt({
                             >
                               {obj.title}
                             </span>
+                            {assignmentsCount > 1 && (
+                              <span 
+                                className="text-[9px] text-accent-cyan/90 bg-accent-cyan/10 border border-accent-cyan/20 rounded px-1 py-0.5 ml-1.5 font-semibold shrink-0" 
+                                title={`Affecté à ${assignmentsCount} semaines`}
+                              >
+                                {assignmentsCount} sem.
+                              </span>
+                            )}
                           </div>
 
                           {/* Checkbox to toggle completed / uncompleted */}
@@ -993,7 +1059,9 @@ export default function ProjectGantt({
                                     isHovered ? 'bg-accent-cyan/30 ring-2 ring-inset ring-accent-cyan' : ''
                                   }`}
                                   style={{ width: `${colWidth}px`, minWidth: `${colWidth}px`, maxWidth: `${colWidth}px` }}
-                                  title={`Cliquer pour affecter "${obj.title}" à ${w.shortLabel} ou glisser-déposer`}
+                                  title={isAssigned 
+                                    ? `Affecté à ${w.shortLabel} — Cliquer sur la pastille pour gérer` 
+                                    : `Cliquer pour ajouter ${w.shortLabel} à "${obj.title}" ou glisser-déposer`}
                                 >
                                   {/* Ghost preview icon on hover when not assigned and not dragging */}
                                   {!isAssigned && !draggingInfo && (
@@ -1128,100 +1196,181 @@ export default function ProjectGantt({
         </div>
 
         <div className="text-[11px] text-dark-400">
-          💡 <strong className="text-accent-cyan">Planification interactive</strong> : Glissez-déposez une pastille ou cliquez sur une semaine pour changer l'affectation.
+          💡 <strong className="text-accent-cyan">Planification multi-semaines</strong> : Cliquez sur les semaines du planning pour ajouter/retirer des affectations, ou cliquez sur une pastille pour gérer l'ensemble des semaines.
         </div>
       </div>
 
-      {/* Floating Popover for Quick Week Assignment & Backlog Actions */}
-      {activePopover && (
-        <>
-          <div 
-            className="fixed inset-0 z-50 bg-black/20 backdrop-blur-[1px]" 
-            onClick={() => setActivePopover(null)} 
-          />
-          <div
-            className="fixed z-50 bg-dark-800 border border-dark-600/90 rounded-2xl shadow-2xl p-3.5 min-w-[240px] max-w-[300px] text-xs animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-2.5 backdrop-blur-md"
-            style={{
-              left: `${Math.max(12, Math.min(activePopover.x, window.innerWidth - 300))}px`,
-              top: `${Math.min(activePopover.y, window.innerHeight - 230)}px`
-            }}
-          >
-            {/* Popover Header */}
-            <div className="flex items-start justify-between gap-2 pb-2 border-b border-dark-700/60">
-              <div className="min-w-0 flex-1">
-                <h4 className="font-bold text-dark-100 truncate text-xs" title={activePopover.objective.title}>
-                  {activePopover.objective.title}
-                </h4>
-                <span className="text-[10px] text-dark-400 font-medium flex items-center gap-1 mt-0.5">
-                  <Calendar size={11} className="text-accent-cyan" />
-                  {activePopover.weekId ? `Affecté à ${formatWeekShort(activePopover.weekId)}` : '📋 Actuellement en Backlog'}
-                </span>
-              </div>
-              <button 
-                type="button" 
-                onClick={() => setActivePopover(null)} 
-                className="text-dark-400 hover:text-dark-100 p-1 rounded-lg hover:bg-dark-700 transition-colors cursor-pointer"
-              >
-                <X size={14} />
-              </button>
-            </div>
+      {/* Floating Popover for Quick Multi-Week Assignment & Backlog Actions */}
+      {activePopover && (() => {
+        const popObj = activePopover.objective;
+        const currentObj = allObjectives.find(o => o.id === popObj.id) || popObj;
+        const assignedWeeks = (currentObj.assignments || [])
+          .filter(a => typeof a === 'string' && /^\d{4}-S\d{2}$/.test(a))
+          .sort();
+        const isBacklog = assignedWeeks.length === 0 || currentObj.assignType === 'backlog';
+        const selectableWeeks = getSelectableWeeks(4, 26);
 
-            {/* Quick Actions */}
-            <div className="flex flex-col gap-2">
-              {/* Backlog button if assigned */}
-              {activePopover.weekId && (
-                <button
-                  type="button"
-                  onClick={() => handleMoveToBacklog(activePopover.objective, activePopover.weekId)}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-accent-violet hover:bg-accent-violet/15 border border-accent-violet/30 transition-colors cursor-pointer shadow-sm"
+        return (
+          <>
+            <div 
+              className="fixed inset-0 z-50 bg-black/20 backdrop-blur-[1px]" 
+              onClick={() => setActivePopover(null)} 
+            />
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="fixed z-50 bg-dark-800 border border-dark-600/90 rounded-2xl shadow-2xl p-3.5 min-w-[280px] max-w-[340px] text-xs animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-3 backdrop-blur-md max-h-[85vh] overflow-y-auto"
+              style={{
+                left: `${Math.max(12, Math.min(activePopover.x, window.innerWidth - 350))}px`,
+                top: `${Math.max(12, Math.min(activePopover.y, window.innerHeight - 380))}px`
+              }}
+            >
+              {/* Popover Header */}
+              <div className="flex items-start justify-between gap-2 pb-2 border-b border-dark-700/60">
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-bold text-dark-100 truncate text-xs" title={currentObj.title}>
+                    {currentObj.title}
+                  </h4>
+                  <span className="text-[10px] text-dark-400 font-medium flex items-center gap-1 mt-0.5">
+                    <Calendar size={11} className="text-accent-cyan shrink-0" />
+                    {isBacklog 
+                      ? '📋 Actuellement en Backlog' 
+                      : assignedWeeks.length === 1 
+                        ? `Affecté à ${formatWeekShort(assignedWeeks[0])}` 
+                        : `Affecté à ${assignedWeeks.length} semaines`}
+                  </span>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setActivePopover(null)} 
+                  className="text-dark-400 hover:text-dark-100 p-1 rounded-lg hover:bg-dark-700 transition-colors cursor-pointer shrink-0"
                 >
-                  <Inbox size={14} />
-                  <span>Remettre dans le backlog</span>
+                  <X size={14} />
                 </button>
-              )}
+              </div>
 
-              {/* Quick select week */}
-              <div className="flex flex-col gap-1">
+              {/* 1. Assigned Weeks Tags */}
+              <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] text-dark-400 font-semibold uppercase tracking-wider">
-                  {activePopover.weekId ? 'Déplacer vers :' : 'Planifier pour :'}
+                  Semaines affectées ({assignedWeeks.length}) :
                 </label>
+                {assignedWeeks.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                    {assignedWeeks.map(wId => (
+                      <span 
+                        key={wId}
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30 text-[11px] font-semibold"
+                      >
+                        <span>{formatWeekShort(wId)}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleWeek(currentObj, wId);
+                          }}
+                          className="text-accent-cyan/70 hover:text-accent-red hover:bg-accent-red/20 rounded p-0.5 transition-colors cursor-pointer"
+                          title={`Retirer la semaine ${formatWeekShort(wId)}`}
+                        >
+                          <X size={11} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-[11px] text-dark-500 italic py-0.5">
+                    Aucune semaine affectée (dans le Backlog)
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Quick Toggle Timeline Weeks */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-dark-400 font-semibold uppercase tracking-wider">
+                  Cliquer pour ajouter / retirer :
+                </label>
+                <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1">
+                  {weeks.map(w => {
+                    const isSelected = assignedWeeks.includes(w.weekId);
+                    return (
+                      <button
+                        key={w.weekId}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleWeek(currentObj, w.weekId);
+                        }}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all cursor-pointer flex items-center gap-1 ${
+                          isSelected
+                            ? 'bg-accent-cyan text-dark-950 border-accent-cyan shadow-sm hover:bg-accent-cyan/80'
+                            : 'bg-dark-900/70 text-dark-300 border-dark-700 hover:border-accent-cyan/60 hover:text-white'
+                        }`}
+                        title={`${w.shortLabel} ${w.isCurrent ? '(Cette semaine)' : ''}`}
+                      >
+                        {isSelected && <Check size={10} strokeWidth={3} />}
+                        <span>{w.shortLabel}</span>
+                        {w.isCurrent && <span className="w-1.5 h-1.5 rounded-full bg-accent-amber shrink-0 ml-0.5" title="Semaine en cours" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3. Dropdown for any other week */}
+              <div className="flex flex-col gap-1">
                 <select
-                  value={activePopover.weekId || ''}
+                  value=""
                   onChange={(e) => {
                     if (e.target.value) {
-                      handleAssignWeek(activePopover.objective, e.target.value, activePopover.weekId);
-                      setActivePopover(null);
+                      handleToggleWeek(currentObj, e.target.value);
                     }
                   }}
-                  className="w-full bg-dark-900/90 border border-dark-600 rounded-xl px-2.5 py-1.5 text-xs text-dark-100 focus:border-accent-cyan outline-none cursor-pointer"
+                  className="w-full bg-dark-900/90 border border-dark-600 rounded-xl px-2.5 py-1.5 text-xs text-dark-200 focus:border-accent-cyan outline-none cursor-pointer"
                 >
-                  <option value="" disabled>Choisir une semaine...</option>
-                  {weeks.map(w => (
-                    <option key={w.weekId} value={w.weekId}>
-                      {w.shortLabel} {w.isCurrent ? "— (Cette semaine)" : ""}
-                    </option>
-                  ))}
+                  <option value="" disabled>+ Choisir une autre semaine...</option>
+                  {selectableWeeks.map(w => {
+                    const isAssigned = assignedWeeks.includes(w);
+                    return (
+                      <option key={w} value={w}>
+                        {isAssigned ? '✓ ' : ''}{formatWeekShort(w)} {w === currentWeekId ? '(Cette semaine)' : ''}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
-              {/* Edit objective modal button */}
-              {onEditObjective && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onEditObjective(activePopover.objective);
-                    setActivePopover(null);
-                  }}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-dark-300 hover:text-dark-100 hover:bg-dark-700/80 border border-dark-600/50 transition-colors cursor-pointer mt-0.5"
-                >
-                  <Pencil size={13} />
-                  <span>Modifier les détails</span>
-                </button>
-              )}
+              {/* 4. Action Buttons */}
+              <div className="flex flex-col gap-1.5 pt-2 border-t border-dark-700/60">
+                {!isBacklog && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleMoveToBacklog(currentObj);
+                      setActivePopover(null);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-accent-violet hover:bg-accent-violet/15 border border-accent-violet/30 transition-colors cursor-pointer shadow-sm"
+                  >
+                    <Inbox size={13} />
+                    <span>Tout remettre dans le backlog</span>
+                  </button>
+                )}
+
+                {onEditObjective && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onEditObjective(currentObj);
+                      setActivePopover(null);
+                    }}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-dark-300 hover:text-dark-100 hover:bg-dark-700/80 border border-dark-600/50 transition-colors cursor-pointer"
+                  >
+                    <Pencil size={12} />
+                    <span>Modifier les détails</span>
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        );
+      })()}
     </div>
   );
 }
