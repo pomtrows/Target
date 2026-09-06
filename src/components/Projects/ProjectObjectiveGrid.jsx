@@ -104,7 +104,7 @@ export default function ProjectObjectiveGrid({
                     <h4
                       onClick={() => onEditObjective?.(obj)}
                       className={`text-sm font-bold leading-snug cursor-pointer transition-colors ${
-                        isDone ? 'line-through text-dark-400' : 'text-dark-100 hover:text-accent-cyan'
+                        isDone ? 'text-dark-200 hover:text-accent-cyan' : 'text-dark-100 hover:text-accent-cyan'
                       }`}
                     >
                       {obj.title}
