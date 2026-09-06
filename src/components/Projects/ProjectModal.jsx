@@ -29,6 +29,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
   const [objectiveSearch, setObjectiveSearch] = useState('');
   const [objectiveMode, setObjectiveMode] = useState(null); // 'create' | 'assign' | null
   const [isAdvancedObjectiveModalOpen, setIsAdvancedObjectiveModalOpen] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
 
   // Attachments and Notes states
   const [tempProjectId, setTempProjectId] = useState(() => projectToEdit?.id || generateUUID());
@@ -93,6 +94,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
     setShowNotesModal(false);
     setProjectNoteId(null);
     setShowDescriptionMobile(false);
+    setShowAssignModal(false);
     setObjectiveMode(null);
     setNewObjTitle('');
     setNewObjPriority('P2');
@@ -507,10 +509,10 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
 
               <button
                 type="button"
-                onClick={() => setObjectiveMode(prev => prev === 'assign' ? null : 'assign')}
+                onClick={() => setShowAssignModal(true)}
                 className={`flex items-center gap-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                  objectiveMode === 'assign'
-                    ? 'bg-accent-cyan text-dark-950 border-accent-cyan shadow-sm shadow-accent-cyan/20'
+                  selectedObjectiveIds.length > 0
+                    ? 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/40 hover:bg-accent-cyan/25'
                     : 'bg-dark-800 text-dark-200 border-dark-600/50 hover:bg-dark-700 hover:text-dark-100 hover:border-dark-500'
                 }`}
                 style={{ padding: '5px 10px' }}
@@ -640,123 +642,6 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
                     {isCreatingInlineObj ? 'Création...' : 'Ajouter'}
                   </button>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* PANNEAU 2 : ATTRIBUER DES OBJECTIFS EXISTANTS */}
-          {objectiveMode === 'assign' && (
-            <div 
-              className="flex flex-col gap-2 bg-dark-800/90 rounded-xl border border-dark-600/40"
-              style={{ padding: '8px 6px' }}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-dark-200 flex items-center gap-1.5">
-                  <Link2 size={13} className="text-accent-cyan" />
-                  Sélectionner parmi vos objectifs existants
-                </span>
-                <div className="flex items-center gap-2">
-                  {selectedObjectiveIds.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedObjectiveIds([])}
-                      className="text-[11px] text-dark-400 hover:text-accent-red underline transition-colors cursor-pointer"
-                      style={{ padding: '2px 4px' }}
-                    >
-                      Tout désélectionner
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setObjectiveMode(null)}
-                    className="text-dark-400 hover:text-dark-200 text-xs cursor-pointer"
-                    style={{ padding: '2px 4px' }}
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Recherche */}
-              <div className="relative">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
-                <input
-                  type="text"
-                  value={objectiveSearch}
-                  onChange={(e) => setObjectiveSearch(e.target.value)}
-                  placeholder="Rechercher un objectif par mot-clé..."
-                  className="w-full bg-dark-900 border border-dark-600/50 rounded-xl text-xs text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan"
-                  style={{ padding: '6px 8px 6px 28px' }}
-                />
-              </div>
-
-              {/* Liste d'objectifs filtrés */}
-              <div className="max-h-44 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-0.5 pr-0.5">
-                {filteredObjectives.length === 0 ? (
-                  <div className="text-center py-3 text-xs text-dark-400">
-                    Aucun objectif trouvé.
-                  </div>
-                ) : (
-                  filteredObjectives.map((obj) => {
-                    const isSelected = selectedObjectiveIds.includes(obj.id);
-                    const progressRatio = getObjectiveProjectProgress(obj, targetState.progress);
-                    const percent = Math.round(progressRatio * 100);
-
-                    return (
-                      <div
-                        key={obj.id}
-                        onClick={() => toggleObjective(obj.id)}
-                        className={`flex items-center justify-between rounded-xl border text-xs cursor-pointer transition-all ${
-                          isSelected
-                            ? 'bg-accent-cyan/15 border-accent-cyan/50 text-dark-100 font-semibold'
-                            : 'bg-dark-900/60 border-dark-600/30 text-dark-300 hover:bg-dark-700/50 hover:text-dark-100'
-                        }`}
-                        style={{ padding: '5px 6px' }}
-                      >
-                        <div className="flex items-center gap-1.5 min-w-0 truncate">
-                          <div 
-                            className={`rounded flex items-center justify-center border transition-all flex-shrink-0 ${
-                              isSelected 
-                                ? 'bg-accent-cyan border-accent-cyan text-dark-950 font-black' 
-                                : 'border-dark-500 bg-dark-800'
-                            }`}
-                            style={{ width: '16px', height: '16px' }}
-                          >
-                            {isSelected && <Check size={11} strokeWidth={3} />}
-                          </div>
-                          <span className="truncate">{obj.title}</span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 flex-shrink-0 ml-1.5">
-                          {obj.priority && (
-                            <span 
-                              className={`text-[9px] font-black rounded border ${
-                                obj.priority === 'P1' ? 'text-accent-red border-accent-red/30 bg-accent-red/10' :
-                                obj.priority === 'P2' ? 'text-accent-violet border-accent-violet/30 bg-accent-violet/10' :
-                                'text-accent-cyan border-accent-cyan/30 bg-accent-cyan/10'
-                              }`}
-                              style={{ padding: '1px 4px' }}
-                            >
-                              {obj.priority}
-                            </span>
-                          )}
-                          <span 
-                            className={`text-[10px] font-black rounded border flex-shrink-0 ${
-                              percent >= 100 
-                                ? 'bg-accent-green/20 text-accent-green border-accent-green/30' 
-                                : percent > 0 
-                                  ? 'bg-accent-cyan/20 text-accent-cyan border-accent-cyan/30' 
-                                  : 'bg-dark-700/60 text-dark-400 border-dark-600/40'
-                            }`}
-                            style={{ padding: '1px 5px' }}
-                          >
-                            {percent}%
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
               </div>
             </div>
           )}
@@ -912,6 +797,138 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           <NoteEditor 
             noteId={projectNoteId} 
           />
+        </div>
+      </Modal>
+    )}
+
+    {/* Modale dédiée : Attribution des objectifs */}
+    {showAssignModal && (
+      <Modal
+        isOpen={showAssignModal}
+        onClose={() => {
+          setShowAssignModal(false);
+          setObjectiveSearch('');
+        }}
+        title="Attribuer des objectifs"
+        maxWidth="max-w-lg"
+        zIndex={220}
+      >
+        <div className="flex flex-col gap-3 text-dark-200">
+          {/* Entête avec nombre sélectionné et Tout désélectionner */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-dark-300">
+              {selectedObjectiveIds.length === 0
+                ? 'Aucun objectif sélectionné'
+                : `${selectedObjectiveIds.length} objectif${selectedObjectiveIds.length > 1 ? 's' : ''} sélectionné${selectedObjectiveIds.length > 1 ? 's' : ''}`}
+            </span>
+            {selectedObjectiveIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelectedObjectiveIds([])}
+                className="text-xs text-dark-400 hover:text-accent-red underline transition-colors cursor-pointer"
+              >
+                Tout désélectionner
+              </button>
+            )}
+          </div>
+
+          {/* Recherche */}
+          <div className="relative">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
+            <input
+              type="text"
+              value={objectiveSearch}
+              onChange={(e) => setObjectiveSearch(e.target.value)}
+              placeholder="Rechercher un objectif par mot-clé..."
+              className="w-full bg-dark-900 border border-dark-600/50 rounded-xl text-xs sm:text-sm text-dark-100 placeholder:text-dark-400 focus:outline-none focus:border-accent-cyan"
+              style={{ padding: '8px 10px 8px 34px' }}
+              autoFocus
+            />
+          </div>
+
+          {/* Liste des objectifs */}
+          <div className="max-h-[50vh] overflow-y-auto custom-scrollbar flex flex-col gap-1.5 pr-0.5">
+            {filteredObjectives.length === 0 ? (
+              <div className="text-center py-8 text-xs sm:text-sm text-dark-400">
+                Aucun objectif trouvé.
+              </div>
+            ) : (
+              filteredObjectives.map((obj) => {
+                const isSelected = selectedObjectiveIds.includes(obj.id);
+                const progressRatio = getObjectiveProjectProgress(obj, targetState.progress);
+                const percent = Math.round(progressRatio * 100);
+
+                return (
+                  <div
+                    key={obj.id}
+                    onClick={() => toggleObjective(obj.id)}
+                    className={`flex items-center justify-between rounded-xl border text-xs sm:text-sm cursor-pointer transition-all ${
+                      isSelected
+                        ? 'bg-accent-cyan/15 border-accent-cyan/50 text-dark-100 font-semibold'
+                        : 'bg-dark-900/60 border-dark-600/30 text-dark-300 hover:bg-dark-700/50 hover:text-dark-100'
+                    }`}
+                    style={{ padding: '7px 10px' }}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 truncate">
+                      <div 
+                        className={`rounded-md flex items-center justify-center border transition-all flex-shrink-0 ${
+                          isSelected 
+                            ? 'bg-accent-cyan border-accent-cyan text-dark-950 font-black' 
+                            : 'border-dark-500 bg-dark-800'
+                        }`}
+                        style={{ width: '18px', height: '18px' }}
+                      >
+                        {isSelected && <Check size={12} strokeWidth={3} />}
+                      </div>
+                      <span className="truncate">{obj.title}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                      {obj.priority && (
+                        <span 
+                          className={`text-[10px] font-black rounded border ${
+                            obj.priority === 'P1' ? 'text-accent-red border-accent-red/30 bg-accent-red/10' :
+                            obj.priority === 'P2' ? 'text-accent-violet border-accent-violet/30 bg-accent-violet/10' :
+                            'text-accent-cyan border-accent-cyan/30 bg-accent-cyan/10'
+                          }`}
+                          style={{ padding: '1px 5px' }}
+                        >
+                          {obj.priority}
+                        </span>
+                      )}
+                      <span 
+                        className={`text-[11px] font-black rounded border flex-shrink-0 ${
+                          percent >= 100 
+                            ? 'bg-accent-green/20 text-accent-green border-accent-green/30' 
+                            : percent > 0 
+                              ? 'bg-accent-cyan/20 text-accent-cyan border-accent-cyan/30' 
+                              : 'bg-dark-700/60 text-dark-400 border-dark-600/40'
+                        }`}
+                        style={{ padding: '1px 6px' }}
+                      >
+                        {percent}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Bouton de validation / fermeture */}
+          <div className="flex items-center justify-end gap-2 pt-2.5 border-t border-dark-700/50">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAssignModal(false);
+                setObjectiveSearch('');
+              }}
+              className="rounded-xl text-xs font-bold bg-accent-cyan hover:bg-accent-cyan/90 text-dark-950 transition-all active:scale-95 cursor-pointer"
+              style={{ padding: '7px 20px' }}
+            >
+              Terminer ({selectedObjectiveIds.length})
+            </button>
+          </div>
         </div>
       </Modal>
     )}
