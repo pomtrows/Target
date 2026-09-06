@@ -50,7 +50,8 @@ const ZOOM_CONFIGS = {
 export default function ProjectGantt({ 
   projects, 
   onEdit, 
-  onOpenDetails 
+  onOpenDetails,
+  onFocusProject 
 }) {
   const { state: targetState } = useTarget();
   const { changeProjectStatus } = useProjects();
@@ -444,9 +445,9 @@ export default function ProjectGantt({
                         {/* Title & Category */}
                         <div className="flex flex-col min-w-0">
                           <span 
-                            onClick={() => onOpenDetails?.(project)}
+                            onClick={() => (onFocusProject || onOpenDetails)?.(project)}
                             className="text-xs font-bold text-dark-100 truncate hover:text-accent-cyan cursor-pointer transition-colors"
-                            title={project.name}
+                            title="Cliquer pour focaliser sur ce projet"
                           >
                             {project.name}
                           </span>

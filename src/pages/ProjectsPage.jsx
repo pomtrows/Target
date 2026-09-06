@@ -3,17 +3,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FolderKanban, Plus, Search, Filter, LayoutGrid, Columns, CalendarRange,
   CheckCircle2, Clock, AlertTriangle, Circle, Eye, EyeOff,
-  Database, Copy, Check, Info, X
+  Database, Copy, Check, Info, X, ArrowLeft, Pencil, Calendar
 } from 'lucide-react';
-import { parseISO, isBefore, startOfDay } from 'date-fns';
+import { parseISO, isBefore, startOfDay, format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { useProjects } from '../contexts/ProjectsContext';
 import { useTarget } from '../contexts/TargetContext';
 import { getProjectEffectiveDates } from '../utils/projectUtils';
+import { getObjectiveProjectProgress } from '../utils/progressUtils';
 import ProjectCard from '../components/Projects/ProjectCard';
 import ProjectKanban from '../components/Projects/ProjectKanban';
 import ProjectGantt from '../components/Projects/ProjectGantt';
+import ProjectObjectiveKanban from '../components/Projects/ProjectObjectiveKanban';
+import ProjectObjectiveGrid from '../components/Projects/ProjectObjectiveGrid';
 import ProjectModal from '../components/Projects/ProjectModal';
 import ProjectDetailModal from '../components/Projects/ProjectDetailModal';
+import ObjectiveForm from '../components/Dashboard/ObjectiveForm';
 import Modal from '../components/Shared/Modal';
 
 const SQL_SCRIPT = `-- 1. Création de la table projects
@@ -121,6 +126,11 @@ export default function ProjectsPage() {
   const [showSqlModal, setShowSqlModal] = useState(false);
   const [copiedSql, setCopiedSql] = useState(false);
 
+  // Focus Project Mode State
+  const [focusedProjectId, setFocusedProjectId] = useState(null);
+  const [showObjectiveModal, setShowObjectiveModal] = useState(false);
+  const [objectiveToEdit, setObjectiveToEdit] = useState(null);
+
   const handleViewModeChange = (mode) => {
     setViewMode(mode);
     localStorage.setItem('target_projects_view_mode', mode);
@@ -225,6 +235,64 @@ export default function ProjectsPage() {
 
   // Keep detailProject in sync with projects list
   const activeDetailProject = detailProject ? (projects.find(p => p.id === detailProject.id) || null) : null;
+
+  // Focused project (synced with projects list)
+  const focusedProject = useMemo(() => {
+    if (!focusedProjectId) return null;
+    return projects.find(p => p.id === focusedProjectId) || null;
+  }, [projects, focusedProjectId]);
+
+  // Objectives linked to focused project
+  const focusedProjectObjectives = useMemo(() => {
+    if (!focusedProject) return [];
+    const linkedIds = new Set(focusedProject.objectiveIds || []);
+    return (targetState.objectives || []).filter(
+      obj => linkedIds.has(obj.id) || obj.projectId === focusedProject.id
+    );
+  }, [focusedProject, targetState.objectives]);
+
+  // Progress stats of focused project
+  const focusedProjectStats = useMemo(() => {
+    if (!focusedProject || focusedProjectObjectives.length === 0) {
+      return { total: 0, completed: 0, percent: 0 };
+    }
+    let totalRatio = 0;
+    let completed = 0;
+    focusedProjectObjectives.forEach(obj => {
+      const prog = getObjectiveProjectProgress(obj, targetState.progress);
+      totalRatio += prog;
+      if (prog >= 1) completed++;
+    });
+    const percent = Math.round((totalRatio / focusedProjectObjectives.length) * 100);
+    return {
+      total: focusedProjectObjectives.length,
+      completed,
+      percent
+    };
+  }, [focusedProject, focusedProjectObjectives, targetState.progress]);
+
+  const focusedCategory = useMemo(() => {
+    if (!focusedProject) return null;
+    return (targetState.categories || []).find(c => c.id === (focusedProject.categoryId || focusedProject.category_id));
+  }, [focusedProject, targetState.categories]);
+
+  const handleFocusProject = (project) => {
+    setFocusedProjectId(project?.id || null);
+  };
+
+  const handleExitFocus = () => {
+    setFocusedProjectId(null);
+  };
+
+  const handleOpenAddObjective = () => {
+    setObjectiveToEdit(null);
+    setShowObjectiveModal(true);
+  };
+
+  const handleOpenEditObjective = (obj) => {
+    setObjectiveToEdit(obj);
+    setShowObjectiveModal(true);
+  };
 
   const renderFilterControls = (isMobile = false) => {
     const inputRef = isMobile ? mobileSearchInputRef : desktopSearchInputRef;
@@ -453,267 +521,387 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      {/* KPI Mobile Summary Chart (< sm) */}
-      <div 
-        className="sm:hidden bg-dark-800/60 border border-dark-600/30 rounded-2xl flex items-center gap-3.5 shadow-sm"
-        style={{ padding: '10px 14px', marginTop: '6px', marginBottom: '-6px' }}
-      >
-        {/* Donut SVG */}
-        <div className="relative flex-shrink-0 w-12 h-12 flex items-center justify-center">
-          <svg width="48" height="48" viewBox="0 0 40 40" className="-rotate-90">
-            <circle
-              cx="20"
-              cy="20"
-              r={donutRadius}
-              fill="none"
-              stroke="rgba(51, 65, 85, 0.4)"
-              strokeWidth="4"
-            />
-            {terminesDash > 0 && (
-              <circle
-                cx="20"
-                cy="20"
-                r={donutRadius}
-                fill="none"
-                stroke="#22c55e"
-                strokeWidth="4"
-                strokeDasharray={`${terminesDash} ${donutCircumference}`}
-                strokeDashoffset={0}
-              />
-            )}
-            {enCoursDash > 0 && (
-              <circle
-                cx="20"
-                cy="20"
-                r={donutRadius}
-                fill="none"
-                stroke="#06b6d4"
-                strokeWidth="4"
-                strokeDasharray={`${enCoursDash} ${donutCircumference}`}
-                strokeDashoffset={-terminesDash}
-              />
-            )}
-            {nonLancesDash > 0 && (
-              <circle
-                cx="20"
-                cy="20"
-                r={donutRadius}
-                fill="none"
-                stroke="#64748b"
-                strokeWidth="4"
-                strokeDasharray={`${nonLancesDash} ${donutCircumference}`}
-                strokeDashoffset={-(terminesDash + enCoursDash)}
-              />
-            )}
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-[11px] font-black text-dark-100 leading-none">
-              {completionRate}%
-            </span>
+      {/* Focus Project Header OR Global Projects KPIs & Filters */}
+      {focusedProject ? (
+        <div className="flex flex-col gap-3.5 bg-dark-800/90 border border-dark-600/50 rounded-2xl p-4 shadow-lg animate-in fade-in duration-200">
+          {/* Top Bar: Return link + Actions */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            {/* Back button to all projects */}
+            <button
+              type="button"
+              onClick={handleExitFocus}
+              className="flex items-center gap-2 text-xs font-bold text-accent-cyan hover:text-accent-cyan/80 bg-accent-cyan/10 hover:bg-accent-cyan/15 border border-accent-cyan/30 rounded-xl px-3 py-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+            >
+              <ArrowLeft size={14} />
+              <span>← Tous les projets</span>
+            </button>
+
+            {/* Quick Actions */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => handleOpenDetails(focusedProject)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-dark-200 hover:text-white bg-dark-700 hover:bg-dark-600 border border-dark-600/50 rounded-xl px-3 py-1.5 transition-colors cursor-pointer"
+                title="Consulter la fiche détaillée du projet"
+              >
+                <Info size={13} className="text-accent-cyan" />
+                <span>Détails</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleOpenEdit(focusedProject)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-dark-200 hover:text-white bg-dark-700 hover:bg-dark-600 border border-dark-600/50 rounded-xl px-3 py-1.5 transition-colors cursor-pointer"
+                title="Modifier les informations du projet"
+              >
+                <Pencil size={13} className="text-accent-violet" />
+                <span>Modifier</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleOpenAddObjective}
+                className="flex items-center gap-1.5 text-xs font-bold text-dark-950 bg-accent-cyan hover:bg-accent-cyan/90 rounded-xl px-3.5 py-1.5 transition-all shadow-md cursor-pointer active:scale-95"
+                title="Ajouter un objectif à ce projet"
+              >
+                <Plus size={14} strokeWidth={2.5} />
+                <span>Ajouter un objectif</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Project Summary Card */}
+          <div className="flex items-start justify-between gap-4 pt-1 flex-wrap sm:flex-nowrap">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-lg sm:text-xl font-black text-dark-100 leading-tight truncate">
+                  {focusedProject.name}
+                </h2>
+
+                {/* Priority */}
+                <span className={`text-[10px] font-black rounded border px-1.5 py-0.5 ${
+                  focusedProject.priority === 1 ? 'text-accent-red border-accent-red/40 bg-accent-red/10' :
+                  focusedProject.priority === 2 ? 'text-accent-violet border-accent-violet/40 bg-accent-violet/10' :
+                  'text-accent-cyan border-accent-cyan/40 bg-accent-cyan/10'
+                }`}>
+                  P{focusedProject.priority || 2}
+                </span>
+
+                {/* Status */}
+                <span className={`text-[10px] font-bold rounded-full border px-2 py-0.5 ${
+                  focusedProject.status === '2-Terminé' ? 'text-accent-green border-accent-green/30 bg-accent-green/10' :
+                  focusedProject.status === '1-En cours' ? 'text-accent-cyan border-accent-cyan/30 bg-accent-cyan/10' :
+                  'text-dark-300 border-dark-600/40 bg-dark-700/60'
+                }`}>
+                  {focusedProject.status === '2-Terminé' ? 'Terminé' :
+                   focusedProject.status === '1-En cours' ? 'En cours' : 'Non lancé'}
+                </span>
+              </div>
+
+              {/* Dates & Category */}
+              <div className="flex items-center gap-3 text-xs text-dark-400 mt-1.5 flex-wrap">
+                {focusedCategory && (
+                  <span className="flex items-center gap-1 font-medium text-dark-300">
+                    <span>{focusedCategory.icon}</span>
+                    <span>{focusedCategory.label}</span>
+                  </span>
+                )}
+
+                <span className="flex items-center gap-1">
+                  <Calendar size={13} className="text-dark-400" />
+                  <span>
+                    {focusedProject.startDate ? format(parseISO(focusedProject.startDate), 'd MMM', { locale: fr }) : '—'}
+                    {' ➔ '}
+                    {focusedProject.endDate ? format(parseISO(focusedProject.endDate), 'd MMM yyyy', { locale: fr }) : '—'}
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            {/* Progress summary box */}
+            <div className="w-full sm:w-56 shrink-0 bg-dark-900/60 border border-dark-700/50 rounded-xl p-2.5">
+              <div className="flex items-center justify-between text-xs font-semibold mb-1">
+                <span className="text-dark-400">Objectifs</span>
+                <span className={focusedProjectStats.percent === 100 ? 'text-accent-green font-bold' : 'text-accent-cyan font-bold'}>
+                  {focusedProjectStats.completed} / {focusedProjectStats.total} ({focusedProjectStats.percent}%)
+                </span>
+              </div>
+              <div className="h-2 w-full bg-dark-700 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    focusedProjectStats.percent === 100 ? 'bg-accent-green' : 'bg-accent-cyan'
+                  }`}
+                  style={{ width: `${focusedProjectStats.percent}%` }}
+                />
+              </div>
+            </div>
           </div>
         </div>
+      ) : (
+        <>
+          {/* KPI Mobile Summary Chart (< sm) */}
+          <div 
+            className="sm:hidden bg-dark-800/60 border border-dark-600/30 rounded-2xl flex items-center gap-3.5 shadow-sm"
+            style={{ padding: '10px 14px', marginTop: '6px', marginBottom: '-6px' }}
+          >
+            {/* Donut SVG */}
+            <div className="relative flex-shrink-0 w-12 h-12 flex items-center justify-center">
+              <svg width="48" height="48" viewBox="0 0 40 40" className="-rotate-90">
+                <circle
+                  cx="20"
+                  cy="20"
+                  r={donutRadius}
+                  fill="none"
+                  stroke="rgba(51, 65, 85, 0.4)"
+                  strokeWidth="4"
+                />
+                {terminesDash > 0 && (
+                  <circle
+                    cx="20"
+                    cy="20"
+                    r={donutRadius}
+                    fill="none"
+                    stroke="#22c55e"
+                    strokeWidth="4"
+                    strokeDasharray={`${terminesDash} ${donutCircumference}`}
+                    strokeDashoffset={0}
+                  />
+                )}
+                {enCoursDash > 0 && (
+                  <circle
+                    cx="20"
+                    cy="20"
+                    r={donutRadius}
+                    fill="none"
+                    stroke="#06b6d4"
+                    strokeWidth="4"
+                    strokeDasharray={`${enCoursDash} ${donutCircumference}`}
+                    strokeDashoffset={-terminesDash}
+                  />
+                )}
+                {nonLancesDash > 0 && (
+                  <circle
+                    cx="20"
+                    cy="20"
+                    r={donutRadius}
+                    fill="none"
+                    stroke="#64748b"
+                    strokeWidth="4"
+                    strokeDasharray={`${nonLancesDash} ${donutCircumference}`}
+                    strokeDashoffset={-(terminesDash + enCoursDash)}
+                  />
+                )}
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-[11px] font-black text-dark-100 leading-none">
+                  {completionRate}%
+                </span>
+              </div>
+            </div>
 
-        {/* Détails & Barre multi-segments */}
-        <div className="flex-1 min-w-0 flex flex-col justify-center gap-1.5">
-          <div className="flex items-center text-xs">
-            <span className="font-bold text-dark-100 flex items-center gap-1.5">
-              <span>Projets</span>
-              <span className="text-dark-400 font-normal">({totalProjects})</span>
-            </span>
+            {/* Détails & Barre multi-segments */}
+            <div className="flex-1 min-w-0 flex flex-col justify-center gap-1.5">
+              <div className="flex items-center text-xs">
+                <span className="font-bold text-dark-100 flex items-center gap-1.5">
+                  <span>Projets</span>
+                  <span className="text-dark-400 font-normal">({totalProjects})</span>
+                </span>
+              </div>
+
+              {/* Barre multi-segments */}
+              <div className="w-full h-2 rounded-full bg-dark-700/60 flex overflow-hidden">
+                {stats.termines > 0 && (
+                  <div
+                    style={{ width: `${(stats.termines / totalProjects) * 100}%` }}
+                    className="h-full bg-accent-green transition-all duration-500"
+                  />
+                )}
+                {stats.enCours > 0 && (
+                  <div
+                    style={{ width: `${(stats.enCours / totalProjects) * 100}%` }}
+                    className="h-full bg-accent-cyan transition-all duration-500"
+                  />
+                )}
+                {stats.nonLances > 0 && (
+                  <div
+                    style={{ width: `${(stats.nonLances / totalProjects) * 100}%` }}
+                    className="h-full bg-dark-400/60 transition-all duration-500"
+                  />
+                )}
+              </div>
+
+              {/* Mini-légende avec compteurs cliquables pour filtrer */}
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-dark-300">
+                <button
+                  type="button"
+                  onClick={() => setSelectedStatus(selectedStatus === '0-Non lancé' ? 'all' : '0-Non lancé')}
+                  className={`inline-flex items-center gap-1 cursor-pointer transition-all rounded-full px-2 py-0.5 border ${
+                    selectedStatus === '0-Non lancé'
+                      ? 'bg-dark-700/90 text-dark-100 border-dark-400 font-bold shadow-sm ring-1 ring-dark-400/50'
+                      : 'bg-dark-900/30 text-dark-400 border-transparent hover:border-dark-600/50 hover:text-dark-200'
+                  }`}
+                  title={selectedStatus === '0-Non lancé' ? 'Afficher tous les statuts' : 'Filtrer : Non lancés'}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-dark-400"></span>
+                  <span>{stats.nonLances} non lancé{stats.nonLances > 1 ? 's' : ''}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedStatus(selectedStatus === '1-En cours' ? 'all' : '1-En cours')}
+                  className={`inline-flex items-center gap-1 cursor-pointer transition-all rounded-full px-2 py-0.5 border ${
+                    selectedStatus === '1-En cours'
+                      ? 'bg-accent-cyan/20 text-accent-cyan border-accent-cyan/60 font-bold shadow-sm ring-1 ring-accent-cyan/40'
+                      : 'bg-dark-900/30 text-accent-cyan/80 border-transparent hover:border-accent-cyan/30 hover:text-accent-cyan'
+                  }`}
+                  title={selectedStatus === '1-En cours' ? 'Afficher tous les statuts' : 'Filtrer : En cours'}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent-cyan"></span>
+                  <span>{stats.enCours} en cours</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedStatus(selectedStatus === '2-Terminé' ? 'all' : '2-Terminé')}
+                  className={`inline-flex items-center gap-1 cursor-pointer transition-all rounded-full px-2 py-0.5 border ${
+                    selectedStatus === '2-Terminé'
+                      ? 'bg-accent-green/20 text-accent-green border-accent-green/60 font-bold shadow-sm ring-1 ring-accent-green/40'
+                      : 'bg-dark-900/30 text-accent-green/80 border-transparent hover:border-accent-green/30 hover:text-accent-green'
+                  }`}
+                  title={selectedStatus === '2-Terminé' ? 'Afficher tous les statuts' : 'Filtrer : Terminés'}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent-green"></span>
+                  <span>{stats.termines} terminé{stats.termines > 1 ? 's' : ''}</span>
+                </button>
+                {stats.enRetard > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStatus(selectedStatus === 'enRetard' ? 'all' : 'enRetard')}
+                    className={`inline-flex items-center gap-1 font-semibold cursor-pointer transition-all rounded-full px-2 py-0.5 border ${
+                      selectedStatus === 'enRetard'
+                        ? 'bg-accent-red/25 text-accent-red border-accent-red font-bold shadow-sm ring-1 ring-accent-red/50'
+                        : 'bg-accent-red/10 text-accent-red border-accent-red/30 hover:bg-accent-red/20'
+                    }`}
+                    title={selectedStatus === 'enRetard' ? 'Afficher tous les statuts' : 'Filtrer : En retard'}
+                  >
+                    <AlertTriangle size={11} />
+                    <span>{stats.enRetard} en retard</span>
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Barre multi-segments */}
-          <div className="w-full h-2 rounded-full bg-dark-700/60 flex overflow-hidden">
-            {stats.termines > 0 && (
-              <div
-                style={{ width: `${(stats.termines / totalProjects) * 100}%` }}
-                className="h-full bg-accent-green transition-all duration-500"
-              />
-            )}
-            {stats.enCours > 0 && (
-              <div
-                style={{ width: `${(stats.enCours / totalProjects) * 100}%` }}
-                className="h-full bg-accent-cyan transition-all duration-500"
-              />
-            )}
-            {stats.nonLances > 0 && (
-              <div
-                style={{ width: `${(stats.nonLances / totalProjects) * 100}%` }}
-                className="h-full bg-dark-400/60 transition-all duration-500"
-              />
-            )}
+          {/* Mobile Filter Bar (< sm) */}
+          <div 
+            className="sm:hidden flex flex-wrap items-center gap-2 bg-dark-800/80 border border-dark-600/40 rounded-2xl"
+            style={{ padding: '8px 12px', marginBottom: '-10px' }}
+          >
+            {renderFilterControls(true)}
           </div>
 
-          {/* Mini-légende avec compteurs cliquables pour filtrer */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-dark-300">
-            <button
-              type="button"
-              onClick={() => setSelectedStatus(selectedStatus === '0-Non lancé' ? 'all' : '0-Non lancé')}
-              className={`inline-flex items-center gap-1 cursor-pointer transition-all rounded-full px-2 py-0.5 border ${
-                selectedStatus === '0-Non lancé'
-                  ? 'bg-dark-700/90 text-dark-100 border-dark-400 font-bold shadow-sm ring-1 ring-dark-400/50'
-                  : 'bg-dark-900/30 text-dark-400 border-transparent hover:border-dark-600/50 hover:text-dark-200'
-              }`}
-              title={selectedStatus === '0-Non lancé' ? 'Afficher tous les statuts' : 'Filtrer : Non lancés'}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-dark-400"></span>
-              <span>{stats.nonLances} non lancé{stats.nonLances > 1 ? 's' : ''}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedStatus(selectedStatus === '1-En cours' ? 'all' : '1-En cours')}
-              className={`inline-flex items-center gap-1 cursor-pointer transition-all rounded-full px-2 py-0.5 border ${
-                selectedStatus === '1-En cours'
-                  ? 'bg-accent-cyan/20 text-accent-cyan border-accent-cyan/60 font-bold shadow-sm ring-1 ring-accent-cyan/40'
-                  : 'bg-dark-900/30 text-accent-cyan/80 border-transparent hover:border-accent-cyan/30 hover:text-accent-cyan'
-              }`}
-              title={selectedStatus === '1-En cours' ? 'Afficher tous les statuts' : 'Filtrer : En cours'}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-accent-cyan"></span>
-              <span>{stats.enCours} en cours</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedStatus(selectedStatus === '2-Terminé' ? 'all' : '2-Terminé')}
-              className={`inline-flex items-center gap-1 cursor-pointer transition-all rounded-full px-2 py-0.5 border ${
-                selectedStatus === '2-Terminé'
-                  ? 'bg-accent-green/20 text-accent-green border-accent-green/60 font-bold shadow-sm ring-1 ring-accent-green/40'
-                  : 'bg-dark-900/30 text-accent-green/80 border-transparent hover:border-accent-green/30 hover:text-accent-green'
-              }`}
-              title={selectedStatus === '2-Terminé' ? 'Afficher tous les statuts' : 'Filtrer : Terminés'}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-accent-green"></span>
-              <span>{stats.termines} terminé{stats.termines > 1 ? 's' : ''}</span>
-            </button>
-            {stats.enRetard > 0 && (
+          {/* Unified Counters & Filters Bar - Desktop (>= sm) */}
+          <div 
+            className="hidden sm:flex flex-wrap items-center gap-2.5 bg-dark-800/80 border border-dark-600/40 rounded-2xl"
+            style={{ padding: '6px 12px', marginBottom: '-4px' }}
+          >
+            {/* Tightened Counters */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Total */}
+              <button
+                type="button"
+                onClick={() => setSelectedStatus('all')}
+                className={`flex items-center gap-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
+                  selectedStatus === 'all'
+                    ? 'border-accent-cyan/60 bg-accent-cyan/15 text-accent-cyan ring-1 ring-accent-cyan/30 shadow-sm'
+                    : 'border-dark-600/30 bg-dark-800/60 text-dark-300 hover:border-dark-500/50 hover:bg-dark-750/60'
+                }`}
+                style={{ padding: '5px 10px' }}
+                title="Afficher tous les projets"
+              >
+                <span className="text-[11px] font-semibold text-dark-400 uppercase tracking-wider">Total</span>
+                <span className="text-xs font-black text-dark-100 bg-dark-700/50 px-1.5 py-0.5 rounded">{stats.total}</span>
+              </button>
+
+              {/* Non lancés */}
+              <button
+                type="button"
+                onClick={() => setSelectedStatus(selectedStatus === '0-Non lancé' ? 'all' : '0-Non lancé')}
+                className={`flex items-center gap-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
+                  selectedStatus === '0-Non lancé'
+                    ? 'border-dark-400 ring-1 ring-dark-400/50 bg-dark-700/80 text-dark-100 shadow-sm'
+                    : 'border-dark-600/30 bg-dark-800/60 text-dark-400 hover:border-dark-500/50 hover:bg-dark-750/60'
+                }`}
+                style={{ padding: '5px 10px' }}
+                title="Filtrer : Projets non lancés"
+              >
+                <Circle size={11} className="text-dark-400" />
+                <span className="text-[11px] font-semibold uppercase tracking-wider">Non lancés</span>
+                <span className="text-xs font-black text-dark-300 bg-dark-700/50 px-1.5 py-0.5 rounded">{stats.nonLances}</span>
+              </button>
+
+              {/* En cours */}
+              <button
+                type="button"
+                onClick={() => setSelectedStatus(selectedStatus === '1-En cours' ? 'all' : '1-En cours')}
+                className={`flex items-center gap-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
+                  selectedStatus === '1-En cours'
+                    ? 'border-accent-cyan ring-1 ring-accent-cyan/50 bg-accent-cyan/15 text-accent-cyan shadow-sm'
+                    : 'border-dark-600/30 bg-dark-800/60 text-accent-cyan/80 hover:border-dark-500/50 hover:bg-dark-750/60'
+                }`}
+                style={{ padding: '5px 10px' }}
+                title="Filtrer : Projets en cours"
+              >
+                <Clock size={11} className="text-accent-cyan" />
+                <span className="text-[11px] font-semibold uppercase tracking-wider">En cours</span>
+                <span className="text-xs font-black text-accent-cyan bg-accent-cyan/10 px-1.5 py-0.5 rounded">{stats.enCours}</span>
+              </button>
+
+              {/* Terminés */}
+              <button
+                type="button"
+                onClick={() => setSelectedStatus(selectedStatus === '2-Terminé' ? 'all' : '2-Terminé')}
+                className={`flex items-center gap-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
+                  selectedStatus === '2-Terminé'
+                    ? 'border-accent-green ring-1 ring-accent-green/50 bg-accent-green/15 text-accent-green shadow-sm'
+                    : 'border-dark-600/30 bg-dark-800/60 text-accent-green/80 hover:border-dark-500/50 hover:bg-dark-750/60'
+                }`}
+                style={{ padding: '5px 10px' }}
+                title="Filtrer : Projets terminés"
+              >
+                <CheckCircle2 size={11} className="text-accent-green" />
+                <span className="text-[11px] font-semibold uppercase tracking-wider">Terminés</span>
+                <span className="text-xs font-black text-accent-green bg-accent-green/10 px-1.5 py-0.5 rounded">{stats.termines}</span>
+              </button>
+
+              {/* En retard */}
               <button
                 type="button"
                 onClick={() => setSelectedStatus(selectedStatus === 'enRetard' ? 'all' : 'enRetard')}
-                className={`inline-flex items-center gap-1 font-semibold cursor-pointer transition-all rounded-full px-2 py-0.5 border ${
+                className={`flex items-center gap-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
                   selectedStatus === 'enRetard'
-                    ? 'bg-accent-red/25 text-accent-red border-accent-red font-bold shadow-sm ring-1 ring-accent-red/50'
-                    : 'bg-accent-red/10 text-accent-red border-accent-red/30 hover:bg-accent-red/20'
+                    ? 'border-accent-red ring-2 ring-accent-red/50 bg-accent-red/20 text-accent-red shadow-sm'
+                    : stats.enRetard > 0 
+                      ? 'bg-accent-red/10 border-accent-red/30 text-accent-red hover:bg-accent-red/20' 
+                      : 'border-dark-600/30 bg-dark-800/60 text-dark-400 hover:border-dark-500/50 hover:bg-dark-750/60'
                 }`}
-                title={selectedStatus === 'enRetard' ? 'Afficher tous les statuts' : 'Filtrer : En retard'}
+                style={{ padding: '5px 10px' }}
+                title="Filtrer : Projets en retard"
               >
-                <AlertTriangle size={11} />
-                <span>{stats.enRetard} en retard</span>
+                <AlertTriangle size={11} className={stats.enRetard > 0 || selectedStatus === 'enRetard' ? 'text-accent-red' : 'text-dark-400'} />
+                <span className="text-[11px] font-semibold uppercase tracking-wider">En retard</span>
+                <span className={`text-xs font-black px-1.5 py-0.5 rounded ${stats.enRetard > 0 ? 'text-accent-red bg-accent-red/20' : 'text-dark-400 bg-dark-700/50'}`}>{stats.enRetard}</span>
               </button>
-            )}
+            </div>
+
+            {/* Separator between Counters and Filters */}
+            <div className="hidden lg:block h-6 w-px bg-dark-600/50 mx-0.5" />
+
+            {/* Filters */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {renderFilterControls(false)}
+            </div>
           </div>
-        </div>
-      </div>
-
-      {/* Mobile Filter Bar (< sm) */}
-      <div 
-        className="sm:hidden flex flex-wrap items-center gap-2 bg-dark-800/80 border border-dark-600/40 rounded-2xl"
-        style={{ padding: '8px 12px', marginBottom: '-10px' }}
-      >
-        {renderFilterControls(true)}
-      </div>
-
-      {/* Unified Counters & Filters Bar - Desktop (>= sm) */}
-      <div 
-        className="hidden sm:flex flex-wrap items-center gap-2.5 bg-dark-800/80 border border-dark-600/40 rounded-2xl"
-        style={{ padding: '6px 12px', marginBottom: '-4px' }}
-      >
-        {/* Tightened Counters */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {/* Total */}
-          <button
-            type="button"
-            onClick={() => setSelectedStatus('all')}
-            className={`flex items-center gap-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
-              selectedStatus === 'all'
-                ? 'border-accent-cyan/60 bg-accent-cyan/15 text-accent-cyan ring-1 ring-accent-cyan/30 shadow-sm'
-                : 'border-dark-600/30 bg-dark-800/60 text-dark-300 hover:border-dark-500/50 hover:bg-dark-750/60'
-            }`}
-            style={{ padding: '5px 10px' }}
-            title="Afficher tous les projets"
-          >
-            <span className="text-[11px] font-semibold text-dark-400 uppercase tracking-wider">Total</span>
-            <span className="text-xs font-black text-dark-100 bg-dark-700/50 px-1.5 py-0.5 rounded">{stats.total}</span>
-          </button>
-
-          {/* Non lancés */}
-          <button
-            type="button"
-            onClick={() => setSelectedStatus(selectedStatus === '0-Non lancé' ? 'all' : '0-Non lancé')}
-            className={`flex items-center gap-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
-              selectedStatus === '0-Non lancé'
-                ? 'border-dark-400 ring-1 ring-dark-400/50 bg-dark-700/80 text-dark-100 shadow-sm'
-                : 'border-dark-600/30 bg-dark-800/60 text-dark-400 hover:border-dark-500/50 hover:bg-dark-750/60'
-            }`}
-            style={{ padding: '5px 10px' }}
-            title="Filtrer : Projets non lancés"
-          >
-            <Circle size={11} className="text-dark-400" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Non lancés</span>
-            <span className="text-xs font-black text-dark-300 bg-dark-700/50 px-1.5 py-0.5 rounded">{stats.nonLances}</span>
-          </button>
-
-          {/* En cours */}
-          <button
-            type="button"
-            onClick={() => setSelectedStatus(selectedStatus === '1-En cours' ? 'all' : '1-En cours')}
-            className={`flex items-center gap-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
-              selectedStatus === '1-En cours'
-                ? 'border-accent-cyan ring-1 ring-accent-cyan/50 bg-accent-cyan/15 text-accent-cyan shadow-sm'
-                : 'border-dark-600/30 bg-dark-800/60 text-accent-cyan/80 hover:border-dark-500/50 hover:bg-dark-750/60'
-            }`}
-            style={{ padding: '5px 10px' }}
-            title="Filtrer : Projets en cours"
-          >
-            <Clock size={11} className="text-accent-cyan" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider">En cours</span>
-            <span className="text-xs font-black text-accent-cyan bg-accent-cyan/10 px-1.5 py-0.5 rounded">{stats.enCours}</span>
-          </button>
-
-          {/* Terminés */}
-          <button
-            type="button"
-            onClick={() => setSelectedStatus(selectedStatus === '2-Terminé' ? 'all' : '2-Terminé')}
-            className={`flex items-center gap-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
-              selectedStatus === '2-Terminé'
-                ? 'border-accent-green ring-1 ring-accent-green/50 bg-accent-green/15 text-accent-green shadow-sm'
-                : 'border-dark-600/30 bg-dark-800/60 text-accent-green/80 hover:border-dark-500/50 hover:bg-dark-750/60'
-            }`}
-            style={{ padding: '5px 10px' }}
-            title="Filtrer : Projets terminés"
-          >
-            <CheckCircle2 size={11} className="text-accent-green" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Terminés</span>
-            <span className="text-xs font-black text-accent-green bg-accent-green/10 px-1.5 py-0.5 rounded">{stats.termines}</span>
-          </button>
-
-          {/* En retard */}
-          <button
-            type="button"
-            onClick={() => setSelectedStatus(selectedStatus === 'enRetard' ? 'all' : 'enRetard')}
-            className={`flex items-center gap-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
-              selectedStatus === 'enRetard'
-                ? 'border-accent-red ring-2 ring-accent-red/50 bg-accent-red/20 text-accent-red shadow-sm'
-                : stats.enRetard > 0 
-                  ? 'bg-accent-red/10 border-accent-red/30 text-accent-red hover:bg-accent-red/20' 
-                  : 'border-dark-600/30 bg-dark-800/60 text-dark-400 hover:border-dark-500/50 hover:bg-dark-750/60'
-            }`}
-            style={{ padding: '5px 10px' }}
-            title="Filtrer : Projets en retard"
-          >
-            <AlertTriangle size={11} className={stats.enRetard > 0 || selectedStatus === 'enRetard' ? 'text-accent-red' : 'text-dark-400'} />
-            <span className="text-[11px] font-semibold uppercase tracking-wider">En retard</span>
-            <span className={`text-xs font-black px-1.5 py-0.5 rounded ${stats.enRetard > 0 ? 'text-accent-red bg-accent-red/20' : 'text-dark-400 bg-dark-700/50'}`}>{stats.enRetard}</span>
-          </button>
-        </div>
-
-        {/* Separator between Counters and Filters */}
-        <div className="hidden lg:block h-6 w-px bg-dark-600/50 mx-0.5" />
-
-        {/* Filters */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {renderFilterControls(false)}
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Main Content View */}
       {loading ? (
@@ -721,6 +909,28 @@ export default function ProjectsPage() {
           <div className="w-8 h-8 border-3 border-accent-cyan border-t-transparent rounded-full animate-spin" />
           <span className="text-xs text-dark-400 font-medium">Chargement des projets...</span>
         </div>
+      ) : focusedProject ? (
+        viewMode === 'kanban' ? (
+          <ProjectObjectiveKanban
+            project={focusedProject}
+            onEditObjective={handleOpenEditObjective}
+            onAddObjective={handleOpenAddObjective}
+          />
+        ) : viewMode === 'gantt' ? (
+          <ProjectGantt
+            projects={[focusedProject]}
+            focusedProjectId={focusedProject.id}
+            onEdit={handleOpenEdit}
+            onOpenDetails={handleOpenDetails}
+            onFocusProject={handleFocusProject}
+          />
+        ) : (
+          <ProjectObjectiveGrid
+            project={focusedProject}
+            onEditObjective={handleOpenEditObjective}
+            onAddObjective={handleOpenAddObjective}
+          />
+        )
       ) : filteredProjects.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center min-h-[350px] p-8 text-center bg-dark-800/40 border border-dashed border-dark-700 rounded-3xl gap-4">
           <div className="w-16 h-16 rounded-2xl bg-dark-700/60 flex items-center justify-center text-dark-400">
@@ -763,12 +973,14 @@ export default function ProjectsPage() {
           projects={filteredProjects}
           onEdit={handleOpenEdit}
           onOpenDetails={handleOpenDetails}
+          onFocusProject={handleFocusProject}
         />
       ) : viewMode === 'gantt' ? (
         <ProjectGantt
           projects={filteredProjects}
           onEdit={handleOpenEdit}
           onOpenDetails={handleOpenDetails}
+          onFocusProject={handleFocusProject}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -778,6 +990,7 @@ export default function ProjectsPage() {
               project={project}
               onEdit={handleOpenEdit}
               onOpenDetails={handleOpenDetails}
+              onFocusProject={handleFocusProject}
             />
           ))}
         </div>
@@ -799,6 +1012,20 @@ export default function ProjectsPage() {
           onClose={() => setDetailProject(null)}
           project={activeDetailProject}
           onEdit={handleOpenEdit}
+        />
+      )}
+
+      {/* Objective Create / Edit Modal (from project focus mode) */}
+      {showObjectiveModal && (
+        <ObjectiveForm
+          isOpen={showObjectiveModal}
+          onClose={() => {
+            setShowObjectiveModal(false);
+            setObjectiveToEdit(null);
+          }}
+          editObjective={objectiveToEdit}
+          defaultProjectId={focusedProject?.id || ''}
+          zIndex={220}
         />
       )}
 
@@ -856,13 +1083,13 @@ export default function ProjectsPage() {
         </Modal>
       )}
 
-      {/* Bouton flottant Nouveau projet (+) */}
+      {/* Bouton flottant Nouveau projet / Nouvel objectif (+) */}
       <motion.button
         whileHover={{ scale: 1.1, rotate: 90 }}
         whileTap={{ scale: 0.9 }}
-        onClick={handleOpenCreate}
+        onClick={focusedProject ? handleOpenAddObjective : handleOpenCreate}
         className="fixed bottom-8 right-8 w-14 h-14 rounded-full bg-dark-100 text-dark-900 shadow-2xl flex items-center justify-center z-50 hover:bg-dark-100 transition-all duration-300 md:bottom-10 md:right-10 cursor-pointer border-none"
-        title="Nouveau projet"
+        title={focusedProject ? "Nouvel objectif pour ce projet" : "Nouveau projet"}
       >
         <Plus size={28} strokeWidth={2.5} />
       </motion.button>

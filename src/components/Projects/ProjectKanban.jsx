@@ -34,7 +34,8 @@ const COLUMNS = [
 export default function ProjectKanban({ 
   projects, 
   onEdit, 
-  onOpenDetails 
+  onOpenDetails,
+  onFocusProject 
 }) {
   const { changeProjectStatus } = useProjects();
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false);
@@ -140,6 +141,7 @@ export default function ProjectKanban({
                                 project={project}
                                 onEdit={onEdit}
                                 onOpenDetails={onOpenDetails}
+                                onFocusProject={onFocusProject}
                               />
                             </div>
                           )}

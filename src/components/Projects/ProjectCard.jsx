@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { 
   Paperclip, FileText, Calendar, AlertTriangle, Clock, 
   MoreVertical, Edit2, Trash2, CheckCircle2, ChevronRight,
-  Target, AlertCircle
+  Target, AlertCircle, Info
 } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore, differenceInCalendarDays, startOfDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -19,6 +19,7 @@ export default function ProjectCard({
   project, 
   onEdit, 
   onOpenDetails,
+  onFocusProject,
   compact = false 
 }) {
   const { state: targetState } = useTarget();
@@ -173,8 +174,9 @@ export default function ProjectCard({
         {/* Top bar: Project Name & Menu */}
         <div className="flex items-center justify-between gap-2">
           <h3 
-            onClick={() => onOpenDetails?.(project)}
+            onClick={() => (onFocusProject || onOpenDetails)?.(project)}
             className="text-base font-bold text-dark-100 leading-snug group-hover:text-accent-cyan transition-colors cursor-pointer truncate"
+            title="Cliquer pour focaliser sur ce projet"
           >
             {project.name}
           </h3>
@@ -203,6 +205,28 @@ export default function ProjectCard({
                   }} 
                 />
                 <div className="absolute right-0 top-7 w-36 bg-dark-800 border border-dark-600/70 rounded-xl shadow-2xl py-1 z-50 flex flex-col text-xs font-medium overflow-hidden">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      (onFocusProject || onOpenDetails)?.(project);
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors cursor-pointer"
+                  >
+                    <Target size={14} className="text-accent-cyan" />
+                    Voir les objectifs
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      onOpenDetails?.(project);
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 text-dark-200 hover:bg-dark-700/60 text-left transition-colors cursor-pointer"
+                  >
+                    <Info size={14} className="text-accent-cyan" />
+                    Détails du projet
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
