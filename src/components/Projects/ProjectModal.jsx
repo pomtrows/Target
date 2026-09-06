@@ -321,7 +321,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            className="w-32 sm:w-36 bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer h-[34px] px-2 truncate"
+            className="w-32 sm:w-36 bg-dark-900/80 border border-dark-600/60 rounded-xl text-xs sm:text-sm text-dark-100 focus:outline-none focus:border-accent-cyan transition-colors cursor-pointer h-[34px] px-2 truncate shrink-0"
           >
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id} className="bg-dark-800 text-dark-100">
@@ -330,12 +330,12 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
             ))}
           </select>
 
-          {/* Boutons Pièces jointes et Notes à droite */}
-          <div className="flex items-center gap-2 ml-auto shrink-0 pl-3 sm:pl-4">
+          {/* Boutons Pièces jointes et Notes répartis équitablement */}
+          <div className="flex-1 flex items-center justify-evenly max-w-[220px] sm:max-w-[240px] ml-auto">
             <button
               type="button"
               onClick={() => setShowAttachmentsModal(true)}
-              className={`flex items-center justify-center gap-1.5 h-[34px] px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center justify-center gap-1.5 h-[34px] px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
                 formAttachments.length > 0
                   ? 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/40 shadow-sm'
                   : 'bg-dark-900/80 text-dark-300 border-dark-600/60 hover:text-dark-100 hover:border-dark-500 hover:bg-dark-800'
@@ -351,7 +351,7 @@ export default function ProjectModal({ isOpen, onClose, projectToEdit = null }) 
             <button
               type="button"
               onClick={handleOpenNotes}
-              className={`flex items-center justify-center h-[34px] px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center justify-center h-[34px] px-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
                 hasNotes
                   ? 'bg-accent-violet/15 text-accent-violet border-accent-violet/40 shadow-sm'
                   : 'bg-dark-900/80 text-dark-300 border-dark-600/60 hover:text-dark-100 hover:border-dark-500 hover:bg-dark-800'
